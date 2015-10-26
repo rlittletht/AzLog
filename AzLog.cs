@@ -10,9 +10,9 @@ using System.Windows.Forms;
 
 namespace AzLog
 {
-    public partial class Form1 : Form
+    public partial class AzLog : Form
     {
-        public Form1()
+        public AzLog()
         {
             InitializeComponent();
         }

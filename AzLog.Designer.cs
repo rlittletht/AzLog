@@ -1,6 +1,6 @@
 ﻿namespace AzLog
 {
-    partial class Form1
+    partial class AzLog
     {
         /// <summary>
         /// Required designer variable.
