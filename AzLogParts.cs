@@ -1,0 +1,499 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Dynamic;
+using System.Security.Cryptography.X509Certificates;
+using NUnit.Framework;
+
+namespace AzLog
+{
+    public enum AzLogPartState
+    {
+        Complete,
+        Pending,
+        Partial,
+        Invalid
+    }
+
+    internal class AzLogPart
+    {
+        private DateTime m_dttmMin;
+        private DateTime m_dttmMac;
+        private int m_nHourMin;
+        private int m_nHourMac;
+        private AzLogPartState m_azlps;
+
+        public AzLogPart() {}
+        public AzLogPartState State => m_azlps;
+        public DateTime DttmMin => m_dttmMin;
+        public DateTime DttmMac => m_dttmMac;
+        public int HourMin => m_nHourMin;
+        public int HourMac => m_nHourMac;
+
+        public bool Contains(DateTime dttmDay, int nHour)
+        {
+            DateTime dttmMinEx = AzLogParts.DttmExactFromParts(m_dttmMin, m_nHourMin);
+            DateTime dttmMacEx = AzLogParts.DttmExactFromParts(m_dttmMac, m_nHourMac);
+            DateTime dttmCheck = AzLogParts.DttmExactFromParts(dttmDay, nHour);
+
+            if (dttmCheck >= dttmMinEx && dttmCheck < dttmMacEx)
+                return true;
+
+            return false;
+        }
+
+        public static AzLogPart Create(DateTime dttmMin, int nHourMin, DateTime dttmMac, int nHourMac, AzLogPartState azlps)
+        {
+            AzLogPart azlp = new AzLogPart();
+            azlp.m_dttmMin = dttmMin;
+            azlp.m_dttmMac = dttmMac;
+            azlp.m_nHourMin = nHourMin;
+            azlp.m_nHourMac = nHourMac;
+            azlp.m_azlps = azlps;
+
+            return azlp;
+        }
+    }
+
+
+    internal class AzLogParts
+    {
+        // sorted list sucks for insert time, but it lets us binary search on our own to find the nearest
+        // key...
+        private SortedList<DateTime, AzLogPart> m_plazlp;
+
+        public AzLogParts()
+        {
+            m_plazlp = new SortedList<DateTime, AzLogPart>();
+        }
+
+        int IazlpFindPart(DateTime dttmStart, out bool fMatched)
+        {
+            int iFirst = 0, iLim = m_plazlp.Count;
+            fMatched = true;
+
+            while (iFirst != iLim)
+                {
+                int iMid = iFirst + (iLim - iFirst)/2;
+                int nCompare = m_plazlp.Keys[iMid].CompareTo(dttmStart);
+
+                if (nCompare == 0)
+                    return iMid;
+                if (nCompare < 0)
+                     iFirst = iMid + 1;
+                else
+                   iLim = iMid;
+                }
+
+            fMatched = false;
+            return iFirst - 1;
+        }
+
+        /* D T T M  E X A C T  F R O M  P A R T S */
+        /*----------------------------------------------------------------------------
+        	%%Function: DttmExactFromParts
+        	%%Qualified: AzLog.AzLogParts.DttmExactFromParts
+        	%%Contact: rlittle
+        	
+        ----------------------------------------------------------------------------*/
+        public static DateTime DttmExactFromParts(DateTime dttm, int nHour)
+        {
+            return dttm.AddHours(nHour - dttm.Hour);
+        }
+
+        /* G E T  P A R T  S T A T E */
+        /*----------------------------------------------------------------------------
+        	%%Function: GetPartState
+        	%%Qualified: AzLog.AzLogParts.GetPartState
+        	%%Contact: rlittle
+        	
+        ----------------------------------------------------------------------------*/
+        public AzLogPartState GetPartState(DateTime dttm, int nHour)
+        {
+            DateTime dttmExact = DttmExactFromParts(dttm, nHour);
+
+            bool fMatched;
+            int iazlp = IazlpFindPart(dttmExact, out fMatched);
+            if (fMatched)
+                {
+                return m_plazlp.Values[iazlp].State;
+                }
+            else if (iazlp == -1)
+                {
+                return AzLogPartState.Invalid;
+                }
+            else
+                {
+                AzLogPart azlp = m_plazlp.Values[iazlp];
+
+                if (azlp.Contains(dttm, nHour))
+                    return azlp.State;
+
+                return AzLogPartState.Invalid;
+                }
+        }
+
+
+        /* S E T  P A R T  S T A T E */
+        /*----------------------------------------------------------------------------
+        	%%Function: SetPartState
+        	%%Qualified: AzLog.AzLogParts.SetPartState
+        	%%Contact: rlittle
+        	
+        ----------------------------------------------------------------------------*/
+        public void SetPartState(DateTime dttmMin, DateTime dttmMac, int nHourMin, int nHourMac,
+            AzLogPartState azlps)
+        {
+            bool fMatched;
+            int iazlp = IazlpFindPart(DttmExactFromParts(dttmMin, nHourMin), out fMatched);
+
+            if (!fMatched && iazlp == -1)
+                {
+                // just insert a new one
+                AzLogPart azlpNew = AzLogPart.Create(dttmMin, nHourMin, dttmMac, nHourMac, azlps);
+                m_plazlp.Add(DttmExactFromParts(dttmMin, nHourMin), azlpNew);
+                return;
+                }
+
+            AzLogPart azlp = m_plazlp.Values[iazlp];
+            // does this part start *before* we do? if so, we need to split
+            AzLogPart azlpPre = null;
+            AzLogPart azlpReplace = null;
+            AzLogPart azlpPost = null;
+            bool fReplace = false;
+
+            if (azlp.DttmMin < dttmMin || (azlp.DttmMin == dttmMin && azlp.HourMin < nHourMin))
+                {
+                // if it doesn't contain us, then just add a new part and be done
+                if (!azlp.Contains(dttmMin, nHourMin))
+                    {
+                    AzLogPart azlpNew = AzLogPart.Create(dttmMin, nHourMin, dttmMac, nHourMac, azlps);
+                    m_plazlp.Add(DttmExactFromParts(dttmMin, nHourMin), azlpNew);
+                    // CAN'T JUST RETURN HERE because this new part might overlap a following part.
+                    }
+                else
+                    {
+                    fReplace = true;
+                    // ok, there's some overlap.
+                    azlpPre = AzLogPart.Create(azlp.DttmMin, azlp.HourMin, dttmMin, nHourMin, azlp.State);
+
+                    // now create the replacement part that covers what we want.
+                    if (azlp.DttmMac > dttmMac || (azlp.DttmMac == dttmMac && azlp.HourMac > nHourMac))
+                        {
+                        // the end of the current node extends beyond what we want. need to create a replace and a post part
+                        azlpReplace = AzLogPart.Create(dttmMin, nHourMin, dttmMac, nHourMac, azlps);
+                        azlpPost = AzLogPart.Create(dttmMac, nHourMac, azlp.DttmMac, azlp.HourMac, azlp.State);
+                        }
+                    else
+                        {
+                        // the end of the matched block is *not* beyond our end. create a replacement that extends to where
+                        // we want
+                        // NOTE!! This might create overlap with the following block. we will need to coalesce!!
+                        azlpReplace = AzLogPart.Create(dttmMin, nHourMin, dttmMac, nHourMac, azlps);
+                        // there is no post because we just extended
+                        }
+                    }
+                }
+            else
+                {
+                if (fMatched)
+                    {
+                    azlpReplace = AzLogPart.Create(dttmMin, nHourMin, dttmMac, nHourMac, azlps);
+                    fReplace = true;
+                    }
+                else
+                    {
+                    // the matched block does *NOT* begin before us, so just create a new pre block for us, and then coalesce
+                    // any following blocks
+                    azlpPre = AzLogPart.Create(dttmMin, nHourMin, dttmMac, nHourMac, azlps);
+                    }
+                }
+            // ok, do the operations
+            if (fReplace)
+                m_plazlp.RemoveAt(iazlp);
+
+            if (azlpPre != null)
+                m_plazlp.Add(DttmExactFromParts(azlpPre.DttmMin, azlpPre.HourMin), azlpPre);
+
+            if (azlpReplace != null)
+                m_plazlp.Add(DttmExactFromParts(azlpReplace.DttmMin, azlpReplace.HourMin), azlpReplace);
+
+            if (azlpPost != null)
+                m_plazlp.Add(DttmExactFromParts(azlpPost.DttmMin, azlpPost.HourMin), azlpPost);
+
+            // at this point, iazlp points to at least the new item, and maybe some overlapping items. fix those (coalescing)
+            CoalesceLogParts(iazlp);
+        }
+
+        /* C O A L E S C E  L O G  P A R T S */
+        /*----------------------------------------------------------------------------
+        	%%Function: CoalesceLogParts
+        	%%Qualified: AzLog.AzLogParts.CoalesceLogParts
+        	%%Contact: rlittle
+        	
+            coalesce
+        ----------------------------------------------------------------------------*/
+        private void CoalesceLogParts(int iazlp)
+        {
+            AzLogPart azlp, azlpNext;
+
+            while (iazlp < m_plazlp.Count - 1)
+                {
+                azlp = m_plazlp.Values[iazlp];
+                azlpNext = m_plazlp.Values[iazlp + 1];
+
+                if (azlp.DttmMac > azlpNext.DttmMin ||
+                    (azlp.DttmMac == azlpNext.DttmMin && azlp.HourMac > azlpNext.HourMin))
+                    {
+                    // we overlap the next guy.  crop the next guy so he doesn't overlap us
+                    AzLogPart azlpNew = null;
+
+                    if (azlp.DttmMac < azlpNext.DttmMac
+                        || (azlp.DttmMac == azlpNext.DttmMac && azlp.HourMac < azlpNext.HourMac))
+                        {
+                        // there is still some left
+                        azlpNew = AzLogPart.Create(azlp.DttmMac, azlp.HourMac, azlpNext.DttmMac, azlpNext.HourMac,
+                                                   azlpNext.State);
+                        }
+                    m_plazlp.RemoveAt(iazlp + 1);
+                    if (azlpNew != null)
+                        m_plazlp.Add(DttmExactFromParts(azlpNew.DttmMin, azlpNew.HourMin), azlpNew);
+                    }
+                else
+                    {
+                    iazlp++;
+                    }
+                }
+        }
+
+        #region Unit Tests
+
+        private class CoalesceLogPartsBuilder
+        {
+            public int nYearMin;
+            public int nHourMin;
+            public int nYearMax;
+            public int nHourMax;
+            public int nState;
+        }
+
+        private static CoalesceLogPartsBuilder ParseLogPartsBuilderFromString(string sLogParts)
+        {
+            CoalesceLogPartsBuilder clp = new CoalesceLogPartsBuilder();
+
+            int i2 = 0;
+            int i2Next = sLogParts.IndexOf("/", i2);
+            clp.nYearMin = int.Parse(sLogParts.Substring(i2, i2Next - i2));
+            i2 = i2Next + 1;
+            i2Next = sLogParts.IndexOf("/", i2);
+            clp.nHourMin = int.Parse(sLogParts.Substring(i2, i2Next - i2));
+            i2 = i2Next + 1;
+            i2Next = sLogParts.IndexOf("/", i2);
+            clp.nYearMax = int.Parse(sLogParts.Substring(i2, i2Next - i2));
+            i2 = i2Next + 1;
+            i2Next = sLogParts.IndexOf("/", i2);
+            clp.nHourMax = int.Parse(sLogParts.Substring(i2, i2Next - i2));
+            i2 = i2Next + 1;
+            i2Next = sLogParts.IndexOf("/", i2);
+            clp.nState = int.Parse(sLogParts.Substring(i2, i2Next - i2));
+
+            return clp;
+        }
+
+        [Test]
+        static public void TestParseLogPartsBuilderFromString()
+        {
+            CoalesceLogPartsBuilder clp = ParseLogPartsBuilderFromString("2003/0/2004/1/2/");
+            Assert.AreEqual(2003, clp.nYearMin);
+            Assert.AreEqual(2004, clp.nYearMax);
+            Assert.AreEqual(0, clp.nHourMin);
+            Assert.AreEqual(1, clp.nHourMax);
+            Assert.AreEqual(2, clp.nState);
+        }
+
+        [Test]
+        public static void TestParseLogPartsBuilderFromStringCollection()
+        {
+            List<CoalesceLogPartsBuilder> plclp =
+                ParseLogPartsCollectionBuilderString("2003/0/2003/1/1/|2003/1/2003/2/1/|2003/2/2003/4/1/|");
+
+            Assert.AreEqual(2003, plclp[0].nYearMin);
+            Assert.AreEqual(2003, plclp[0].nYearMax);
+            Assert.AreEqual(0, plclp[0].nHourMin);
+            Assert.AreEqual(1, plclp[0].nHourMax);
+            Assert.AreEqual(1, plclp[0].nState);
+
+            Assert.AreEqual(2003, plclp[1].nYearMin);
+            Assert.AreEqual(2003, plclp[1].nYearMax);
+            Assert.AreEqual(1, plclp[1].nHourMin);
+            Assert.AreEqual(2, plclp[1].nHourMax);
+            Assert.AreEqual(1, plclp[1].nState);
+
+            Assert.AreEqual(2003, plclp[2].nYearMin);
+            Assert.AreEqual(2003, plclp[2].nYearMax);
+            Assert.AreEqual(2, plclp[2].nHourMin);
+            Assert.AreEqual(4, plclp[2].nHourMax);
+            Assert.AreEqual(1, plclp[2].nState);
+        }
+
+        [Test]
+        public static void TestParseLogPartsBuildFromEmptyStringCollection()
+        {
+            List<CoalesceLogPartsBuilder> plclp = ParseLogPartsCollectionBuilderString("|");
+            Assert.AreEqual(0, plclp.Count);
+        }
+
+        static private List<CoalesceLogPartsBuilder> ParseLogPartsCollectionBuilderString(string sLogPartsCollection)
+        {
+            int i = 0;
+            List<CoalesceLogPartsBuilder> plclp = new List<CoalesceLogPartsBuilder>();
+
+            while (i < sLogPartsCollection.Length)
+                {
+                int iNext = sLogPartsCollection.IndexOf("|", i);
+                if (iNext == -1)
+                    break;
+
+                if (iNext > i)
+                    {
+                    string s = sLogPartsCollection.Substring(i, iNext - i);
+                    CoalesceLogPartsBuilder clp = ParseLogPartsBuilderFromString(s);
+
+                    plclp.Add(clp);
+                    }
+                i = iNext + 1;
+                }
+            return plclp;
+        }
+
+        private static AzLogPartState AzlpsFromNum(int n)
+        {
+            if (n == 0)
+                return AzLogPartState.Invalid;
+            else if (n == 1)
+                return AzLogPartState.Complete;
+            else if (n == 2)
+                return AzLogPartState.Pending;
+            else if (n == 3)
+                return AzLogPartState.Partial;
+
+            throw new Exception("invalid azlps num");
+        }
+
+        private static AzLogParts AzlpsFromClp(List<CoalesceLogPartsBuilder> plclp)
+        {
+            AzLogParts azlps = new AzLogParts();
+            foreach (CoalesceLogPartsBuilder clp in plclp)
+                {
+                AzLogPart azlp = AzLogPart.Create(new DateTime(clp.nYearMin, 1, 1), clp.nHourMin,
+                                                  new DateTime(clp.nYearMax, 1, 1), clp.nHourMax,
+                                                  AzlpsFromNum(clp.nState));
+                azlps.m_plazlp.Add(DttmExactFromParts(azlp.DttmMin, azlp.HourMin), azlp);
+                }
+            return azlps;
+        }
+
+        static private void AssertEqualClpAzlps(List<CoalesceLogPartsBuilder> plclpExpected, AzLogParts azlps, string sTest)
+        {
+            Assert.AreEqual(plclpExpected.Count, azlps.m_plazlp.Values.Count);
+
+            for (int iclp = 0; iclp < plclpExpected.Count; iclp++)
+                {
+                CoalesceLogPartsBuilder clp = plclpExpected[iclp];
+
+                Assert.AreEqual(new DateTime(clp.nYearMin, 1, 1), azlps.m_plazlp.Values[iclp].DttmMac,
+                                "{0}: index {1} match check", sTest, iclp);
+                Assert.AreEqual(new DateTime(clp.nYearMax, 1, 1), azlps.m_plazlp.Values[iclp].DttmMac,
+                                "{0}: index {1} match check", sTest, iclp);
+                Assert.AreEqual(clp.nHourMin, azlps.m_plazlp.Values[iclp].HourMin,
+                                "{0}: index {1} match check", sTest, iclp);
+                Assert.AreEqual(clp.nHourMax, azlps.m_plazlp.Values[iclp].HourMac,
+                                "{0}: index {1} match check", sTest, iclp);
+                Assert.AreEqual(AzlpsFromNum(clp.nState), azlps.m_plazlp.Values[iclp].State,
+                                "{0}: index {1} match check", sTest, iclp);
+                }
+        }
+
+        [TestCase("2003/0/2003/1/1/|2003/1/2003/2/1/|2003/2/2003/4/1/|", 1, "2003/0/2003/1/1/|2003/1/2003/2/1/|2003/2/2003/4/1/|", "Identity coalesce")]
+        [TestCase("2003/0/2003/1/1/|2003/1/2003/4/1/|2003/2/2003/4/1/|", 1, "2003/0/2003/1/1/|2003/1/2003/4/1/|", "Simple combine, wholly subsumed")]
+        [TestCase("2003/0/2003/1/1/|2003/1/2003/3/2/|2003/2/2003/4/1/|", 1, "2003/0/2003/1/1/|2003/1/2003/3/2/|2003/3/2003/4/1/|", "Overlap with next with split next")]
+        [TestCase("2003/0/2003/1/1/|2003/1/2003/5/2/|2003/2/2003/3/1/|2003/3/2003/5/1/|", 1, "2003/0/2003/1/1/|2003/1/2003/5/2/|", "Wholle subsume, superset of next")]
+        [TestCase("2003/0/2003/6/3/|2003/1/2003/5/2/|2003/2/2003/3/1/|2003/3/2003/5/1/|", 0, "2003/0/2003/6/3/|", "Combine with next 2 elements")]
+        [Test]
+        static public void TestCoalesceLogParts(string sLogParts, int iFirst, string sLogPartsExpected, string sTest)
+        {
+            // setup the state to coalesce
+            List<CoalesceLogPartsBuilder> plclp = ParseLogPartsCollectionBuilderString(sLogParts);
+            AzLogParts azlps = AzlpsFromClp(plclp);
+            azlps.CoalesceLogParts(iFirst);
+
+            List<CoalesceLogPartsBuilder> plclpExpected = ParseLogPartsCollectionBuilderString(sLogPartsExpected);
+            AssertEqualClpAzlps(plclpExpected, azlps, sTest);
+        }
+
+        [TestCase("|", "2003/0/2003/1/0/", "2003/0/2003/1/0/|", "insert into an empty list")]
+        [TestCase("2003/0/2003/1/0/|", "2003/0/2003/1/1/", "2003/0/2003/1/1/|", "update a single item in a single item list")]
+        [TestCase("2003/0/2003/1/0/|2003/2/2003/3/0/|", "2003/0/2003/1/1/", "2003/0/2003/1/1/|2003/2/2003/3/0/|", "update a single item in a non single item list")]
+        [TestCase("2003/0/2003/1/0/|2003/2/2003/3/0/|2003/3/2003/4/0/|2003/4/2003/5/0/|","2003/2/2003/4/1/", "2003/0/2003/1/0/|2003/2/2003/4/1/|2003/4/2003/5/0/|","update an item that coalesces 2 items into 1, starting with a match")]
+        [TestCase("2003/0/2003/1/0/|2003/1/2003/3/0/|2003/3/2003/4/0/|2003/4/2003/5/0/|","2003/2/2003/4/1/", "2003/0/2003/1/0/|2003/1/2003/2/0/|2003/2/2003/4/1/|2003/4/2003/5/0/|","update an item that coalesces 2 items into 1, splitting the first item")]
+        [TestCase("2003/0/2003/1/0/|2003/10/2003/13/0/|2003/13/2003/14/0/|2003/14/2003/15/0/|", "2003/1/2003/2/1/", "2003/0/2003/1/0/|2003/1/2003/2/1/|2003/10/2003/13/0/|2003/13/2003/14/0/|2003/14/2003/15/0/|", "insert an item that starts before a match")]
+        [TestCase("2003/0/2003/1/0/|2003/10/2003/13/0/|2003/13/2003/14/0/|2003/14/2003/15/0/|", "2003/9/2003/11/1/", "2003/0/2003/1/0/|2003/9/2003/11/1/|2003/11/2003/13/0/|2003/13/2003/14/0/|2003/14/2003/15/0/|", "update an item that starts before a match and ends within the following")]
+        [TestCase("2003/0/2003/1/0/|2003/10/2003/13/0/|2003/13/2003/14/0/|2003/14/2003/15/0/|", "2003/9/2003/13/1/", "2003/0/2003/1/0/|2003/9/2003/13/1/|2003/13/2003/14/0/|2003/14/2003/15/0/|", "update an item that starts before a match and ends exactly at the following")]
+        [TestCase("2003/0/2003/1/0/|2003/10/2003/13/0/|2003/15/2003/16/0/|2003/16/2003/17/0/|", "2003/9/2003/14/1/", "2003/0/2003/1/0/|2003/9/2003/14/1/|2003/15/2003/16/0/|2003/16/2003/17/0/|", "update an item that starts before a match and ends after the following (but not matching the following following)")]
+        [TestCase("2003/0/2003/1/0/|2003/10/2003/13/0/|2003/15/2003/16/0/|2003/16/2003/17/0/|", "2003/9/2003/15/1/", "2003/0/2003/1/0/|2003/9/2003/15/1/|2003/15/2003/16/0/|2003/16/2003/17/0/|", "update an item that starts before a match and ends after the following (and the ending matches the beginning of the following following")]
+        [TestCase("2003/0/2003/1/0/|2003/10/2003/13/0/|2003/15/2003/17/0/|2003/17/2003/18/0/|", "2003/11/2003/16/1/", "2003/0/2003/1/0/|2003/10/2003/11/0/|2003/11/2003/16/1/|2003/16/2003/17/0/|2003/17/2003/18/0/|", "update an item that starts within a match and ends within the following")]
+        [TestCase("2003/0/2003/1/0/|2003/10/2003/13/0/|2003/15/2003/17/0/|2003/17/2003/18/0/|", "2003/11/2003/17/1/", "2003/0/2003/1/0/|2003/10/2003/11/0/|2003/11/2003/17/1/|2003/17/2003/18/0/|", "update an item that starts within a match and ends exactly at the end of the following")]
+        [TestCase("2003/0/2003/1/0/|2003/10/2003/13/0/|2003/15/2003/17/0/|2003/17/2003/18/0/|", "2003/11/2003/18/1/", "2003/0/2003/1/0/|2003/10/2003/11/0/|2003/11/2003/18/1/|", "update an item that starts within a match and ends exactly at the end of the following following (also at the end of the list)")]
+        // try some of the above but spanning another item between following and following following
+        [Test]
+        static public void TestSetPartState(string sLogParts, string sPartUpdate, string sLogPartsExpected, string sTest)
+        {
+            List<CoalesceLogPartsBuilder> plclp = ParseLogPartsCollectionBuilderString(sLogParts);
+            AzLogParts azlps = AzlpsFromClp(plclp);
+            CoalesceLogPartsBuilder clp = ParseLogPartsBuilderFromString(sPartUpdate);
+            azlps.SetPartState(new DateTime(clp.nYearMin, 1, 1), new DateTime(clp.nYearMax, 1, 1), clp.nHourMin, clp.nHourMax, AzlpsFromNum(clp.nState));
+            
+            List<CoalesceLogPartsBuilder> plclpExpected = ParseLogPartsCollectionBuilderString(sLogPartsExpected);
+            AssertEqualClpAzlps(plclpExpected, azlps, sTest);
+        }
+
+        [TestCase("1/1/2000 0:00", 1, "1/1/2000 1:00")]
+        [TestCase("1/1/2000 1:00", 1, "1/1/2000 1:00")]
+        [TestCase("1/1/2000 2:00", 1, "1/1/2000 1:00")]
+        [TestCase("1/1/2000 12:00", 1, "1/1/2000 1:00")]
+        [TestCase("1/1/2000 12:00", 19, "1/1/2000 19:00")]
+        [Test]
+        static public void TestDttmExactFromParts(string sDttm, int nHour, string sDttmExpected)
+        {
+            DateTime dttm = DateTime.Parse(sDttm);
+            DateTime dttmExact = DttmExactFromParts(dttm, nHour);
+            Assert.AreEqual(DateTime.Parse(sDttmExpected), dttmExact);
+        }
+        [TestCase(new int[] { 1, 2, 3}, 1, 0, true)]
+        [TestCase(new int[] { 1, 2, 3}, 2, 1, true)]
+        [TestCase(new int[] { 1, 2, 3}, 3, 2, true)]
+        [TestCase(new int[] { 1, 2}, 1, 0, true)]
+        [TestCase(new int[] { 1, 2}, 2, 1, true)]
+        [TestCase(new int[] { 1, 3, 5}, 2, 0, false)]
+        [TestCase(new int[] { 1, 3, 5}, 0, -1, false)]
+        [TestCase(new int[] { 1, 3, 5}, 4, 1, false)]
+        [TestCase(new int[] { 1, 3, 5}, 6, 2, false)]
+        [TestCase(new int[] { 1, 3}, 0, -1, false)]
+        [TestCase(new int[] { 1, 3}, 2, 0, false)]
+        [TestCase(new int[] { 1, 3}, 4, 1, false)]
+        [Test]
+        static public void TestFindPart(int[] rgnKeys, int nFind, int iExpected, bool fMatchExpected)
+        {
+            AzLogParts azlp = new AzLogParts();
+            foreach (int n in rgnKeys)
+                azlp.m_plazlp.Add(new DateTime(2000 + n, 1, 1), null);
+
+            bool fMatched;
+            int iResult = azlp.IazlpFindPart(new DateTime(2000 + nFind, 1, 1), out fMatched);
+            Assert.AreEqual(iExpected, iResult);
+            Assert.AreEqual(fMatchExpected, fMatched);
+        }
+#endregion
+
+    }
+
+}
