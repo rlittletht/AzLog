@@ -84,13 +84,13 @@ namespace AzLog
         {
             // figure out the timespan being requested
             DateTime dttmMin, dttmMac;
-            int nHourMin, nHourMac;
 
-            AzLogModel.FillMinMacFromStartEnd(m_ebStart.Text, m_ebEnd.Text, out dttmMin, out nHourMin, out dttmMac, out nHourMac);
+            AzLogModel.FillMinMacFromStartEnd(m_ebStart.Text, m_ebEnd.Text, out dttmMin, out dttmMac);
 
             // we don't know what partition we're going to find this data in, so launch a query 
             // from the first partition for this date range
-            m_azlm.FetchPartitionForDate(dttmMin, nHourMin, dttmMac, nHourMac);
+            // m_azlm.FetchPartitionsForDateRange(dttmMin, nHourMin, dttmMac, nHourMac);
+            m_azlm.FetchPartitionForDate(dttmMin);
         }
 
         public delegate void SyncViewDel(int iFirstSync, int iMacSync);

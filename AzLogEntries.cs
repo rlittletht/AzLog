@@ -161,11 +161,11 @@ namespace AzLog
             return m_plale[i];
         }
 
-        public void UpdatePart(DateTime dttmMin, int nHourMin, DateTime dttmMac, int nHourMac, AzLogPartState azpls)
+        public void UpdatePart(DateTime dttmMin, DateTime dttmMac, AzLogPartState azpls)
         {
             lock (this)
                 {
-                m_azlps.SetPartState(dttmMin, dttmMac, nHourMin, nHourMac, azpls);
+                m_azlps.SetPartState(dttmMin, dttmMac, azpls);
                 }
         }
         public void AddSegment(TableQuerySegment<AzLogEntryEntity> qsazle)
