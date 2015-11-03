@@ -269,8 +269,12 @@ namespace AzLog
 
         private class CoalesceLogPartsBuilder
         {
+            public int nDayMin;
+            public int nMonthMin;
             public int nYearMin;
             public int nHourMin;
+            public int nDayMax;
+            public int nMonthMax;
             public int nYearMax;
             public int nHourMax;
             public int nState;
@@ -279,15 +283,50 @@ namespace AzLog
         private static CoalesceLogPartsBuilder ParseLogPartsBuilderFromString(string sLogParts)
         {
             CoalesceLogPartsBuilder clp = new CoalesceLogPartsBuilder();
-
+            
             int i2 = 0;
             int i2Next = sLogParts.IndexOf("/", i2);
+            int i2NextT;
+            i2NextT = sLogParts.IndexOf("-", i2);
+            if (i2NextT < i2Next && i2NextT != -1)
+                {
+                // this has day and month parts too
+                clp.nMonthMin = int.Parse(sLogParts.Substring(i2, i2NextT - i2));
+                i2 = i2NextT + 1;
+                i2NextT = sLogParts.IndexOf("-", i2);
+                if (i2NextT >= i2Next)
+                    throw new Exception("input string in valid format");
+                clp.nDayMin = int.Parse(sLogParts.Substring(i2, i2NextT - i2));
+                i2 = i2NextT + 1;
+                // fallthrough
+                }
+            else
+                {
+                clp.nMonthMin = clp.nDayMin = 1;
+                }
             clp.nYearMin = int.Parse(sLogParts.Substring(i2, i2Next - i2));
             i2 = i2Next + 1;
             i2Next = sLogParts.IndexOf("/", i2);
             clp.nHourMin = int.Parse(sLogParts.Substring(i2, i2Next - i2));
             i2 = i2Next + 1;
             i2Next = sLogParts.IndexOf("/", i2);
+            i2NextT = sLogParts.IndexOf("-", i2);
+            if (i2NextT < i2Next && i2NextT != -1)
+                {
+                // this has day and month parts too
+                clp.nMonthMax = int.Parse(sLogParts.Substring(i2, i2NextT - i2));
+                i2 = i2NextT + 1;
+                i2NextT = sLogParts.IndexOf("-", i2);
+                if (i2NextT >= i2Next)
+                    throw new Exception("input string in valid format");
+                clp.nDayMax = int.Parse(sLogParts.Substring(i2, i2NextT - i2));
+                i2 = i2NextT + 1;
+                // fallthrough
+                }
+            else
+                {
+                clp.nMonthMax = clp.nDayMax = 1;
+                }
             clp.nYearMax = int.Parse(sLogParts.Substring(i2, i2Next - i2));
             i2 = i2Next + 1;
             i2Next = sLogParts.IndexOf("/", i2);
@@ -300,13 +339,32 @@ namespace AzLog
         }
 
         [Test]
-        static public void TestParseLogPartsBuilderFromString()
+        static public void TestParseLogPartsBuilderFromStringYear()
         {
             CoalesceLogPartsBuilder clp = ParseLogPartsBuilderFromString("2003/0/2004/1/2/");
             Assert.AreEqual(2003, clp.nYearMin);
+            Assert.AreEqual(1, clp.nMonthMin);
+            Assert.AreEqual(1, clp.nDayMin);
             Assert.AreEqual(2004, clp.nYearMax);
+            Assert.AreEqual(1, clp.nMonthMax);
+            Assert.AreEqual(1, clp.nDayMax);
             Assert.AreEqual(0, clp.nHourMin);
             Assert.AreEqual(1, clp.nHourMax);
+            Assert.AreEqual(2, clp.nState);
+        }
+
+        [Test]
+        static public void TestParseLogPartsBuilderFromStringFullDate()
+        {
+            CoalesceLogPartsBuilder clp = ParseLogPartsBuilderFromString("1-1-2003/0/1-2-2003/0/2/");
+            Assert.AreEqual(2003, clp.nYearMin);
+            Assert.AreEqual(1, clp.nMonthMin);
+            Assert.AreEqual(1, clp.nDayMin);
+            Assert.AreEqual(2003, clp.nYearMax);
+            Assert.AreEqual(1, clp.nMonthMax);
+            Assert.AreEqual(2, clp.nDayMax);
+            Assert.AreEqual(0, clp.nHourMin);
+            Assert.AreEqual(0, clp.nHourMax);
             Assert.AreEqual(2, clp.nState);
         }
 
@@ -384,8 +442,8 @@ namespace AzLog
             AzLogParts azlps = new AzLogParts();
             foreach (CoalesceLogPartsBuilder clp in plclp)
                 {
-                AzLogPart azlp = AzLogPart.Create(new DateTime(clp.nYearMin, 1, 1), clp.nHourMin,
-                                                  new DateTime(clp.nYearMax, 1, 1), clp.nHourMax,
+                AzLogPart azlp = AzLogPart.Create(new DateTime(clp.nYearMin, clp.nMonthMin, clp.nDayMin), clp.nHourMin,
+                                                  new DateTime(clp.nYearMax, clp.nMonthMax, clp.nDayMax), clp.nHourMax,
                                                   AzlpsFromNum(clp.nState));
                 azlps.m_plazlp.Add(DttmExactFromParts(azlp.DttmMin, azlp.HourMin), azlp);
                 }
@@ -418,6 +476,7 @@ namespace AzLog
         [TestCase("2003/0/2003/1/1/|2003/1/2003/3/2/|2003/2/2003/4/1/|", 1, "2003/0/2003/1/1/|2003/1/2003/3/2/|2003/3/2003/4/1/|", "Overlap with next with split next")]
         [TestCase("2003/0/2003/1/1/|2003/1/2003/5/2/|2003/2/2003/3/1/|2003/3/2003/5/1/|", 1, "2003/0/2003/1/1/|2003/1/2003/5/2/|", "Wholle subsume, superset of next")]
         [TestCase("2003/0/2003/6/3/|2003/1/2003/5/2/|2003/2/2003/3/1/|2003/3/2003/5/1/|", 0, "2003/0/2003/6/3/|", "Combine with next 2 elements")]
+        [TestCase("2003/0/2003/6/3/|1-1-2003/22/1-1-2003/25/2/|1-1-2003/23/1-1-2003/24/1/|1-2-2003/0/1-2-2003/2/3/|", 0, "2003/0/2003/6/3/|1-1-2003/22/1-2-2003/0/2/|1-2-2003/0/1-2-2003/2/3/|", "Test combine with 25th hour")]
         [Test]
         static public void TestCoalesceLogParts(string sLogParts, int iFirst, string sLogPartsExpected, string sTest)
         {

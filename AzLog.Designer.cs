@@ -102,7 +102,7 @@
             this.m_lvLog.UseCompatibleStateImageBehavior = false;
             this.m_lvLog.View = System.Windows.Forms.View.Details;
             this.m_lvLog.VirtualMode = true;
-            this.m_lvLog.RetrieveVirtualItem += new System.Windows.Forms.RetrieveVirtualItemEventHandler(this.GetListViewItem);
+            // this.m_lvLog.RetrieveVirtualItem += new System.Windows.Forms.RetrieveVirtualItemEventHandler(this.GetListViewItem);
             // 
             // m_ebStart
             // 

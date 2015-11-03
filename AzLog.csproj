@@ -90,9 +90,17 @@
     <Compile Include="AzLog.Designer.cs">
       <DependentUpon>AzLog.cs</DependentUpon>
     </Compile>
+    <Compile Include="AzLogEntries.cs" />
+    <Compile Include="AzLogModel.cs" />
     <Compile Include="AzLogParts.cs" />
     <Compile Include="AzLogTest.cs">
       <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="AzLogWindow.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="AzLogWindow.Designer.cs">
+      <DependentUpon>AzLogWindow.cs</DependentUpon>
     </Compile>
     <Compile Include="AzTableCollection.cs" />
     <Compile Include="Program.cs" />
@@ -102,6 +110,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="AzLog.resx">
       <DependentUpon>AzLog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="AzLogWindow.resx">
+      <DependentUpon>AzLogWindow.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>

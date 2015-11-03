@@ -77,7 +77,7 @@ namespace AzLog
             DateTime dttmMinActual, dttmMacActual;
             int nHourMinActual, nHourMacActual;
 
-            FillMinMacFromStartEnd(sStart, sEnd, out dttmMinActual, out nHourMinActual, out dttmMacActual, out nHourMacActual);
+            AzLogModel.FillMinMacFromStartEnd(sStart, sEnd, out dttmMinActual, out nHourMinActual, out dttmMacActual, out nHourMacActual);
             Assert.AreEqual(dttmMin, dttmMinActual);
             Assert.AreEqual(dttmMac, dttmMacActual);
             Assert.AreEqual(nHourMinExpected, nHourMinActual);
