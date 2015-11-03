@@ -63,25 +63,21 @@ namespace AzLog
         }
 #endregion // ConstructorTests
 
-        [TestCase("1/1/2003 8:00", "1/1/2003 9:00", "1/1/2003", 8, "1/1/2003", 9)]
-        [TestCase("1/1/2003 12:00", "1/1/2003 13:00", "1/1/2003", 12, "1/1/2003", 13)]
-        [TestCase("1/1/2003 0:00", "1/1/2003 2:00", "1/1/2003", 0, "1/1/2003", 2)]
-        [TestCase("1/1/2003 8:00", "9:00", "1/1/2003", 8, "1/1/2003", 9)]
-        [TestCase("1/1/2003 8:00", "1/2/2003 9:00", "1/1/2003", 8, "1/2/2003", 9)]
+        [TestCase("1/1/2003 8:00", "1/1/2003 9:00", "1/1/2003 8:00", "1/1/2003 9:00")]
+        [TestCase("1/1/2003 12:00", "1/1/2003 13:00", "1/1/2003 12:00", "1/1/2003 13:00")]
+        [TestCase("1/1/2003 0:00", "1/1/2003 2:00", "1/1/2003 0:00", "1/1/2003 2:00")]
+        [TestCase("1/1/2003 8:00", "9:00", "1/1/2003 8:00", "1/1/2003 9:00")]
+        [TestCase("1/1/2003 8:00", "1/2/2003 9:00", "1/1/2003 8:00", "1/2/2003 9:00")]
         [Test]
-        public static void TestFillMinMacFromStartEnd(string sStart, string sEnd, string sDttmMinExpected, int nHourMinExpected,
-                    string sDttmMacExpected, int nHourMacExpected)
+        public static void TestFillMinMacFromStartEnd(string sStart, string sEnd, string sDttmMinExpected, string sDttmMacExpected)
         {
             DateTime dttmMin = DateTime.Parse(sDttmMinExpected);
             DateTime dttmMac = DateTime.Parse(sDttmMacExpected);
             DateTime dttmMinActual, dttmMacActual;
-            int nHourMinActual, nHourMacActual;
 
-            AzLogModel.FillMinMacFromStartEnd(sStart, sEnd, out dttmMinActual, out nHourMinActual, out dttmMacActual, out nHourMacActual);
+            AzLogModel.FillMinMacFromStartEnd(sStart, sEnd, out dttmMinActual, out dttmMacActual);
             Assert.AreEqual(dttmMin, dttmMinActual);
             Assert.AreEqual(dttmMac, dttmMacActual);
-            Assert.AreEqual(nHourMinExpected, nHourMinActual);
-            Assert.AreEqual(nHourMacExpected, nHourMacActual);
         }
     }
 }

@@ -18,36 +18,29 @@ namespace AzLog
     {
         private DateTime m_dttmMin;
         private DateTime m_dttmMac;
-        private int m_nHourMin;
-        private int m_nHourMac;
         private AzLogPartState m_azlps;
 
         public AzLogPart() {}
         public AzLogPartState State => m_azlps;
         public DateTime DttmMin => m_dttmMin;
         public DateTime DttmMac => m_dttmMac;
-        public int HourMin => m_nHourMin;
-        public int HourMac => m_nHourMac;
 
-        public bool Contains(DateTime dttmDay, int nHour)
+        public bool Contains(DateTime dttm)
         {
-            DateTime dttmMinEx = AzLogParts.DttmExactFromParts(m_dttmMin, m_nHourMin);
-            DateTime dttmMacEx = AzLogParts.DttmExactFromParts(m_dttmMac, m_nHourMac);
-            DateTime dttmCheck = AzLogParts.DttmExactFromParts(dttmDay, nHour);
-
-            if (dttmCheck >= dttmMinEx && dttmCheck < dttmMacEx)
+            if (dttm >= m_dttmMin && dttm < m_dttmMac)
                 return true;
 
             return false;
         }
 
-        public static AzLogPart Create(DateTime dttmMin, int nHourMin, DateTime dttmMac, int nHourMac, AzLogPartState azlps)
+        public static AzLogPart Create(DateTime dttmMin, DateTime dttmMac, AzLogPartState azlps)
         {
+            if (dttmMin.Minute != 0 || dttmMac.Minute != 0)
+                throw new Exception("all dates must be on even hours!");
+
             AzLogPart azlp = new AzLogPart();
             azlp.m_dttmMin = dttmMin;
             azlp.m_dttmMac = dttmMac;
-            azlp.m_nHourMin = nHourMin;
-            azlp.m_nHourMac = nHourMac;
             azlp.m_azlps = azlps;
 
             return azlp;
@@ -88,18 +81,6 @@ namespace AzLog
             return iFirst - 1;
         }
 
-        /* D T T M  E X A C T  F R O M  P A R T S */
-        /*----------------------------------------------------------------------------
-        	%%Function: DttmExactFromParts
-        	%%Qualified: AzLog.AzLogParts.DttmExactFromParts
-        	%%Contact: rlittle
-        	
-        ----------------------------------------------------------------------------*/
-        public static DateTime DttmExactFromParts(DateTime dttm, int nHour)
-        {
-            return dttm.AddHours(nHour - dttm.Hour);
-        }
-
         /* G E T  P A R T  S T A T E */
         /*----------------------------------------------------------------------------
         	%%Function: GetPartState
@@ -107,12 +88,13 @@ namespace AzLog
         	%%Contact: rlittle
         	
         ----------------------------------------------------------------------------*/
-        public AzLogPartState GetPartState(DateTime dttm, int nHour)
+        public AzLogPartState GetPartState(DateTime dttm)
         {
-            DateTime dttmExact = DttmExactFromParts(dttm, nHour);
+            if (dttm.Minute != 0)
+                throw new Exception("dates must be on hour boundaries");
 
             bool fMatched;
-            int iazlp = IazlpFindPart(dttmExact, out fMatched);
+            int iazlp = IazlpFindPart(dttm, out fMatched);
             if (fMatched)
                 {
                 return m_plazlp.Values[iazlp].State;
@@ -125,7 +107,7 @@ namespace AzLog
                 {
                 AzLogPart azlp = m_plazlp.Values[iazlp];
 
-                if (azlp.Contains(dttm, nHour))
+                if (azlp.Contains(dttm))
                     return azlp.State;
 
                 return AzLogPartState.Invalid;
@@ -140,17 +122,16 @@ namespace AzLog
         	%%Contact: rlittle
         	
         ----------------------------------------------------------------------------*/
-        public void SetPartState(DateTime dttmMin, DateTime dttmMac, int nHourMin, int nHourMac,
-            AzLogPartState azlps)
+        public void SetPartState(DateTime dttmMin, DateTime dttmMac, AzLogPartState azlps)
         {
             bool fMatched;
-            int iazlp = IazlpFindPart(DttmExactFromParts(dttmMin, nHourMin), out fMatched);
+            int iazlp = IazlpFindPart(dttmMin, out fMatched);
 
             if (!fMatched && iazlp == -1)
                 {
                 // just insert a new one
-                AzLogPart azlpNew = AzLogPart.Create(dttmMin, nHourMin, dttmMac, nHourMac, azlps);
-                m_plazlp.Add(DttmExactFromParts(dttmMin, nHourMin), azlpNew);
+                AzLogPart azlpNew = AzLogPart.Create(dttmMin, dttmMac, azlps);
+                m_plazlp.Add(dttmMin, azlpNew);
                 return;
                 }
 
@@ -161,34 +142,34 @@ namespace AzLog
             AzLogPart azlpPost = null;
             bool fReplace = false;
 
-            if (azlp.DttmMin < dttmMin || (azlp.DttmMin == dttmMin && azlp.HourMin < nHourMin))
+            if (azlp.DttmMin < dttmMin)
                 {
                 // if it doesn't contain us, then just add a new part and be done
-                if (!azlp.Contains(dttmMin, nHourMin))
+                if (!azlp.Contains(dttmMin))
                     {
-                    AzLogPart azlpNew = AzLogPart.Create(dttmMin, nHourMin, dttmMac, nHourMac, azlps);
-                    m_plazlp.Add(DttmExactFromParts(dttmMin, nHourMin), azlpNew);
+                    AzLogPart azlpNew = AzLogPart.Create(dttmMin, dttmMac, azlps);
+                    m_plazlp.Add(dttmMin, azlpNew);
                     // CAN'T JUST RETURN HERE because this new part might overlap a following part.
                     }
                 else
                     {
                     fReplace = true;
                     // ok, there's some overlap.
-                    azlpPre = AzLogPart.Create(azlp.DttmMin, azlp.HourMin, dttmMin, nHourMin, azlp.State);
+                    azlpPre = AzLogPart.Create(azlp.DttmMin, dttmMin, azlp.State);
 
                     // now create the replacement part that covers what we want.
-                    if (azlp.DttmMac > dttmMac || (azlp.DttmMac == dttmMac && azlp.HourMac > nHourMac))
+                    if (azlp.DttmMac > dttmMac)
                         {
                         // the end of the current node extends beyond what we want. need to create a replace and a post part
-                        azlpReplace = AzLogPart.Create(dttmMin, nHourMin, dttmMac, nHourMac, azlps);
-                        azlpPost = AzLogPart.Create(dttmMac, nHourMac, azlp.DttmMac, azlp.HourMac, azlp.State);
+                        azlpReplace = AzLogPart.Create(dttmMin, dttmMac, azlps);
+                        azlpPost = AzLogPart.Create(dttmMac, azlp.DttmMac, azlp.State);
                         }
                     else
                         {
                         // the end of the matched block is *not* beyond our end. create a replacement that extends to where
                         // we want
                         // NOTE!! This might create overlap with the following block. we will need to coalesce!!
-                        azlpReplace = AzLogPart.Create(dttmMin, nHourMin, dttmMac, nHourMac, azlps);
+                        azlpReplace = AzLogPart.Create(dttmMin, dttmMac, azlps);
                         // there is no post because we just extended
                         }
                     }
@@ -197,14 +178,14 @@ namespace AzLog
                 {
                 if (fMatched)
                     {
-                    azlpReplace = AzLogPart.Create(dttmMin, nHourMin, dttmMac, nHourMac, azlps);
+                    azlpReplace = AzLogPart.Create(dttmMin, dttmMac, azlps);
                     fReplace = true;
                     }
                 else
                     {
                     // the matched block does *NOT* begin before us, so just create a new pre block for us, and then coalesce
                     // any following blocks
-                    azlpPre = AzLogPart.Create(dttmMin, nHourMin, dttmMac, nHourMac, azlps);
+                    azlpPre = AzLogPart.Create(dttmMin, dttmMac, azlps);
                     }
                 }
             // ok, do the operations
@@ -212,13 +193,13 @@ namespace AzLog
                 m_plazlp.RemoveAt(iazlp);
 
             if (azlpPre != null)
-                m_plazlp.Add(DttmExactFromParts(azlpPre.DttmMin, azlpPre.HourMin), azlpPre);
+                m_plazlp.Add(azlpPre.DttmMin, azlpPre);
 
             if (azlpReplace != null)
-                m_plazlp.Add(DttmExactFromParts(azlpReplace.DttmMin, azlpReplace.HourMin), azlpReplace);
+                m_plazlp.Add(azlpReplace.DttmMin, azlpReplace);
 
             if (azlpPost != null)
-                m_plazlp.Add(DttmExactFromParts(azlpPost.DttmMin, azlpPost.HourMin), azlpPost);
+                m_plazlp.Add(azlpPost.DttmMin, azlpPost);
 
             // at this point, iazlp points to at least the new item, and maybe some overlapping items. fix those (coalescing)
             CoalesceLogParts(iazlp);
@@ -240,23 +221,20 @@ namespace AzLog
                 {
                 azlp = m_plazlp.Values[iazlp];
                 azlpNext = m_plazlp.Values[iazlp + 1];
-
-                if (azlp.DttmMac > azlpNext.DttmMin ||
-                    (azlp.DttmMac == azlpNext.DttmMin && azlp.HourMac > azlpNext.HourMin))
+                
+                if (azlp.DttmMac > azlpNext.DttmMin)
                     {
                     // we overlap the next guy.  crop the next guy so he doesn't overlap us
                     AzLogPart azlpNew = null;
 
-                    if (azlp.DttmMac < azlpNext.DttmMac
-                        || (azlp.DttmMac == azlpNext.DttmMac && azlp.HourMac < azlpNext.HourMac))
+                    if (azlp.DttmMac < azlpNext.DttmMac)
                         {
                         // there is still some left
-                        azlpNew = AzLogPart.Create(azlp.DttmMac, azlp.HourMac, azlpNext.DttmMac, azlpNext.HourMac,
-                                                   azlpNext.State);
+                        azlpNew = AzLogPart.Create(azlp.DttmMac, azlpNext.DttmMac, azlpNext.State);
                         }
                     m_plazlp.RemoveAt(iazlp + 1);
                     if (azlpNew != null)
-                        m_plazlp.Add(DttmExactFromParts(azlpNew.DttmMin, azlpNew.HourMin), azlpNew);
+                        m_plazlp.Add(azlpNew.DttmMin, azlpNew);
                     }
                 else
                     {
@@ -442,10 +420,10 @@ namespace AzLog
             AzLogParts azlps = new AzLogParts();
             foreach (CoalesceLogPartsBuilder clp in plclp)
                 {
-                AzLogPart azlp = AzLogPart.Create(new DateTime(clp.nYearMin, clp.nMonthMin, clp.nDayMin), clp.nHourMin,
-                                                  new DateTime(clp.nYearMax, clp.nMonthMax, clp.nDayMax), clp.nHourMax,
+                AzLogPart azlp = AzLogPart.Create(new DateTime(clp.nYearMin, clp.nMonthMin, clp.nDayMin, clp.nHourMin, 0, 0),
+                                                  new DateTime(clp.nYearMax, clp.nMonthMax, clp.nDayMax, clp.nHourMax, 0, 0),
                                                   AzlpsFromNum(clp.nState));
-                azlps.m_plazlp.Add(DttmExactFromParts(azlp.DttmMin, azlp.HourMin), azlp);
+                azlps.m_plazlp.Add(azlp.DttmMin, azlp);
                 }
             return azlps;
         }
@@ -458,16 +436,12 @@ namespace AzLog
                 {
                 CoalesceLogPartsBuilder clp = plclpExpected[iclp];
 
-                Assert.AreEqual(new DateTime(clp.nYearMin, 1, 1), azlps.m_plazlp.Values[iclp].DttmMac,
-                                "{0}: index {1} match check", sTest, iclp);
-                Assert.AreEqual(new DateTime(clp.nYearMax, 1, 1), azlps.m_plazlp.Values[iclp].DttmMac,
-                                "{0}: index {1} match check", sTest, iclp);
-                Assert.AreEqual(clp.nHourMin, azlps.m_plazlp.Values[iclp].HourMin,
-                                "{0}: index {1} match check", sTest, iclp);
-                Assert.AreEqual(clp.nHourMax, azlps.m_plazlp.Values[iclp].HourMac,
-                                "{0}: index {1} match check", sTest, iclp);
+                Assert.AreEqual(new DateTime(clp.nYearMin, clp.nMonthMin, clp.nDayMin, clp.nHourMin, 0, 0), azlps.m_plazlp.Values[iclp].DttmMin,
+                                "{0}: index {1} match(min) check", sTest, iclp);
+                Assert.AreEqual(new DateTime(clp.nYearMax, clp.nMonthMax, clp.nDayMax, clp.nHourMax, 0 , 0), azlps.m_plazlp.Values[iclp].DttmMac,
+                                "{0}: index {1} match(max) check", sTest, iclp);
                 Assert.AreEqual(AzlpsFromNum(clp.nState), azlps.m_plazlp.Values[iclp].State,
-                                "{0}: index {1} match check", sTest, iclp);
+                                "{0}: index {1} match check(state)", sTest, iclp);
                 }
         }
 
@@ -476,7 +450,7 @@ namespace AzLog
         [TestCase("2003/0/2003/1/1/|2003/1/2003/3/2/|2003/2/2003/4/1/|", 1, "2003/0/2003/1/1/|2003/1/2003/3/2/|2003/3/2003/4/1/|", "Overlap with next with split next")]
         [TestCase("2003/0/2003/1/1/|2003/1/2003/5/2/|2003/2/2003/3/1/|2003/3/2003/5/1/|", 1, "2003/0/2003/1/1/|2003/1/2003/5/2/|", "Wholle subsume, superset of next")]
         [TestCase("2003/0/2003/6/3/|2003/1/2003/5/2/|2003/2/2003/3/1/|2003/3/2003/5/1/|", 0, "2003/0/2003/6/3/|", "Combine with next 2 elements")]
-        [TestCase("2003/0/2003/6/3/|1-1-2003/22/1-1-2003/25/2/|1-1-2003/23/1-1-2003/24/1/|1-2-2003/0/1-2-2003/2/3/|", 0, "2003/0/2003/6/3/|1-1-2003/22/1-2-2003/0/2/|1-2-2003/0/1-2-2003/2/3/|", "Test combine with 25th hour")]
+        [TestCase("2003/0/2003/6/3/|1-1-2003/22/1-2-2003/1/2/|1-1-2003/23/1-2-2003/0/1/|1-2-2003/1/1-2-2003/2/3/|", 0, "2003/0/2003/6/3/|1-1-2003/22/1-2-2003/1/2/|1-2-2003/1/1-2-2003/2/3/|", "Test combine with 25th hour")]
         [Test]
         static public void TestCoalesceLogParts(string sLogParts, int iFirst, string sLogPartsExpected, string sTest)
         {
@@ -509,24 +483,12 @@ namespace AzLog
             List<CoalesceLogPartsBuilder> plclp = ParseLogPartsCollectionBuilderString(sLogParts);
             AzLogParts azlps = AzlpsFromClp(plclp);
             CoalesceLogPartsBuilder clp = ParseLogPartsBuilderFromString(sPartUpdate);
-            azlps.SetPartState(new DateTime(clp.nYearMin, 1, 1), new DateTime(clp.nYearMax, 1, 1), clp.nHourMin, clp.nHourMax, AzlpsFromNum(clp.nState));
+            azlps.SetPartState(new DateTime(clp.nYearMin, 1, 1, clp.nHourMin, 0, 0), new DateTime(clp.nYearMax, 1, 1, clp.nHourMax, 0, 0), AzlpsFromNum(clp.nState));
             
             List<CoalesceLogPartsBuilder> plclpExpected = ParseLogPartsCollectionBuilderString(sLogPartsExpected);
             AssertEqualClpAzlps(plclpExpected, azlps, sTest);
         }
 
-        [TestCase("1/1/2000 0:00", 1, "1/1/2000 1:00")]
-        [TestCase("1/1/2000 1:00", 1, "1/1/2000 1:00")]
-        [TestCase("1/1/2000 2:00", 1, "1/1/2000 1:00")]
-        [TestCase("1/1/2000 12:00", 1, "1/1/2000 1:00")]
-        [TestCase("1/1/2000 12:00", 19, "1/1/2000 19:00")]
-        [Test]
-        static public void TestDttmExactFromParts(string sDttm, int nHour, string sDttmExpected)
-        {
-            DateTime dttm = DateTime.Parse(sDttm);
-            DateTime dttmExact = DttmExactFromParts(dttm, nHour);
-            Assert.AreEqual(DateTime.Parse(sDttmExpected), dttmExact);
-        }
         [TestCase(new int[] { 1, 2, 3}, 1, 0, true)]
         [TestCase(new int[] { 1, 2, 3}, 2, 1, true)]
         [TestCase(new int[] { 1, 2, 3}, 3, 2, true)]

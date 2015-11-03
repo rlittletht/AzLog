@@ -70,15 +70,15 @@ namespace AzLog
                 }    
         }
 #endif // no
-        public async Task<bool> FetchPartitionForDate(DateTime dttmMin, int nHourMin, DateTime dttmMac, int nHourMac)
+        public async Task<bool> FetchPartitionForDate(DateTime dttm)
         {
-
             TableQuery<AzLogEntryEntity> tq =
                 new TableQuery<AzLogEntryEntity>().Where(
                         TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal,
-                                                           SPartitionFromDate(dttmMin, nHourMin)));
+                                                           SPartitionFromDate(dttm, dttm.Hour)));
 
             TableQuerySegment<AzLogEntryEntity> azleSegment = null;
+            m_azles.UpdatePart(dttm, dttm.AddHours(1.0), AzLogPartState.Pending);
 
             while (azleSegment == null || azleSegment.ContinuationToken != null)
                 {
@@ -97,7 +97,7 @@ namespace AzLog
                         }
                     }
 
-                m_azles.UpdatePart(dttmMin, nHourMin, dttmMac, nHourMac, AzLogPartState.Complete);
+                m_azles.UpdatePart(dttm, dttm.AddHours(1.0), AzLogPartState.Complete);
                 }
             return true;
         }
@@ -107,24 +107,21 @@ namespace AzLog
             return String.Format("{0:D4}{1:D2}{2:D2}{3:D2}", dttm.Year, dttm.Month, dttm.Day, nHour);
         }
 
-        public static void FillMinMacFromStartEnd(string sStart, string sEnd, out DateTime dttmMin, out int nHourMin,
-            out DateTime dttmMac, out int nHourMac)
+        public static void FillMinMacFromStartEnd(string sStart, string sEnd, out DateTime dttmMin, out DateTime dttmMac)
         {
             DateTime dttmStart = DateTime.Parse(sStart);
             DateTime dttmEnd = DateTime.Parse(sEnd);
 
-            dttmMin = new DateTime(dttmStart.Year, dttmStart.Month, dttmStart.Day);
-
             if (dttmEnd.Year == 1900 || (sEnd.IndexOf("/") == -1 && sEnd.IndexOf("-") == -1))
                 {
-                dttmMac = dttmMin;
+                dttmEnd = dttmStart.AddHours(dttmEnd.Hour - dttmStart.Hour);
                 }
-            else
-                {
-                dttmMac = new DateTime(dttmEnd.Year, dttmEnd.Month, dttmEnd.Day);
-                }
-            nHourMin = dttmStart.Hour;
-            nHourMac = dttmEnd.Hour;
+
+            dttmStart = dttmStart.AddSeconds(-dttmStart.Second);
+            dttmMin = dttmStart.AddMinutes(-dttmStart.Minute);
+
+            dttmEnd = dttmEnd.AddSeconds(-dttmEnd.Second);
+            dttmMac = dttmEnd.AddMinutes(-dttmEnd.Minute);
         }
 
     }
