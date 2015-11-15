@@ -131,7 +131,7 @@ namespace AzLog
 
         private string KeySettingsParent()
         {
-            return "Software\\Thetasoft\\AzLog\\Views");
+            return "Software\\Thetasoft\\AzLog\\Views";
         }
         /* L O A D */
         /*----------------------------------------------------------------------------
