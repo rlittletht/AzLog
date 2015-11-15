@@ -22,6 +22,8 @@ namespace AzLog
         private int m_nPid;
         private int m_nTid;
         private string m_sMessage;
+        private string[] m_rgsMessageParts;
+
         private int m_nGeneration; // this is going to pose a problem when multiple windows start at the same nGeneration -- we are likely to collide with multiple windows open, which means that they can
         // have separate views but they might have the same nGeneration (so we will be caching lviItem's from one view and thinking they are valid for other views)
         // the way to solve this *might* be to start each nGeneration with a random number, increasing the chances that we will not collide.
@@ -76,6 +78,17 @@ namespace AzLog
             set { m_sMessage = value; }
         }
 
+        public string Message0 => m_rgsMessageParts.Length <= 0 ? null : m_rgsMessageParts[0];
+        public string Message1 => m_rgsMessageParts.Length <= 1 ? null : m_rgsMessageParts[1];
+        public string Message2 => m_rgsMessageParts.Length <= 2 ? null : m_rgsMessageParts[2];
+        public string Message3 => m_rgsMessageParts.Length <= 3 ? null : m_rgsMessageParts[3];
+        public string Message4 => m_rgsMessageParts.Length <= 4 ? null : m_rgsMessageParts[4];
+        public string Message5 => m_rgsMessageParts.Length <= 5 ? null : m_rgsMessageParts[5];
+        public string Message6 => m_rgsMessageParts.Length <= 6 ? null : m_rgsMessageParts[6];
+        public string Message7 => m_rgsMessageParts.Length <= 7 ? null : m_rgsMessageParts[7];
+        public string Message8 => m_rgsMessageParts.Length <= 8 ? null : m_rgsMessageParts[8];
+        public string Message9 => m_rgsMessageParts.Length <= 9 ? null : m_rgsMessageParts[9];
+        
 
         public enum LogColumn : int
         {
@@ -89,15 +102,16 @@ namespace AzLog
             Pid = 7,
             Tid = 8,
             Message = 9,
-            Message0 = 9,
-            Message1 = 10,
-            Message2 = 11,
-            Message3 = 12,
-            Message4 = 13,
-            Message5 = 14,
-            Message6 = 15,
-            Message7 = 16,
-            Message8 = 17
+            Message0 = 10,
+            Message1 = 11,
+            Message2 = 12,
+            Message3 = 13,
+            Message4 = 14,
+            Message5 = 15,
+            Message6 = 16,
+            Message7 = 17,
+            Message8 = 18,
+            Message9 = 19
         };
 
         public string GetColumn(LogColumn lc)
@@ -124,6 +138,26 @@ namespace AzLog
                     return m_nTid.ToString();
                 case LogColumn.Message:
                     return m_sMessage;
+                case LogColumn.Message0:
+                    return Message0;
+                case LogColumn.Message1:
+                    return Message1;
+                case LogColumn.Message2:
+                    return Message2;
+                case LogColumn.Message3:
+                    return Message3;
+                case LogColumn.Message4:
+                    return Message4;
+                case LogColumn.Message5:
+                    return Message5;
+                case LogColumn.Message6:
+                    return Message6;
+                case LogColumn.Message7:
+                    return Message7;
+                case LogColumn.Message8:
+                    return Message8;
+                case LogColumn.Message9:
+                    return Message9;
                 default:
                     return "";
                 }
@@ -165,6 +199,7 @@ namespace AzLog
             azle.Pid = nPid;
             azle.Tid = nTid;
             azle.Message = sMessage;
+            azle.m_rgsMessageParts = sMessage.Split('\t');
 
             return azle;
         }
@@ -220,6 +255,15 @@ namespace AzLog
                 m_azlps.SetPartState(dttmMin, dttmMac, azpls);
                 }
         }
+
+        public void AddLogEntry(AzLogEntry azle)
+        {
+            lock (this)
+                {
+                m_plale.Add(azle);
+                }
+        }
+
         public void AddSegment(TableQuerySegment<AzLogEntryEntity> qsazle)
         {
             lock (this)
@@ -243,7 +287,14 @@ namespace AzLog
 
         public int Compare(int iLeft, int iRight)
         {
-            return (int) (m_azlm.LogEntry(iRight).EventTickCount - m_azlm.LogEntry(iLeft).EventTickCount);
+            long n = (m_azlm.LogEntry(iLeft).EventTickCount - m_azlm.LogEntry(iRight).EventTickCount);
+
+            if (n > 0)
+                return 1;
+            if (n == 0)
+                return 0;
+
+            return -1;
         }
     }
 

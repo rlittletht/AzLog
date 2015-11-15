@@ -90,6 +90,16 @@ namespace AzLog
             m_plazlvc.Insert(iDest, azlvc);
         }
 
+        public int IazlvcFind(string sName)
+        {
+            for (int i = 0; i < m_plazlvc.Count; i++)
+                {
+                if (string.Compare(m_plazlvc[i].Name, sName, true) == 0)
+                    return i;
+                }
+            return -1;
+        }
+
         public AzLogViewSettings Clone()
         {
             AzLogViewSettings azlvs = new AzLogViewSettings(m_sName);
@@ -108,12 +118,13 @@ namespace AzLog
             Load();
         }
 
+        #region File I/O
         private Settings.SettingsElt[] _rgsteeColumn =
             {
                 new Settings.SettingsElt("TabOrder", Settings.Type.Int, 0, ""),
                 new Settings.SettingsElt("Width", Settings.Type.Int, 64, ""),
                 new Settings.SettingsElt("DataLogColumn", Settings.Type.Int, 9, ""),
-                new Settings.SettingsElt("Visible", Settings.Type.Bool, 1, ""),
+                new Settings.SettingsElt("Visible", Settings.Type.Bool, true, ""),
             };
 
         /* K E Y  S E T T I N G S */
@@ -133,6 +144,7 @@ namespace AzLog
         {
             return "Software\\Thetasoft\\AzLog\\Views";
         }
+
         /* L O A D */
         /*----------------------------------------------------------------------------
         	%%Function: Load
@@ -209,6 +221,52 @@ namespace AzLog
                 }
             rk.Close();
         }
+        #endregion
+
+        #region Initialization
+
+        public struct DefaultColumnDef
+        {
+            public string sName;
+            public AzLogEntry.LogColumn lc;
+            public int nWidthDefault;
+            public bool fVisibleDefault;
+
+            public DefaultColumnDef(string sNameIn, AzLogEntry.LogColumn lcIn, int nWidthDefaultIn, bool fVisibleDefIn = true)
+            {
+                sName = sNameIn;
+                lc = lcIn;
+                nWidthDefault = nWidthDefaultIn;
+                fVisibleDefault = fVisibleDefIn;
+            }
+        }
+
+        private DefaultColumnDef[] _rgdcd = new DefaultColumnDef[]
+                                                {
+                                                    new DefaultColumnDef("PartitionKey", AzLogEntry.LogColumn.Partition, 64),
+                                                    new DefaultColumnDef("RowKey", AzLogEntry.LogColumn.RowKey, 64),
+                                                    new DefaultColumnDef("EventTickCount", AzLogEntry.LogColumn.EventTickCount, 64),
+                                                    new DefaultColumnDef("AppName", AzLogEntry.LogColumn.AppName, 64),
+                                                    new DefaultColumnDef("Level", AzLogEntry.LogColumn.Level, 64),
+                                                    new DefaultColumnDef("EventID", AzLogEntry.LogColumn.EventID, 64),
+                                                    new DefaultColumnDef("InstanceID", AzLogEntry.LogColumn.InstanceID, 64),
+                                                    new DefaultColumnDef("Pid", AzLogEntry.LogColumn.Pid, 64),
+                                                    new DefaultColumnDef("nTid", AzLogEntry.LogColumn.Tid, 64),
+                                                    new DefaultColumnDef("sMessage", AzLogEntry.LogColumn.Message, 64),
+                                                    new DefaultColumnDef("sMessage0", AzLogEntry.LogColumn.Message0, 64, false),
+                                                    new DefaultColumnDef("sMessage1", AzLogEntry.LogColumn.Message1, 64, false),
+                                                    new DefaultColumnDef("sMessage2", AzLogEntry.LogColumn.Message2, 64, false),
+                                                    new DefaultColumnDef("sMessage3", AzLogEntry.LogColumn.Message3, 64, false),
+                                                    new DefaultColumnDef("sMessage4", AzLogEntry.LogColumn.Message4, 64, false),
+                                                    new DefaultColumnDef("sMessage5", AzLogEntry.LogColumn.Message5, 64, false),
+                                                    new DefaultColumnDef("sMessage6", AzLogEntry.LogColumn.Message6, 64, false),
+                                                    new DefaultColumnDef("sMessage7", AzLogEntry.LogColumn.Message7, 64, false),
+                                                    new DefaultColumnDef("sMessage8", AzLogEntry.LogColumn.Message8, 64, false),
+                                                    new DefaultColumnDef("sMessage9", AzLogEntry.LogColumn.Message9, 64, false)
+                                                };
+
+        public DefaultColumnDef[] DefaultColumns => _rgdcd;
+
 
         /* S E T  D E F A U L T */
         /*----------------------------------------------------------------------------
@@ -219,22 +277,19 @@ namespace AzLog
         ----------------------------------------------------------------------------*/
         public void SetDefault()
         {
-            AddLogViewColumn("PartitionKey", 64, AzLogEntry.LogColumn.Partition, true);
-            AddLogViewColumn("RowKey", 64, AzLogEntry.LogColumn.RowKey, true);
-            AddLogViewColumn("EventTickCount", 64, AzLogEntry.LogColumn.EventTickCount, true);
-            AddLogViewColumn("AppName", 64, AzLogEntry.LogColumn.AppName, true);
-            AddLogViewColumn("Level", 64, AzLogEntry.LogColumn.Level, true);
-            AddLogViewColumn("EventID", 64, AzLogEntry.LogColumn.EventID, true);
-            AddLogViewColumn("InstanceID", 64, AzLogEntry.LogColumn.InstanceID, true);
-            AddLogViewColumn("Pid", 64, AzLogEntry.LogColumn.Pid, true);
-            AddLogViewColumn("nTid", 64, AzLogEntry.LogColumn.Tid, true);
-            AddLogViewColumn("sMessage", 256, AzLogEntry.LogColumn.Message, true);
+            foreach (DefaultColumnDef dcd in _rgdcd)
+                {
+                if (dcd.fVisibleDefault)
+                    AddLogViewColumn(dcd.sName, dcd.nWidthDefault, dcd.lc, true);
+                }
         }
 
         public void AddLogViewColumn(string sName, int nWidth, AzLogEntry.LogColumn azlc, bool fVisible)
         {
             m_plazlvc.Add(new AzLogViewColumn(sName, nWidth, azlc, fVisible));
         }
+
+        #endregion 
 
         public AzLogViewColumn AzlvcFromName(string sName)
         {

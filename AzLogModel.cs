@@ -26,7 +26,17 @@ namespace AzLog
         public void AddView(AzLogView azlv)
         {
             m_plazlvListeners.Add(azlv);
-        } 
+        }
+
+        public void RemoveView(AzLogView azlv)
+        {
+            for (int i = 0; i < m_plazlvListeners.Count; i++)
+                if (m_plazlvListeners[i] == azlv)
+                    {
+                    m_plazlvListeners.RemoveAt(i);;
+                    return;
+                    }
+        }
         public void OpenTable(string sTableName)
         {
             foreach (AzLogView azlv in m_plazlvListeners)
@@ -52,7 +62,23 @@ namespace AzLog
         public AzLogModel()
         {
             m_azles = new AzLogEntries();
+        }
 
+        public void AddTestDataPartition(DateTime dttmPartition, Int64[] rgTickCount, string []rgs)
+        {
+            AzLogEntries azles = new AzLogEntries();
+            for (int i = 0; i < rgTickCount.Length; i++)
+                {
+                Int64 nTickCount = rgTickCount[i];
+                string s = rgs == null ? "msg" : rgs[i];
+
+                AzLogEntry azle = AzLogEntry.Create(dttmPartition.ToString("yyyyMMddHH"), Guid.NewGuid(), nTickCount, "testdata", "Informational",
+                                                    1, "2", 3, 4, s);
+
+                m_azles.AddLogEntry(azle);
+                }
+
+            azles.UpdatePart(dttmPartition, dttmPartition.AddHours(1), AzLogPartState.Complete);
         }
 
         public async Task<bool> FetchPartitionsForDateRange(DateTime dttmMin, DateTime dttmMac)
@@ -93,7 +119,7 @@ namespace AzLog
 
                         int iLast = m_azles.Length;
 
-                        azlv.SyncView(iFirst, iLast);
+                        azlv.UpdateViewRegion(iFirst, iLast);
                         }
                     }
 

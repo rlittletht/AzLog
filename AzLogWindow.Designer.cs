@@ -35,14 +35,12 @@
             this.label1 = new System.Windows.Forms.Label();
             this.m_ebStart = new System.Windows.Forms.TextBox();
             this.m_lvLog = new System.Windows.Forms.ListView();
-            this.m_ctxMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
-            this.m_tsiShowHide = new System.Windows.Forms.ToolStripMenuItem();
+            this.ctxMenuList = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.tsmiFilter = new System.Windows.Forms.ToolStripMenuItem();
             this.m_cbView = new System.Windows.Forms.ComboBox();
             this.m_pbSave = new System.Windows.Forms.Button();
-            this.ctxMenuHeader = new System.Windows.Forms.ContextMenuStrip(this.components);
-            this.blahToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.m_ctxMenu.SuspendLayout();
-            this.ctxMenuHeader.SuspendLayout();
+            this.m_ctxmHeader = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.ctxMenuList.SuspendLayout();
             this.SuspendLayout();
             // 
             // m_pbFetch
@@ -94,7 +92,7 @@
             this.m_lvLog.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.m_lvLog.ContextMenuStrip = this.m_ctxMenu;
+            this.m_lvLog.ContextMenuStrip = this.ctxMenuList;
             this.m_lvLog.Location = new System.Drawing.Point(12, 86);
             this.m_lvLog.Name = "m_lvLog";
             this.m_lvLog.Size = new System.Drawing.Size(874, 525);
@@ -105,20 +103,19 @@
             this.m_lvLog.ColumnReordered += new System.Windows.Forms.ColumnReorderedEventHandler(this.DoColumnReorder);
             this.m_lvLog.RetrieveVirtualItem += new System.Windows.Forms.RetrieveVirtualItemEventHandler(this.GetListViewItem);
             // 
-            // m_ctxMenu
+            // ctxMenuList
             // 
-            this.m_ctxMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.m_tsiShowHide});
-            this.m_ctxMenu.Name = "m_ctxMenu";
-            this.m_ctxMenu.Size = new System.Drawing.Size(146, 26);
-            this.m_ctxMenu.Opening += new System.ComponentModel.CancelEventHandler(this.HandleContextOpening);
+            this.ctxMenuList.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.tsmiFilter});
+            this.ctxMenuList.Name = "ctxMenuList";
+            this.ctxMenuList.Size = new System.Drawing.Size(146, 26);
+            this.ctxMenuList.Opening += new System.ComponentModel.CancelEventHandler(this.HandleContextOpening);
             // 
-            // m_tsiShowHide
+            // tsmiFilter
             // 
-            this.m_tsiShowHide.Name = "m_tsiShowHide";
-            this.m_tsiShowHide.Size = new System.Drawing.Size(145, 22);
-            this.m_tsiShowHide.Text = "Hide Column";
-            this.m_tsiShowHide.Click += new System.EventHandler(this.DoHideColumnClick);
+            this.tsmiFilter.Name = "tsmiFilter";
+            this.tsmiFilter.Size = new System.Drawing.Size(145, 22);
+            this.tsmiFilter.Text = "Filter to this...";
             // 
             // m_cbView
             // 
@@ -139,19 +136,10 @@
             this.m_pbSave.UseVisualStyleBackColor = true;
             this.m_pbSave.Click += new System.EventHandler(this.DoViewSave);
             // 
-            // ctxMenuHeader
+            // m_ctxmHeader
             // 
-            this.ctxMenuHeader.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.blahToolStripMenuItem});
-            this.ctxMenuHeader.Name = "ctxMenuHeader";
-            this.ctxMenuHeader.Size = new System.Drawing.Size(153, 48);
-            // 
-            // blahToolStripMenuItem
-            // 
-            this.blahToolStripMenuItem.Name = "blahToolStripMenuItem";
-            this.blahToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
-            this.blahToolStripMenuItem.Text = "blah";
-            this.blahToolStripMenuItem.Click += new System.EventHandler(this.blahToolStripMenuItem_Click);
+            this.m_ctxmHeader.Name = "m_ctxmHeader";
+            this.m_ctxmHeader.Size = new System.Drawing.Size(61, 4);
             // 
             // AzLogWindow
             // 
@@ -168,8 +156,8 @@
             this.Controls.Add(this.m_pbFetch);
             this.Name = "AzLogWindow";
             this.Text = "AzLogWindow";
-            this.m_ctxMenu.ResumeLayout(false);
-            this.ctxMenuHeader.ResumeLayout(false);
+            this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.HandleFormClosed);
+            this.ctxMenuList.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -185,9 +173,9 @@
         private System.Windows.Forms.ListView m_lvLog;
         private System.Windows.Forms.ComboBox m_cbView;
         private System.Windows.Forms.Button m_pbSave;
-        private System.Windows.Forms.ContextMenuStrip m_ctxMenu;
-        private System.Windows.Forms.ToolStripMenuItem m_tsiShowHide;
-        private System.Windows.Forms.ContextMenuStrip ctxMenuHeader;
+        private System.Windows.Forms.ContextMenuStrip m_ctxmHeader;
         private System.Windows.Forms.ToolStripMenuItem blahToolStripMenuItem;
+        private System.Windows.Forms.ContextMenuStrip ctxMenuList;
+        private System.Windows.Forms.ToolStripMenuItem tsmiFilter;
     }
 }
