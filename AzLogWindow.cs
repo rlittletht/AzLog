@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.Win32;
+using TCore.ListViewSupp;
 
 namespace AzLog
 {
@@ -259,110 +260,27 @@ namespace AzLog
         {
             m_azlvs.MoveColumn(e.OldDisplayIndex, e.NewDisplayIndex);
         }
-        // The area occupied by the ListView header. 
-private Rectangle _headerRect;
- 
-// Delegate that is called for each child window of the ListView. 
-private delegate bool EnumWinCallBack(IntPtr hwnd, IntPtr lParam);
-
-// Calls EnumWinCallBack for each child window of hWndParent (i.e. the ListView).
-[DllImport("user32.Dll")]
-private static extern int EnumChildWindows(
-    IntPtr hWndParent, 
-    EnumWinCallBack callBackFunc, 
-    IntPtr lParam);
-
-// Gets the bounding rectangle of the specified window (ListView header bar). 
-[DllImport("user32.dll")]
-private static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect); 
-
-[StructLayout(LayoutKind.Sequential)]
-private struct RECT
-{
-    public int Left;
-    public int Top;
-    public int Right;
-    public int Bottom; 
-}
-
-        private bool EnumWindowCallBack(IntPtr hwnd, IntPtr lParam)
-{
-    // Determine the rectangle of the ListView header bar and save it in _headerRect.
-    RECT rct;
-    if (!GetWindowRect(hwnd, out rct))
-    {
-        _headerRect = Rectangle.Empty;
-    }
-    else
-    {
-        _headerRect = new Rectangle(
-        rct.Left, rct.Top, rct.Right - rct.Left, rct.Bottom - rct.Top);
-    }
-    return false; // Stop the enum
-}
-
-        private static ColumnHeader[] GetOrderedHeaders(ListView lv)
-{
-    ColumnHeader[] arr = new ColumnHeader[lv.Columns.Count];
-
-    foreach (ColumnHeader header in lv.Columns)
-    {
-        arr[header.DisplayIndex] = header;
-    }
-
-    return arr;
-}
-
 
         private void DoHideColumnClick(object sender, EventArgs e)
         {
             m_azlvs.MoveColumn(1, 1);
         }
 
+        private HeaderSupp m_hs;
+
         private void HandleContextOpening(object sender, CancelEventArgs e)
         {
-                // This call indirectly calls EnumWindowCallBack which sets _headerRect
-    // to the area occupied by the ListView's header bar.
-    EnumChildWindows(
-        m_lvLog.Handle, new EnumWinCallBack(EnumWindowCallBack), IntPtr.Zero);
+            if (m_hs == null)
+                m_hs = new HeaderSupp();
 
-    // If the mouse position is in the header bar, cancel the display
-    // of the regular context menu and display the column header context 
-    // menu instead.
-    if (_headerRect.Contains(Control.MousePosition))
-    {
-        e.Cancel = true;
+            ColumnHeader ch = m_hs.ColumnHeaderFromContextOpening(m_lvLog, sender, e);
 
-        // The xoffset is how far the mouse is from the left edge of the header.
-        int xoffset = Control.MousePosition.X - _headerRect.Left;
-
-         // Iterate through the column headers in the order they are displayed, 
-         // adding up their widths as we go.  When the sum exceeds the xoffset, 
-         // we know the mouse is on the current header. 
-        int sum = 0;
-        foreach (ColumnHeader header in GetOrderedHeaders(m_lvLog))
-        {
-            sum += header.Width;
-            if (sum > xoffset)
-            {
-                // This code displays the same context menu for 
-                // every header, but changes the menu item
-                // text based on the header. It sets the context 
-                // menu tag to the header object so
-                // the handler for whatever command the user 
-                // clicks can know the column.
-                ctxMenuHeader.Tag = header;
-                ctxMenuHeader.Items[0].Text = "Command for Header " + header.Text;
+            if (ch != null)
+                {
+                ctxMenuHeader.Tag = ch;
+                ctxMenuHeader.Items[0].Text = "Command for Header " + ch.Text;
                 ctxMenuHeader.Show(Control.MousePosition);
-                break;
-            }
-        }
-    }
-    else
-    {
-        // Allow the regular context menu to be displayed.
-        // We may want to update the menu here.
-    }
+                }
         }
 
         private void blahToolStripMenuItem_Click(object sender, EventArgs e)

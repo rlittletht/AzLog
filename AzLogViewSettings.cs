@@ -187,7 +187,7 @@ namespace AzLog
         {
             RegistryKey rk = Settings.RkEnsure(KeySettingsParent());
 
-            rk.DeleteSubKeyTree(m_sName);
+            rk.DeleteSubKeyTree(m_sName, false);
             rk.Close();
 
             rk = Settings.RkEnsure(KeySettings());

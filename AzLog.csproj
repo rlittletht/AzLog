@@ -139,6 +139,10 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\liblet\cs\TCore.ListViewSupp\TCore.ListViewSupp.csproj">
+      <Project>{25b9ae6c-1ab4-4ede-b9f4-85629b84f2d3}</Project>
+      <Name>TCore.ListViewSupp</Name>
+    </ProjectReference>
     <ProjectReference Include="..\liblet\cs\TCore.Settings\TCore.Settings.csproj">
       <Project>{cf92fd1e-ce88-492e-a7c6-c4d29d908a22}</Project>
       <Name>TCore.Settings</Name>
