@@ -55,21 +55,21 @@ namespace AzLog
 
         }
 
-#if no
-        public async Task<bool> FetchPartitionsForDateRange(DateTime dttmMin, int nHourMin, DateTime dttmMac,
-        int nHourMac)
+        public async Task<bool> FetchPartitionsForDateRange(DateTime dttmMin, DateTime dttmMac)
         {
-            DateTime dttmExactMin = AzLogParts.DttmExactFromParts(dttmMin, nHourMin);
-            DateTime dttmExactMac = AzLogParts.DttmExactFromParts(dttmMac, nHourMac);
 
-            while (dttmExactMin < dttmExactMac)
+            while (dttmMin < dttmMac)
                 {
-                m_azles.UpdatePart(dttmMin, nHourMin, dttmMac, nHourMac, AzLogPartState.Pending);
-                FetchPartitionForDate(dttmExactMin.AddHours(-dttmExactMin.Hour), dttmExactMin.Hour);
-
-                }    
+                if (m_azles.GetPartState(dttmMin) != AzLogPartState.Complete)
+                    {
+                    m_azles.UpdatePart(dttmMin, dttmMin.AddHours(1), AzLogPartState.Pending);
+                    FetchPartitionForDate(dttmMin);
+                    }
+                dttmMin = dttmMin.AddHours(1);
+                }
+            return true;
         }
-#endif // no
+
         public async Task<bool> FetchPartitionForDate(DateTime dttm)
         {
             TableQuery<AzLogEntryEntity> tq =

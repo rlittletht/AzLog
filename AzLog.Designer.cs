@@ -33,13 +33,11 @@
             this.m_pbRemove = new System.Windows.Forms.Button();
             this.m_lbTables = new System.Windows.Forms.ListBox();
             this.m_pbOpen = new System.Windows.Forms.Button();
-            this.m_lvLog = new System.Windows.Forms.ListView();
             this.m_ebStart = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.m_ebEnd = new System.Windows.Forms.TextBox();
             this.m_pbFetch = new System.Windows.Forms.Button();
-            this.m_recStatus = new System.Windows.Forms.RichTextBox();
             this.SuspendLayout();
             // 
             // m_cbAccounts
@@ -76,7 +74,7 @@
             this.m_lbTables.FormattingEnabled = true;
             this.m_lbTables.Location = new System.Drawing.Point(13, 82);
             this.m_lbTables.Name = "m_lbTables";
-            this.m_lbTables.Size = new System.Drawing.Size(121, 615);
+            this.m_lbTables.Size = new System.Drawing.Size(113, 134);
             this.m_lbTables.TabIndex = 3;
             this.m_lbTables.SelectedIndexChanged += new System.EventHandler(this.DoSelectTable);
             // 
@@ -89,20 +87,6 @@
             this.m_pbOpen.Text = "Open Account";
             this.m_pbOpen.UseVisualStyleBackColor = true;
             this.m_pbOpen.Click += new System.EventHandler(this.m_pbOpen_Click);
-            // 
-            // m_lvLog
-            // 
-            this.m_lvLog.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.m_lvLog.Location = new System.Drawing.Point(141, 82);
-            this.m_lvLog.Name = "m_lvLog";
-            this.m_lvLog.Size = new System.Drawing.Size(1110, 615);
-            this.m_lvLog.TabIndex = 5;
-            this.m_lvLog.UseCompatibleStateImageBehavior = false;
-            this.m_lvLog.View = System.Windows.Forms.View.Details;
-            this.m_lvLog.VirtualMode = true;
-            // this.m_lvLog.RetrieveVirtualItem += new System.Windows.Forms.RetrieveVirtualItemEventHandler(this.GetListViewItem);
             // 
             // m_ebStart
             // 
@@ -148,26 +132,16 @@
             this.m_pbFetch.UseVisualStyleBackColor = true;
             this.m_pbFetch.Click += new System.EventHandler(this.DoFetchLogEntries);
             // 
-            // m_recStatus
-            // 
-            this.m_recStatus.Location = new System.Drawing.Point(141, 703);
-            this.m_recStatus.Name = "m_recStatus";
-            this.m_recStatus.Size = new System.Drawing.Size(1110, 96);
-            this.m_recStatus.TabIndex = 11;
-            this.m_recStatus.Text = "";
-            // 
             // AzLog
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1258, 796);
-            this.Controls.Add(this.m_recStatus);
+            this.ClientSize = new System.Drawing.Size(652, 231);
             this.Controls.Add(this.m_pbFetch);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.m_ebEnd);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.m_ebStart);
-            this.Controls.Add(this.m_lvLog);
             this.Controls.Add(this.m_pbOpen);
             this.Controls.Add(this.m_lbTables);
             this.Controls.Add(this.m_pbRemove);
@@ -187,13 +161,11 @@
         private System.Windows.Forms.Button m_pbRemove;
         private System.Windows.Forms.ListBox m_lbTables;
         private System.Windows.Forms.Button m_pbOpen;
-        private System.Windows.Forms.ListView m_lvLog;
         private System.Windows.Forms.TextBox m_ebStart;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.TextBox m_ebEnd;
         private System.Windows.Forms.Button m_pbFetch;
-        private System.Windows.Forms.RichTextBox m_recStatus;
     }
 }
 

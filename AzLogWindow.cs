@@ -4,9 +4,12 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Linq;
+using System.Runtime.InteropServices;
+using System.Runtime.Remoting.Metadata.W3cXsd2001;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Microsoft.Win32;
 
 namespace AzLog
 {
@@ -15,63 +18,139 @@ namespace AzLog
         private AzLogView m_azlv = null;
         private AzLogModel m_azlm;
 
+        public AzLogView View => m_azlv;
+    
+        /* A Z  L O G  W I N D O W */
+        /*----------------------------------------------------------------------------
+        	%%Function: AzLogWindow
+        	%%Qualified: AzLog.AzLogWindow.AzLogWindow
+        	%%Contact: rlittle
+        	
+        ----------------------------------------------------------------------------*/
         public AzLogWindow()
         {
             InitializeComponent();
-            SetupListViewForLog(m_lvLog);
+            // SetupListViewForLog(m_lvLog);
+            PopulateViewList();
+            // SetView("");
         }
 
-        public AzLogView View => m_azlv;
+        public AzLogViewSettings ViewSettings => m_azlvs;
+        private ILogClient m_ilc;
 
-        private void GetListViewItem(object sender, RetrieveVirtualItemEventArgs e)
-        {
-            e.Item = m_azlv.LviItem(e.ItemIndex);
-        }
-
-        public static AzLogWindow CreateNewWindow(AzLogModel azlm)
+        /* C R E A T E  N E W  W I N D O W */
+        /*----------------------------------------------------------------------------
+        	%%Function: CreateNewWindow
+        	%%Qualified: AzLog.AzLogWindow.CreateNewWindow
+        	%%Contact: rlittle
+        	
+        ----------------------------------------------------------------------------*/
+        public static AzLogWindow CreateNewWindow(AzLogModel azlm, string sViewName, ILogClient ilc)
         {
             AzLogWindow azlw = new AzLogWindow();
+
+            azlw.SetView(sViewName);
             azlw.m_azlv = new AzLogView(azlw);
+            azlw.m_ilc = ilc;
             azlw.m_azlm = azlm;
             azlw.m_azlv.BuildView(azlw.m_azlm, new CompareLogEntryTickCount(azlw.m_azlm));
 
             return azlw;
         }
 
-        private void SetupListViewForLog(ListView lv)
+        private int IViewFromName(string sName)
         {
-            lv.Columns.Add(new ColumnHeader());
-            lv.Columns[0].Text = "PartitionKey";
-            lv.Columns[0].Width = 64;
-            lv.Columns.Add(new ColumnHeader());
-            lv.Columns[1].Text = "RowKey";
-            lv.Columns[1].Width = 64;
-            lv.Columns.Add(new ColumnHeader());
-            lv.Columns[2].Text = "EventTickCount";
-            lv.Columns[2].Width = 64;
-            lv.Columns.Add(new ColumnHeader());
-            lv.Columns[3].Text = "AppName";
-            lv.Columns[3].Width = 64;
-            lv.Columns.Add(new ColumnHeader());
-            lv.Columns[4].Text = "Level";
-            lv.Columns[4].Width = 64;
-            lv.Columns.Add(new ColumnHeader());
-            lv.Columns[5].Text = "EventID";
-            lv.Columns[5].Width = 64;
-            lv.Columns.Add(new ColumnHeader());
-            lv.Columns[6].Text = "InstanceID";
-            lv.Columns[6].Width = 64;
-            lv.Columns.Add(new ColumnHeader());
-            lv.Columns[7].Text = "Pid";
-            lv.Columns[7].Width = 64;
-            lv.Columns.Add(new ColumnHeader());
-            lv.Columns[8].Text = "nTid";
-            lv.Columns[8].Width = 64;
-            lv.Columns.Add(new ColumnHeader());
-            lv.Columns[9].Text = "sMessage";
-            lv.Columns[9].Width = 256;
+            int i;
 
-            lv.VirtualListSize = 0;
+            for (i = 0; i < m_cbView.Items.Count; i++)
+                {
+                AzLogViewSettings azlvs = (AzLogViewSettings) m_cbView.Items[i];
+                if (String.Compare(azlvs.Name, sName, true) == 0)
+                    break;
+                }
+            return (i >= m_cbView.Items.Count) ? -1 : i;
+        }
+
+        private AzLogViewSettings m_azlvs;
+
+        public void SetView(string sViewName)
+        {
+            int iView = IViewFromName(sViewName);
+
+            if (iView != -1)
+                {
+                m_cbView.SelectedIndex = iView;
+                m_azlvs = (AzLogViewSettings) m_cbView.Items[iView];
+                }
+            else
+                {
+                AzLogViewSettings azlvs = new AzLogViewSettings(sViewName);
+                m_azlvs = azlvs;
+                m_cbView.SelectedIndex = -1;
+                }
+
+            SetupListViewForLog(m_azlvs);
+        }
+
+        /* G E T  L I S T  V I E W  I T E M */
+        /*----------------------------------------------------------------------------
+        	%%Function: GetListViewItem
+        	%%Qualified: AzLog.AzLogWindow.GetListViewItem
+        	%%Contact: rlittle
+        	
+        ----------------------------------------------------------------------------*/
+        private void GetListViewItem(object sender, RetrieveVirtualItemEventArgs e)
+        {
+            e.Item = m_azlv.LviItem(e.ItemIndex);
+        }
+
+        /* P O P U L A T E  V I E W  L I S T */
+        /*----------------------------------------------------------------------------
+        	%%Function: PopulateViewList
+        	%%Qualified: AzLog.AzLogWindow.PopulateViewList
+        	%%Contact: rlittle
+        	
+        ----------------------------------------------------------------------------*/
+        public void PopulateViewList()
+        {
+            RegistryKey rk = Registry.CurrentUser.OpenSubKey("Software\\Thetasoft\\AzLog\\Views");
+            if (rk != null)
+                {
+                string[] rgs = rk.GetSubKeyNames();
+
+                foreach (string s in rgs)
+                    {
+                    AzLogViewSettings azlvs = new AzLogViewSettings(s);
+                    m_cbView.Items.Add(azlvs);
+                    }
+                rk.Close();
+                }
+            m_cbView.Items.Add(new AzLogViewSettings("<New...>"));
+        }
+
+        /* S E T U P  L I S T  V I E W  F O R  L O G */
+        /*----------------------------------------------------------------------------
+        	%%Function: SetupListViewForLog
+        	%%Qualified: AzLog.AzLogWindow.SetupListViewForLog
+        	%%Contact: rlittle
+        	
+        ----------------------------------------------------------------------------*/
+        private void SetupListViewForLog(AzLogViewSettings azlvs)
+        {
+            int i;
+            for (i = m_lvLog.Columns.Count - 1; i >= 0; --i)
+                m_lvLog.Columns.RemoveAt(i);
+
+            for (i = 0; i < azlvs.Columns.Count; i++)
+                {
+                AzLogViewSettings.AzLogViewColumn azlvc = azlvs.Columns[i];
+
+                m_lvLog.Columns.Add(new ColumnHeader());
+                m_lvLog.Columns[i].Text = azlvc.Name;
+                m_lvLog.Columns[i].Width = azlvc.Width;
+                }
+
+            m_lvLog.VirtualListSize = 0;
         }
 
         public void ClearLog()
@@ -118,7 +197,185 @@ namespace AzLog
                 SyncViewCore(iMin, iMac);
         }
 
-//        public bool InvokeRequired { get { return m_lvLog.InvokeRequired; } }
+        private AzLogViewSettings m_azlvsCurrent;
+
+        private void CreateNewView()
+        {
+            string sName;
+            if (TCore.UI.InputBox.ShowInputBox("New view name", "View name", "", out sName))
+                {
+                // create a new view based on the current view
+
+                AzLogViewSettings azlvs = m_azlvs.Clone();
+                azlvs.SetName(sName);
+                m_cbView.Items.Add(azlvs);
+                m_cbView.SelectedIndex = m_cbView.Items.Count - 1;
+
+                m_azlvs = azlvs;
+
+                }
+        }
+
+        private void ChangeViewSelected(object sender, EventArgs e)
+        {
+            AzLogViewSettings azlvs = (AzLogViewSettings)m_cbView.SelectedItem;
+
+            if (azlvs.Name == "<New...>")
+                {
+                CreateNewView();
+                }
+        }
+
+        private void DoViewSave(object sender, EventArgs e)
+        {
+            AzLogViewSettings azlvs = (AzLogViewSettings)m_cbView.SelectedItem;
+
+            if (azlvs == null || azlvs.Name == "<New...>")
+                {
+                CreateNewView();
+                }
+
+            Dictionary<string, int> rgColumns = new Dictionary<string, int>();
+
+            for (int i = 0; i < m_lvLog.Columns.Count; i++)
+                {
+                rgColumns.Add(m_lvLog.Columns[i].Text, i);
+                }
+
+            for (int i = 0; i < m_azlvs.Columns.Count; i++)
+                {
+                string sName = m_azlvs.Columns[i].Name;
+
+                // only sync the width here. all else sync during manipulation
+                if (rgColumns.ContainsKey(sName))
+                    m_azlvs.Columns[i].Width = m_lvLog.Columns[rgColumns[sName]].Width;
+                }
+
+            m_azlvs.Save();
+            m_ilc.SetDefaultView(m_azlvs.Name);
+        }
+
+        private void DoColumnReorder(object sender, ColumnReorderedEventArgs e)
+        {
+            m_azlvs.MoveColumn(e.OldDisplayIndex, e.NewDisplayIndex);
+        }
+        // The area occupied by the ListView header. 
+private Rectangle _headerRect;
+ 
+// Delegate that is called for each child window of the ListView. 
+private delegate bool EnumWinCallBack(IntPtr hwnd, IntPtr lParam);
+
+// Calls EnumWinCallBack for each child window of hWndParent (i.e. the ListView).
+[DllImport("user32.Dll")]
+private static extern int EnumChildWindows(
+    IntPtr hWndParent, 
+    EnumWinCallBack callBackFunc, 
+    IntPtr lParam);
+
+// Gets the bounding rectangle of the specified window (ListView header bar). 
+[DllImport("user32.dll")]
+private static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect); 
+
+[StructLayout(LayoutKind.Sequential)]
+private struct RECT
+{
+    public int Left;
+    public int Top;
+    public int Right;
+    public int Bottom; 
+}
+
+        private bool EnumWindowCallBack(IntPtr hwnd, IntPtr lParam)
+{
+    // Determine the rectangle of the ListView header bar and save it in _headerRect.
+    RECT rct;
+    if (!GetWindowRect(hwnd, out rct))
+    {
+        _headerRect = Rectangle.Empty;
+    }
+    else
+    {
+        _headerRect = new Rectangle(
+        rct.Left, rct.Top, rct.Right - rct.Left, rct.Bottom - rct.Top);
+    }
+    return false; // Stop the enum
+}
+
+        private static ColumnHeader[] GetOrderedHeaders(ListView lv)
+{
+    ColumnHeader[] arr = new ColumnHeader[lv.Columns.Count];
+
+    foreach (ColumnHeader header in lv.Columns)
+    {
+        arr[header.DisplayIndex] = header;
+    }
+
+    return arr;
+}
+
+
+        private void DoHideColumnClick(object sender, EventArgs e)
+        {
+            m_azlvs.MoveColumn(1, 1);
+        }
+
+        private void HandleContextOpening(object sender, CancelEventArgs e)
+        {
+                // This call indirectly calls EnumWindowCallBack which sets _headerRect
+    // to the area occupied by the ListView's header bar.
+    EnumChildWindows(
+        m_lvLog.Handle, new EnumWinCallBack(EnumWindowCallBack), IntPtr.Zero);
+
+    // If the mouse position is in the header bar, cancel the display
+    // of the regular context menu and display the column header context 
+    // menu instead.
+    if (_headerRect.Contains(Control.MousePosition))
+    {
+        e.Cancel = true;
+
+        // The xoffset is how far the mouse is from the left edge of the header.
+        int xoffset = Control.MousePosition.X - _headerRect.Left;
+
+         // Iterate through the column headers in the order they are displayed, 
+         // adding up their widths as we go.  When the sum exceeds the xoffset, 
+         // we know the mouse is on the current header. 
+        int sum = 0;
+        foreach (ColumnHeader header in GetOrderedHeaders(m_lvLog))
+        {
+            sum += header.Width;
+            if (sum > xoffset)
+            {
+                // This code displays the same context menu for 
+                // every header, but changes the menu item
+                // text based on the header. It sets the context 
+                // menu tag to the header object so
+                // the handler for whatever command the user 
+                // clicks can know the column.
+                ctxMenuHeader.Tag = header;
+                ctxMenuHeader.Items[0].Text = "Command for Header " + header.Text;
+                ctxMenuHeader.Show(Control.MousePosition);
+                break;
+            }
+        }
+    }
+    else
+    {
+        // Allow the regular context menu to be displayed.
+        // We may want to update the menu here.
+    }
+        }
+
+        private void blahToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            m_azlvs.ShowHideColumn(((ColumnHeader)((((ToolStripMenuItem) sender).GetCurrentParent()).Tag)).Text, false);
+            int c = m_lvLog.VirtualListSize;
+            
+            SetupListViewForLog(m_azlvs);
+            m_azlv.BumpGeneration();
+            m_lvLog.VirtualListSize = c;
+        }
+
+        //        public bool InvokeRequired { get { return m_lvLog.InvokeRequired; } }
     }
 
     public class AzLogView
@@ -126,12 +383,14 @@ namespace AzLog
         private List<int> m_pliale;
         private IComparer<int> m_icle;
         private AzLogModel m_azlm;
+        private int m_nGeneration;
 
         public int Length => m_pliale.Count;
 
         private object m_oSyncView;
         private AzLogWindow m_azlw;
-
+        private int m_nLogViewGeneration; // when we change views on the azlw, we have to bump this number so that we know that any cached ListViewItems are now invalid 
+        // (this is lazy invalidation).  for now, since we don't actually cache ListViewItems, this is a noop
         public void ClearLog()
         {
             m_azlw.ClearLog();
@@ -146,16 +405,23 @@ namespace AzLog
         {
             m_azlw.SyncView(iMin, iMac);
         }
+
         // public bool InvokeRequired { get { return m_azlw.InvokeRequired; } }
 
         public AzLogView(AzLogWindow azlw)
         {
             m_azlw = azlw;
+            m_nLogViewGeneration = (new Random(System.Environment.TickCount)).Next(10000);
+        }
+
+        public void BumpGeneration()
+        {
+            m_nLogViewGeneration++;
         }
 
         public ListViewItem LviItem(int i)
         {
-            return m_azlm.LogEntry(m_pliale[i]).LviFetch();
+            return m_azlm.LogEntry(m_pliale[i]).LviFetch(m_nLogViewGeneration, m_azlw.ViewSettings);
         }
 
         public void BuildView(AzLogModel azlm, IComparer<int> icle)
@@ -178,6 +444,7 @@ namespace AzLog
 
             m_pliale.Sort(m_icle);
         }
+
     }
 }
 

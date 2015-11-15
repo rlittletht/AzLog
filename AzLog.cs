@@ -17,7 +17,12 @@ using TCore.Settings;
 
 namespace AzLog
 {
-    public partial class AzLog : Form
+    public interface ILogClient
+    {
+        void SetDefaultView(string s);
+    }
+
+    public partial class AzLog : Form, ILogClient
     {
         private Settings.SettingsElt[] _rgsteeAccount =
             {
@@ -26,13 +31,31 @@ namespace AzLog
                 new Settings.SettingsElt("StorageDomain", Settings.Type.Str, "", ""),
             };
 
+        private Settings.SettingsElt[] _rgsteeApp =
+            {
+                new Settings.SettingsElt("DefaultView", Settings.Type.Str, "", ""),
+            };
+
+        private string m_sDefaultView;
+
         private AzLogModel m_azlm;
+        private Settings m_ste;
+
         public AzLog()
         {
             m_azlm = new AzLogModel();
             
             InitializeComponent();
             PopulateAccounts();
+            m_ste = new Settings(_rgsteeApp, "Software\\Thetasoft\\AzLog", "App");
+            m_ste.Load();
+            m_sDefaultView = m_ste.SValue("DefaultView");
+        }
+
+        public void SetDefaultView(string sView)
+        {
+            m_ste.SetSValue("DefaultView", sView);
+            m_ste.Save();
         }
 
         public void PopulateAccounts()
@@ -42,7 +65,8 @@ namespace AzLog
 
             foreach (string s in rgs)
                 {
-                m_cbAccounts.Items.Add(s);
+                if (s != "Views")
+                    m_cbAccounts.Items.Add(s);
                 }
             rk.Close();
         }
@@ -74,7 +98,7 @@ namespace AzLog
 
         private void DoFetchLogEntries(object sender, EventArgs e)
         {
-            AzLogWindow azlw = AzLogWindow.CreateNewWindow(m_azlm);
+            AzLogWindow azlw = AzLogWindow.CreateNewWindow(m_azlm, m_sDefaultView, this);
 
             azlw.Show();
 
@@ -87,7 +111,7 @@ namespace AzLog
             // we don't know what partition we're going to find this data in, so launch a query 
             // from the first partition for this date range
             //m_azlm.FetchPartitionsForDateRange(dttmMin, nHourMin, dttmMac, nHourMac);
-            m_azlm.FetchPartitionForDate(dttmMin);
+            m_azlm.FetchPartitionsForDateRange(dttmMin, dttmMac);
         }
 
 #if nomore

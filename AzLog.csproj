@@ -96,6 +96,7 @@
     <Compile Include="AzLogTest.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="AzLogViewSettings.cs" />
     <Compile Include="AzLogWindow.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -141,6 +142,10 @@
     <ProjectReference Include="..\liblet\cs\TCore.Settings\TCore.Settings.csproj">
       <Project>{cf92fd1e-ce88-492e-a7c6-c4d29d908a22}</Project>
       <Name>TCore.Settings</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\liblet\cs\TCore.UI\TCore.UI.csproj">
+      <Project>{9213a90f-a23f-4bc5-827c-164ecb6c6cc2}</Project>
+      <Name>TCore.UI</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

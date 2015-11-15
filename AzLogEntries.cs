@@ -22,6 +22,9 @@ namespace AzLog
         private int m_nPid;
         private int m_nTid;
         private string m_sMessage;
+        private int m_nGeneration; // this is going to pose a problem when multiple windows start at the same nGeneration -- we are likely to collide with multiple windows open, which means that they can
+        // have separate views but they might have the same nGeneration (so we will be caching lviItem's from one view and thinking they are valid for other views)
+        // the way to solve this *might* be to start each nGeneration with a random number, increasing the chances that we will not collide.
 
         public string Partition
         {
@@ -73,38 +76,75 @@ namespace AzLog
             set { m_sMessage = value; }
         }
 
-        
+
+        public enum LogColumn : int
+        {
+            Partition = 0,
+            RowKey = 1,
+            EventTickCount = 2,
+            AppName = 3,
+            Level = 4,
+            EventID = 5,
+            InstanceID = 6,
+            Pid = 7,
+            Tid = 8,
+            Message = 9,
+            Message0 = 9,
+            Message1 = 10,
+            Message2 = 11,
+            Message3 = 12,
+            Message4 = 13,
+            Message5 = 14,
+            Message6 = 15,
+            Message7 = 16,
+            Message8 = 17
+        };
+
+        public string GetColumn(LogColumn lc)
+        {
+            switch (lc)
+                {
+                case LogColumn.Partition:
+                    return Partition;
+                case LogColumn.RowKey:
+                    return RowKey.ToString();
+                case LogColumn.EventTickCount:
+                    return m_nEventTickCount.ToString();
+                case LogColumn.AppName:
+                    return m_sAppName;
+                case LogColumn.Level:
+                    return m_sLevel;
+                case LogColumn.EventID:
+                    return m_nEventID.ToString();
+                case LogColumn.InstanceID:
+                    return m_nInstanceID.ToString();
+                case LogColumn.Pid:
+                    return m_nPid.ToString();
+                case LogColumn.Tid:
+                    return m_nTid.ToString();
+                case LogColumn.Message:
+                    return m_sMessage;
+                default:
+                    return "";
+                }
+        }
+
         private ListViewItem m_lvi;
 
-        public ListViewItem LviFetch()
+        public ListViewItem LviFetch(int nGeneration, AzLogViewSettings azlvs)
         {
-            if (m_lvi == null)
+            if (m_lvi == null || m_nGeneration != nGeneration)
                 {
                 m_lvi = new ListViewItem();
 
-                m_lvi.SubItems.Add(new ListViewItem.ListViewSubItem());
-                m_lvi.SubItems.Add(new ListViewItem.ListViewSubItem());
-                m_lvi.SubItems.Add(new ListViewItem.ListViewSubItem());
-                m_lvi.SubItems.Add(new ListViewItem.ListViewSubItem());
-                m_lvi.SubItems.Add(new ListViewItem.ListViewSubItem());
-                m_lvi.SubItems.Add(new ListViewItem.ListViewSubItem());
-                m_lvi.SubItems.Add(new ListViewItem.ListViewSubItem());
-                m_lvi.SubItems.Add(new ListViewItem.ListViewSubItem());
-                m_lvi.SubItems.Add(new ListViewItem.ListViewSubItem());
-                m_lvi.SubItems.Add(new ListViewItem.ListViewSubItem());                      
+                for (int i = 0; i < azlvs.Columns.Count; i++)
+                    {
+                    m_lvi.SubItems.Add(new ListViewItem.ListViewSubItem());
 
-                m_lvi.SubItems[0].Text = Partition;
-                m_lvi.SubItems[1].Text = RowKey.ToString();
-                m_lvi.SubItems[2].Text = m_nEventTickCount.ToString();
-                m_lvi.SubItems[3].Text = m_sAppName;
-                m_lvi.SubItems[4].Text = m_sLevel;
-                m_lvi.SubItems[5].Text = m_nEventID.ToString();
-                m_lvi.SubItems[6].Text = m_nInstanceID.ToString();
-                m_lvi.SubItems[7].Text = m_nPid.ToString();
-                m_lvi.SubItems[8].Text = m_nTid.ToString();
-                m_lvi.SubItems[9].Text = m_sMessage;
-
-                m_lvi.Tag = this;
+                    m_lvi.SubItems[i].Text = GetColumn(azlvs.Columns[i].DataColumn);
+                    m_lvi.Tag = this;
+                    }
+                m_nGeneration = nGeneration;
                 }
             return m_lvi;
         }
@@ -161,6 +201,18 @@ namespace AzLog
             return m_plale[i];
         }
 
+        public AzLogPartState GetPartState(DateTime dttm)
+        {
+            AzLogPartState azlps;
+
+            lock (this)
+                {
+                azlps = m_azlps.GetPartState(dttm);
+                }
+
+            return azlps;
+        }
+
         public void UpdatePart(DateTime dttmMin, DateTime dttmMac, AzLogPartState azpls)
         {
             lock (this)
@@ -191,7 +243,7 @@ namespace AzLog
 
         public int Compare(int iLeft, int iRight)
         {
-            return (int) (m_azlm.LogEntry(iLeft).EventTickCount - m_azlm.LogEntry(iRight).EventTickCount);
+            return (int) (m_azlm.LogEntry(iRight).EventTickCount - m_azlm.LogEntry(iLeft).EventTickCount);
         }
     }
 

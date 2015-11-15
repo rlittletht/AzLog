@@ -32,7 +32,8 @@ namespace AzLog
 
         public void LoadSettings(string sAccountName)
         {
-            Settings ste = new Settings(_rgsteeAccount, String.Format("Software\\Thetasoft\\AzLog\\{0}", sAccountName), sAccountName);
+            Settings ste = new Settings(_rgsteeAccount, String.Format("Software\\Thetasoft\\AzLog\\{0}", sAccountName),
+                                        sAccountName);
 
             ste.Load();
             m_ebAccountName.Text = sAccountName;
@@ -44,7 +45,8 @@ namespace AzLog
         {
             string sAccountName = m_ebAccountName.Text;
 
-            Settings ste = new Settings(_rgsteeAccount, String.Format("Software\\Thetasoft\\AzLog\\{0}", sAccountName), sAccountName);
+            Settings ste = new Settings(_rgsteeAccount, String.Format("Software\\Thetasoft\\AzLog\\{0}", sAccountName),
+                                        sAccountName);
             ste.Save();
             this.Close();
         }
@@ -54,10 +56,17 @@ namespace AzLog
             AzAddAccount azaa = new AzAddAccount(rgsteeAccount);
             azaa.LoadSettings(sAccountName);
             azaa.ShowDialog();
-                        
+
             return true;
         }
 
+        /* A D D  S T O R A G E  A C C O U N T */
+        /*----------------------------------------------------------------------------
+        	%%Function: AddStorageAccount
+        	%%Qualified: AzLog.AzAddAccount.AddStorageAccount
+        	%%Contact: rlittle
+        	
+        ----------------------------------------------------------------------------*/
         public static bool AddStorageAccount(Settings.SettingsElt[] rgsteeAccount)
         {
             AzAddAccount azaa = new AzAddAccount(rgsteeAccount);
@@ -65,10 +74,7 @@ namespace AzLog
             return azaa.ShowDialog() == System.Windows.Forms.DialogResult.OK;
         }
 
-        private void DoCancel(object sender, EventArgs e)
-        {
-            
-        }
+        private void DoCancel(object sender, EventArgs e) {}
 
         private void DoTest(object sender, EventArgs e)
         {
