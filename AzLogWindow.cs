@@ -359,7 +359,7 @@ namespace AzLog
         public void AppendUpdateViewCore(int iMin, int iMac)
         {
             // we have new items from iMin to iMac. Add them to the view
-            m_azlv.AppendView(m_azlm, iMin, iMac);
+            m_azlv.AppendView(iMin, iMac);
             m_lvLog.VirtualListSize = m_azlv.Length;
         }
 

@@ -168,7 +168,7 @@ namespace AzLog
             Remember, all we store is a list of indexes into the underlying data 
             model.
         ----------------------------------------------------------------------------*/
-        public void AppendView(AzLogModel azlm, int iMin, int iMac)
+        public void AppendView(int iMin, int iMac)
         {
             while (iMin < iMac)
                 m_pliale.Add(iMin++);
