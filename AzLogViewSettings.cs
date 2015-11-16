@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32;
+using NUnit.Framework;
 using TCore.Settings;
 
 namespace AzLog
@@ -13,7 +14,7 @@ namespace AzLog
     {
         private string m_sName;
         private List<AzLogViewColumn> m_plazlvc;
-
+        private List<int> m_pliazlvc; // the mapped tab order for saving later.  starts out with "identity"
         public string Name => m_sName;
 
         public class AzLogViewColumn
@@ -78,20 +79,74 @@ namespace AzLog
             return m_sName;
         }
 
-        public List<AzLogViewColumn> Columns => m_plazlvc;
+        public AzLogViewColumn Column(int i)
+        {
+            return m_plazlvc[i];
+        }
+
+        public int ColumnCount()
+        {
+            return m_plazlvc.Count;
+        }
+
+        /* A D D  C O L U M N */
+        /*----------------------------------------------------------------------------
+        	%%Function: AddColumn
+        	%%Qualified: AzLog.AzLogViewSettings.AddColumn
+        	%%Contact: rlittle
+        	
+            Add the given column, making sure to keep the tab order mapping in synch
+        ----------------------------------------------------------------------------*/
+        public void AddColumn(AzLogViewColumn azlvc)
+        {
+            m_plazlvc.Add(azlvc);
+            m_pliazlvc.Add(m_pliazlvc.Count);   // adds are always identity mapping because they are appended
+        }
 
         public void MoveColumn(int iSource, int iDest)
         {
-            AzLogViewColumn azlvc = m_plazlvc[iSource];
+            int iazlvc = m_pliazlvc[iSource];
             
-            m_plazlvc.RemoveAt(iSource);
+            m_pliazlvc.RemoveAt(iSource);
 
             if (iDest > iSource)
                 iDest--;
 
-            m_plazlvc.Insert(iDest, azlvc);
+            m_pliazlvc.Insert(iDest, iazlvc);
         }
 
+        [TestCase("sMessage", 9, 9, 9, "Identity at the end")]
+        [TestCase("PartitionKey", 0, 0, 0, "Identity at the beginning")]
+        [TestCase("Level", 4, 4, 4, "Identity in the middle")]
+        [TestCase("PartitionKey", 0, 4, 3, "Move later at the beginning")]
+        [TestCase("Level", 4, 6, 5, "Move later in the middle")]
+        [TestCase("sMessage", 9, 1, 1, "Move earlier at the end")]
+        [TestCase("Level", 4, 1, 1, "Move earlier in the middle")]
+        [Test]
+        public void TestMove(string sColumn, int iazlvcExpected, int iazlvcDest, int iazlvcResult, string sTestDescription)
+        {
+            m_plazlvc.Clear();
+            m_pliazlvc.Clear();
+
+            SetDefault();
+
+            int iazlvc = IazlvcTabOrderFromIazlvc(IazlvcFind(sColumn));
+
+            Assert.AreEqual(iazlvcExpected, iazlvc, "{0} (source match)", sTestDescription);
+
+            MoveColumn(iazlvc, iazlvcDest);
+            int iazlvcNew = IazlvcTabOrderFromIazlvc(IazlvcFind(sColumn));
+            Assert.AreEqual(iazlvcResult, iazlvcNew, "{0} (move result)", sTestDescription);
+        }
+
+        public int IazlvcTabOrderFromIazlvc(int iazlvc)
+        {
+            for (int i = 0; i < m_pliazlvc.Count; i++)
+                if (m_pliazlvc[i] == iazlvc)
+                    return i;
+
+            return -1;
+        }
         public int IazlvcFind(string sName)
         {
             for (int i = 0; i < m_plazlvc.Count; i++)
@@ -105,10 +160,16 @@ namespace AzLog
         public AzLogViewSettings Clone()
         {
             AzLogViewSettings azlvs = new AzLogViewSettings(m_sName);
+
             int i;
-            for (i = 0; i < Columns.Count; i++)
+            for (i = 0; i < ColumnCount(); i++)
                 {
-                azlvs.Columns.Add(Columns[i].Clone());
+                // BE CAREFUL! we want the new clone to have its columns in the order of
+                // the tab order, NOT in the list order. we do this because the new view
+                // is likely to be used to recreate a listview whereas the current view
+                // reflects the loaded view PLUS any manipulation done by the current
+                // window that the view is attached to
+                azlvs.AddColumn(m_plazlvc[m_pliazlvc[i]].Clone());
                 }
             return azlvs;
         }
@@ -116,8 +177,15 @@ namespace AzLog
         public AzLogViewSettings(string sName)
         {
             m_plazlvc = new List<AzLogViewColumn>();
+            m_pliazlvc = new List<int>();
             m_sName = sName;
             Load();
+        }
+
+        public AzLogViewSettings()
+        {
+            m_plazlvc = new List<AzLogViewColumn>();
+            m_pliazlvc = new List<int>();
         }
 
         #region File I/O
@@ -196,25 +264,36 @@ namespace AzLog
         	%%Qualified: AzLog.AzLogViewSettings.Save
         	%%Contact: rlittle
         	
+            Save is a little tricky. We load the settings into a new listview, which
+            means that the taborder is the same as the column order. on save, though,
+            the listview could have been reordered by the user, which means that the
+            the tab order isn't necessarily the same as our column ordering.
+
+            the client will tell use the tab ordering via an rgsColumns
         ----------------------------------------------------------------------------*/
         public void Save()
         {
             RegistryKey rk = Settings.RkEnsure(KeySettingsParent());
+            
+            // build a tab order reverse mapping
+            int[] mpTabOrder = new int[m_pliazlvc.Count];
+
+            for (int i = 0; i < m_pliazlvc.Count; i++)
+                mpTabOrder[m_pliazlvc[i]] = i;
 
             rk.DeleteSubKeyTree(m_sName, false);
             rk.Close();
 
             rk = Settings.RkEnsure(KeySettings());
-
-            int i = 0;
-            for (i = 0; i < Columns.Count; i++)
+            
+            for (int i = 0; i < ColumnCount(); i++)
                 {
-                AzLogViewColumn azlvc = Columns[i];
+                AzLogViewColumn azlvc = Column(i);
 
                 string sKey = String.Format("{0}\\{1}", KeySettings(), azlvc.Name);
                 Settings ste = new Settings(_rgsteeColumn, sKey, azlvc.Name);
 
-                ste.SetNValue("TabOrder", i);
+                ste.SetNValue("TabOrder", mpTabOrder[i]);
                 ste.SetNValue("Width", azlvc.Width);
                 ste.SetNValue("DataLogColumn", ((int) azlvc.DataColumn));
                 ste.SetFValue("Visible", azlvc.Visible);
@@ -288,7 +367,7 @@ namespace AzLog
 
         public void AddLogViewColumn(string sName, int nWidth, AzLogEntry.LogColumn azlc, bool fVisible)
         {
-            m_plazlvc.Add(new AzLogViewColumn(sName, nWidth, azlc, fVisible));
+            AddColumn(new AzLogViewColumn(sName, nWidth, azlc, fVisible));
         }
 
         #endregion 

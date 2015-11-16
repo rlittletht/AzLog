@@ -12,11 +12,9 @@ namespace AzLog
         private List<int> m_pliale;
         private IComparer<int> m_icle;
         private AzLogModel m_azlm;
-        private int m_nGeneration;
 
         public int Length => m_pliale.Count;
 
-        private object m_oSyncView;
         private AzLogWindow m_azlw;
 
         // when we change views on the azlw, we have to bump this number so that we know that any cached ListViewItems are now invalid 

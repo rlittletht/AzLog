@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
@@ -165,13 +166,13 @@ namespace AzLog
                 rgColumns.Add(m_lvLog.Columns[i].Text, i);
                 }
 
-            for (int i = 0; i < m_azlvs.Columns.Count; i++)
+            for (int i = 0; i < m_azlvs.ColumnCount(); i++)
                 {
-                string sName = m_azlvs.Columns[i].Name;
+                string sName = m_azlvs.Column(i).Name;
 
                 // only sync the width here. all else sync during manipulation
                 if (rgColumns.ContainsKey(sName))
-                    m_azlvs.Columns[i].Width = m_lvLog.Columns[rgColumns[sName]].Width;
+                    m_azlvs.Column(i).Width = m_lvLog.Columns[rgColumns[sName]].Width;
                 }
 
             m_azlvs.Save();
@@ -273,9 +274,9 @@ namespace AzLog
             //for (i = m_lvLog.Columns.Count - 1; i >= 0; --i)
                 //m_lvLog.Columns.RemoveAt(i);
 
-            for (i = 0; i < azlvs.Columns.Count; i++)
+            for (i = 0; i < azlvs.ColumnCount(); i++)
                 {
-                AzLogViewSettings.AzLogViewColumn azlvc = azlvs.Columns[i];
+                AzLogViewSettings.AzLogViewColumn azlvc = azlvs.Column(i);
 
                 m_lvLog.Columns.Add(new ColumnHeader());
                 m_lvLog.Columns[i].Text = azlvc.Name;
@@ -581,11 +582,8 @@ namespace AzLog
         ----------------------------------------------------------------------------*/
         private void DoColumnReorder(object sender, ColumnReorderedEventArgs e)
         {
-            lock (SyncLock)
-                {
-                m_azlvs.MoveColumn(e.OldDisplayIndex, e.NewDisplayIndex);
-                m_azlv.BumpGeneration();
-                }
+            m_azlvs.MoveColumn(e.OldDisplayIndex, e.NewDisplayIndex);   // just notify it of the move, this doesn't change anything until we save because the listview already did the move for us.
+            // really, this is just about remembering the tab order...
         }
 
         #endregion

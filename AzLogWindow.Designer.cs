@@ -174,7 +174,6 @@
         private System.Windows.Forms.ComboBox m_cbView;
         private System.Windows.Forms.Button m_pbSave;
         private System.Windows.Forms.ContextMenuStrip m_ctxmHeader;
-        private System.Windows.Forms.ToolStripMenuItem blahToolStripMenuItem;
         private System.Windows.Forms.ContextMenuStrip ctxMenuList;
         private System.Windows.Forms.ToolStripMenuItem tsmiFilter;
     }

@@ -201,11 +201,11 @@ namespace AzLog
                 {
                 m_lvi = new ListViewItem();
 
-                for (int i = 0; i < azlvs.Columns.Count; i++)
+                for (int i = 0; i < azlvs.ColumnCount(); i++)
                     {
                     m_lvi.SubItems.Add(new ListViewItem.ListViewSubItem());
 
-                    m_lvi.SubItems[i].Text = GetColumn(azlvs.Columns[i].DataColumn);
+                    m_lvi.SubItems[i].Text = GetColumn(azlvs.Column(i).DataColumn);
                     m_lvi.Tag = this;
                     }
                 m_nGeneration = nGeneration;
