@@ -135,6 +135,10 @@ namespace AzLog
                 {
                 CreateNewView();
                 }
+            else
+                {
+                SetView(azlvs.Name);
+                }
         }
 
         /* D O  V I E W  S A V E */
@@ -262,8 +266,12 @@ namespace AzLog
         {
             int i;
 
-            for (i = m_lvLog.Columns.Count - 1; i >= 0; --i)
-                m_lvLog.Columns.RemoveAt(i);
+            m_lvLog.BeginUpdate();
+
+            m_lvLog.Columns.Clear();
+
+            //for (i = m_lvLog.Columns.Count - 1; i >= 0; --i)
+                //m_lvLog.Columns.RemoveAt(i);
 
             for (i = 0; i < azlvs.Columns.Count; i++)
                 {
@@ -274,7 +282,8 @@ namespace AzLog
                 m_lvLog.Columns[i].Width = azlvc.Width;
                 }
 
-            m_lvLog.VirtualListSize = 0;
+            m_lvLog.EndUpdate();
+            // m_lvLog.VirtualListSize = 0;
         }
         #endregion
 
@@ -344,8 +353,10 @@ namespace AzLog
         public void AppendUpdateViewCore(int iMin, int iMac)
         {
             // we have new items from iMin to iMac. Add them to the view
+            m_lvLog.BeginUpdate();
             m_azlv.AppendView(iMin, iMac);
             m_lvLog.VirtualListSize = m_azlv.Length;
+            m_lvLog.EndUpdate();
         }
 
         /* A P P E N D  U P D A T E  V I E W */
