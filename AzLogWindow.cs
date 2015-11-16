@@ -174,21 +174,6 @@ namespace AzLog
             m_ilc.SetDefaultView(m_azlvs.Name);
         }
 
-        /* D O  C O L U M N  R E O R D E R */
-        /*----------------------------------------------------------------------------
-        	%%Function: DoColumnReorder
-        	%%Qualified: AzLog.AzLogWindow.DoColumnReorder
-        	%%Contact: rlittle
-        	
-            Handle a drag of the column header (reordering the columns)
-        ----------------------------------------------------------------------------*/
-        private void DoColumnReorder(object sender, ColumnReorderedEventArgs e)
-        {
-            m_azlvs.MoveColumn(e.OldDisplayIndex, e.NewDisplayIndex);
-        }
-
-        private HeaderSupp m_hs;    // this is the guts of dealing with right clicking on the header region
-
         /* I  V I E W  F R O M  N A M E */
         /*----------------------------------------------------------------------------
         	%%Function: IViewFromName
@@ -381,7 +366,10 @@ namespace AzLog
         }
         #endregion
 
-        #region Context Menus
+        #region Column Headers / Context Menus
+        
+        private HeaderSupp m_hs;    // this is the guts of dealing with right clicking on the header region
+
         /* S E T U P  C O N T E X T  M E N U */
         /*----------------------------------------------------------------------------
         	%%Function: SetupContextMenu
@@ -508,27 +496,30 @@ namespace AzLog
         ----------------------------------------------------------------------------*/
         private void AddHeader(AzLogViewSettings.DefaultColumnDef dcd, string sColumnInsertBefore)
         {
-            int iazlvcInsert = m_azlvs.IazlvcFind(sColumnInsertBefore);
-            int iazlvc = m_azlvs.IazlvcFind(dcd.sName);
-
-            if (iazlvc == -1)
+            lock (SyncLock)
                 {
-                // we are adding this column
-                m_azlvs.AddLogViewColumn(dcd.sName, dcd.nWidthDefault, dcd.lc, true);
-                iazlvc = m_azlvs.IazlvcFind(dcd.sName);
+                int iazlvcInsert = m_azlvs.IazlvcFind(sColumnInsertBefore);
+                int iazlvc = m_azlvs.IazlvcFind(dcd.sName);
+
+                if (iazlvc == -1)
+                    {
+                    // we are adding this column
+                    m_azlvs.AddLogViewColumn(dcd.sName, dcd.nWidthDefault, dcd.lc, true);
+                    iazlvc = m_azlvs.IazlvcFind(dcd.sName);
+                    }
+                else
+                    {
+                    m_azlvs.ShowHideColumn(dcd.sName, true);
+                    }
+
+                m_azlvs.MoveColumn(iazlvc, iazlvcInsert);
+
+                int c = m_lvLog.VirtualListSize;
+
+                SetupListViewForView(m_azlvs);
+                m_azlv.BumpGeneration();
+                m_lvLog.VirtualListSize = c;
                 }
-            else
-                {
-                m_azlvs.ShowHideColumn(dcd.sName, true);
-                }
-
-            m_azlvs.MoveColumn(iazlvc, iazlvcInsert);
-
-            int c = m_lvLog.VirtualListSize;
-
-            SetupListViewForView(m_azlvs);
-            m_azlv.BumpGeneration();
-            m_lvLog.VirtualListSize = c;
         }
 
         /* R E M O V E  H E A D E R */
@@ -543,13 +534,16 @@ namespace AzLog
         ----------------------------------------------------------------------------*/
         private void RemoveHeader(string sColumnName)
         {
-            m_azlvs.ShowHideColumn(sColumnName, false);
+            lock (SyncLock)
+                {
+                m_azlvs.ShowHideColumn(sColumnName, false);
 
-            int c = m_lvLog.VirtualListSize;
+                int c = m_lvLog.VirtualListSize;
 
-            SetupListViewForView(m_azlvs);
-            m_azlv.BumpGeneration();
-            m_lvLog.VirtualListSize = c;
+                SetupListViewForView(m_azlvs);
+                m_azlv.BumpGeneration();
+                m_lvLog.VirtualListSize = c;
+                }
         }
 
         /* H A N D L E  R E M O V E  H E A D E R  I T E M */
@@ -565,6 +559,24 @@ namespace AzLog
             RemoveHeader(((ColumnHeader) ((((ToolStripMenuItem) sender).GetCurrentParent()).Tag)).Text);
             // or we could just get this from m_ctxmHeader.Tag...
         }
+
+        /* D O  C O L U M N  R E O R D E R */
+        /*----------------------------------------------------------------------------
+        	%%Function: DoColumnReorder
+        	%%Qualified: AzLog.AzLogWindow.DoColumnReorder
+        	%%Contact: rlittle
+        	
+            Handle a drag of the column header (reordering the columns)
+        ----------------------------------------------------------------------------*/
+        private void DoColumnReorder(object sender, ColumnReorderedEventArgs e)
+        {
+            lock (SyncLock)
+                {
+                m_azlvs.MoveColumn(e.OldDisplayIndex, e.NewDisplayIndex);
+                m_azlv.BumpGeneration();
+                }
+        }
+
         #endregion
     }
 

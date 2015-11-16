@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32;
 using TCore.Settings;
@@ -82,6 +83,7 @@ namespace AzLog
         public void MoveColumn(int iSource, int iDest)
         {
             AzLogViewColumn azlvc = m_plazlvc[iSource];
+            
             m_plazlvc.RemoveAt(iSource);
 
             if (iDest > iSource)
