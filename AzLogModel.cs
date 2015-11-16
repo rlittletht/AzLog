@@ -37,6 +37,7 @@ namespace AzLog
                     return;
                     }
         }
+
         public void OpenTable(string sTableName)
         {
             foreach (AzLogView azlv in m_plazlvListeners)
@@ -111,7 +112,7 @@ namespace AzLog
                 azleSegment = await m_azt.Table.ExecuteQuerySegmentedAsync(tq, azleSegment?.ContinuationToken);
                 foreach (AzLogView azlv in m_plazlvListeners)
                     {
-                    lock (azlv.OSyncView)
+                    lock (azlv.SyncLock)
                         {
                         int iFirst = m_azles.Length;
 
@@ -119,7 +120,7 @@ namespace AzLog
 
                         int iLast = m_azles.Length;
 
-                        azlv.UpdateViewRegion(iFirst, iLast);
+                        azlv.AppendUpdateRegion(iFirst, iLast);
                         }
                     }
 

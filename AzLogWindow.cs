@@ -19,8 +19,12 @@ namespace AzLog
     {
         private AzLogView m_azlv = null;
         private AzLogModel m_azlm;
-
         public AzLogView View => m_azlv;
+        public AzLogViewSettings ViewSettings => m_azlvs;
+        private ILogClient m_ilc;   // allows setting of default view
+        private AzLogViewSettings m_azlvs;
+
+        #region Construct/Destruct
 
         /* A Z  L O G  W I N D O W */
         /*----------------------------------------------------------------------------
@@ -32,13 +36,9 @@ namespace AzLog
         public AzLogWindow()
         {
             InitializeComponent();
-            // SetupListViewForLog(m_lvLog);
             PopulateViewList();
-            // SetView("");
         }
 
-        public AzLogViewSettings ViewSettings => m_azlvs;
-        private ILogClient m_ilc;
 
         /* C R E A T E  N E W  W I N D O W */
         /*----------------------------------------------------------------------------
@@ -62,153 +62,47 @@ namespace AzLog
             return azlw;
         }
 
+        /* C L O S E  W I N D O W */
+        /*----------------------------------------------------------------------------
+        	%%Function: CloseWindow
+        	%%Qualified: AzLog.AzLogWindow.CloseWindow
+        	%%Contact: rlittle
+        	
+            Handle removing this from the underlying model (so we don't get any more
+            notifications)
+        ----------------------------------------------------------------------------*/
         public void CloseWindow()
         {
             m_azlm.RemoveView(m_azlv);
         }
 
-        private int IViewFromName(string sName)
-        {
-            int i;
-
-            for (i = 0; i < m_cbView.Items.Count; i++)
-                {
-                AzLogViewSettings azlvs = (AzLogViewSettings) m_cbView.Items[i];
-                if (String.Compare(azlvs.Name, sName, true) == 0)
-                    break;
-                }
-            return (i >= m_cbView.Items.Count) ? -1 : i;
-        }
-
-        private AzLogViewSettings m_azlvs;
-
-        public void SetView(string sViewName)
-        {
-            int iView = IViewFromName(sViewName);
-
-            if (iView != -1)
-                {
-                m_cbView.SelectedIndex = iView;
-                m_azlvs = (AzLogViewSettings) m_cbView.Items[iView];
-                }
-            else
-                {
-                AzLogViewSettings azlvs = new AzLogViewSettings(sViewName);
-                m_azlvs = azlvs;
-                m_cbView.SelectedIndex = -1;
-                }
-
-            SetupListViewForLog(m_azlvs);
-            SetupContextMenu();
-        }
-
-        /* G E T  L I S T  V I E W  I T E M */
+        
+        /* H A N D L E  F O R M  C L O S E D */
         /*----------------------------------------------------------------------------
-        	%%Function: GetListViewItem
-        	%%Qualified: AzLog.AzLogWindow.GetListViewItem
+        	%%Function: HandleFormClosed
+        	%%Qualified: AzLog.AzLogWindow.HandleFormClosed
         	%%Contact: rlittle
         	
+            Handle the form closed event
         ----------------------------------------------------------------------------*/
-        private void GetListViewItem(object sender, RetrieveVirtualItemEventArgs e)
+        private void HandleFormClosed(object sender, FormClosedEventArgs e)
         {
-            e.Item = m_azlv.LviItem(e.ItemIndex);
+            CloseWindow();
         }
 
-        /* P O P U L A T E  V I E W  L I S T */
+        #endregion
+
+        #region View Settings/Selection
+
+        /* C R E A T E  N E W  V I E W */
         /*----------------------------------------------------------------------------
-        	%%Function: PopulateViewList
-        	%%Qualified: AzLog.AzLogWindow.PopulateViewList
+        	%%Function: CreateNewView
+        	%%Qualified: AzLog.AzLogWindow.CreateNewView
         	%%Contact: rlittle
         	
+            Create a new view copied from the current view. Ask the user to give us
+            a name for the new view
         ----------------------------------------------------------------------------*/
-        public void PopulateViewList()
-        {
-            RegistryKey rk = Registry.CurrentUser.OpenSubKey("Software\\Thetasoft\\AzLog\\Views");
-            if (rk != null)
-                {
-                string[] rgs = rk.GetSubKeyNames();
-
-                foreach (string s in rgs)
-                    {
-                    AzLogViewSettings azlvs = new AzLogViewSettings(s);
-                    m_cbView.Items.Add(azlvs);
-                    }
-                rk.Close();
-                }
-            m_cbView.Items.Add(new AzLogViewSettings("<New...>"));
-        }
-
-        /* S E T U P  L I S T  V I E W  F O R  L O G */
-        /*----------------------------------------------------------------------------
-        	%%Function: SetupListViewForLog
-        	%%Qualified: AzLog.AzLogWindow.SetupListViewForLog
-        	%%Contact: rlittle
-        	
-        ----------------------------------------------------------------------------*/
-        private void SetupListViewForLog(AzLogViewSettings azlvs)
-        {
-            int i;
-            for (i = m_lvLog.Columns.Count - 1; i >= 0; --i)
-                m_lvLog.Columns.RemoveAt(i);
-
-            for (i = 0; i < azlvs.Columns.Count; i++)
-                {
-                AzLogViewSettings.AzLogViewColumn azlvc = azlvs.Columns[i];
-
-                m_lvLog.Columns.Add(new ColumnHeader());
-                m_lvLog.Columns[i].Text = azlvc.Name;
-                m_lvLog.Columns[i].Width = azlvc.Width;
-                }
-
-            m_lvLog.VirtualListSize = 0;
-        }
-
-        public void ClearLog()
-        {
-            m_lvLog.Items.Clear();
-        }
-
-
-        private void DoFetchLogEntries(object sender, EventArgs e)
-        {
-            // figure out the timespan being requested
-            DateTime dttmMin, dttmMac;
-
-            AzLogModel.FillMinMacFromStartEnd(m_ebStart.Text, m_ebEnd.Text, out dttmMin, out dttmMac);
-
-            // we don't know what partition we're going to find this data in, so launch a query 
-            // from the first partition for this date range
-            // m_azlm.FetchPartitionsForDateRange(dttmMin, nHourMin, dttmMac, nHourMac);
-            m_azlm.FetchPartitionForDate(dttmMin);
-        }
-
-        public delegate void SyncViewDel(int iFirstSync, int iMacSync);
-
-        private object oSyncView = new Object();
-
-        public object OSyncView
-        {
-            get { return oSyncView; }
-            set { oSyncView = value; }
-        }
-
-        public void AppendUpdateViewCore(int iMin, int iMac)
-        {
-            // we have new items from iMin to iMac. Add them to the view
-            m_azlv.AppendView(m_azlm, iMin, iMac);
-            m_lvLog.VirtualListSize = m_azlv.Length;
-        }
-
-        public void AppendUpdateView(int iMin, int iMac)
-        {
-            if (m_lvLog.InvokeRequired)
-                m_lvLog.BeginInvoke(new AzLogWindow.SyncViewDel(AppendUpdateViewCore), new object[] {iMin, iMac});
-            else
-                AppendUpdateViewCore(iMin, iMac);
-        }
-
-        private AzLogViewSettings m_azlvsCurrent;
-
         private void CreateNewView()
         {
             string sName;
@@ -222,10 +116,17 @@ namespace AzLog
                 m_cbView.SelectedIndex = m_cbView.Items.Count - 1;
 
                 m_azlvs = azlvs;
-
                 }
         }
 
+        /* C H A N G E  V I E W  S E L E C T E D */
+        /*----------------------------------------------------------------------------
+        	%%Function: ChangeViewSelected
+        	%%Qualified: AzLog.AzLogWindow.ChangeViewSelected
+        	%%Contact: rlittle
+        	
+            Handle a change to the selected view dropdown.
+        ----------------------------------------------------------------------------*/
         private void ChangeViewSelected(object sender, EventArgs e)
         {
             AzLogViewSettings azlvs = (AzLogViewSettings) m_cbView.SelectedItem;
@@ -236,6 +137,14 @@ namespace AzLog
                 }
         }
 
+        /* D O  V I E W  S A V E */
+        /*----------------------------------------------------------------------------
+        	%%Function: DoViewSave
+        	%%Qualified: AzLog.AzLogWindow.DoViewSave
+        	%%Contact: rlittle
+        	
+            Save all the current view settings
+        ----------------------------------------------------------------------------*/
         private void DoViewSave(object sender, EventArgs e)
         {
             AzLogViewSettings azlvs = (AzLogViewSettings) m_cbView.SelectedItem;
@@ -265,18 +174,223 @@ namespace AzLog
             m_ilc.SetDefaultView(m_azlvs.Name);
         }
 
+        /* D O  C O L U M N  R E O R D E R */
+        /*----------------------------------------------------------------------------
+        	%%Function: DoColumnReorder
+        	%%Qualified: AzLog.AzLogWindow.DoColumnReorder
+        	%%Contact: rlittle
+        	
+            Handle a drag of the column header (reordering the columns)
+        ----------------------------------------------------------------------------*/
         private void DoColumnReorder(object sender, ColumnReorderedEventArgs e)
         {
             m_azlvs.MoveColumn(e.OldDisplayIndex, e.NewDisplayIndex);
         }
 
-        private void DoHideColumnClick(object sender, EventArgs e)
+        private HeaderSupp m_hs;    // this is the guts of dealing with right clicking on the header region
+
+        /* I  V I E W  F R O M  N A M E */
+        /*----------------------------------------------------------------------------
+        	%%Function: IViewFromName
+        	%%Qualified: AzLog.AzLogWindow.IViewFromName
+        	%%Contact: rlittle
+        	
+            Return the indext to the named view (in our combobox of views)
+        ----------------------------------------------------------------------------*/
+        private int IViewFromName(string sName)
         {
-            m_azlvs.MoveColumn(1, 1);
+            int i;
+
+            for (i = 0; i < m_cbView.Items.Count; i++)
+                {
+                AzLogViewSettings azlvs = (AzLogViewSettings) m_cbView.Items[i];
+                if (String.Compare(azlvs.Name, sName, true) == 0)
+                    break;
+                }
+            return (i >= m_cbView.Items.Count) ? -1 : i;
+        }
+        
+        /* P O P U L A T E  V I E W  L I S T */
+        /*----------------------------------------------------------------------------
+        	%%Function: PopulateViewList
+        	%%Qualified: AzLog.AzLogWindow.PopulateViewList
+        	%%Contact: rlittle
+        	
+        ----------------------------------------------------------------------------*/
+        public void PopulateViewList()
+        {
+            RegistryKey rk = Registry.CurrentUser.OpenSubKey("Software\\Thetasoft\\AzLog\\Views");
+            if (rk != null)
+                {
+                string[] rgs = rk.GetSubKeyNames();
+
+                foreach (string s in rgs)
+                    {
+                    AzLogViewSettings azlvs = new AzLogViewSettings(s);
+                    m_cbView.Items.Add(azlvs);
+                    }
+                rk.Close();
+                }
+            m_cbView.Items.Add(new AzLogViewSettings("<New...>"));
         }
 
-        private HeaderSupp m_hs;
+        /* S E T  V I E W */
+        /*----------------------------------------------------------------------------
+        	%%Function: SetView
+        	%%Qualified: AzLog.AzLogWindow.SetView
+        	%%Contact: rlittle
+        	
+            Set the current view to the given name. This will handle loading the 
+            view settings from the registry and setting up the current view to match
+            the selected view.
+        ----------------------------------------------------------------------------*/
+        public void SetView(string sViewName)
+        {
+            int iView = IViewFromName(sViewName);
 
+            if (iView != -1)
+                {
+                m_cbView.SelectedIndex = iView;
+                m_azlvs = (AzLogViewSettings) m_cbView.Items[iView];
+                }
+            else
+                {
+                AzLogViewSettings azlvs = new AzLogViewSettings(sViewName);
+                m_azlvs = azlvs;
+                m_cbView.SelectedIndex = -1;
+                }
+
+            SetupListViewForView(m_azlvs);
+            SetupContextMenu();
+        }
+
+
+        /* S E T U P  L I S T  V I E W  F O R  L O G */
+        /*----------------------------------------------------------------------------
+        	%%Function: SetupListViewForView
+        	%%Qualified: AzLog.AzLogWindow.SetupListViewForView
+        	%%Contact: rlittle
+        	
+            Initialize the view to match the given view
+        ----------------------------------------------------------------------------*/
+        private void SetupListViewForView(AzLogViewSettings azlvs)
+        {
+            int i;
+
+            for (i = m_lvLog.Columns.Count - 1; i >= 0; --i)
+                m_lvLog.Columns.RemoveAt(i);
+
+            for (i = 0; i < azlvs.Columns.Count; i++)
+                {
+                AzLogViewSettings.AzLogViewColumn azlvc = azlvs.Columns[i];
+
+                m_lvLog.Columns.Add(new ColumnHeader());
+                m_lvLog.Columns[i].Text = azlvc.Name;
+                m_lvLog.Columns[i].Width = azlvc.Width;
+                }
+
+            m_lvLog.VirtualListSize = 0;
+        }
+        #endregion
+
+        #region View Contents
+
+        /* C L E A R  L O G */
+        /*----------------------------------------------------------------------------
+        	%%Function: ClearLog
+        	%%Qualified: AzLog.AzLogWindow.ClearLog
+        	%%Contact: rlittle
+        	
+            This is only going to happen if someone changes the underlying data model
+            (its something that the model expects to call back into our window)
+        ----------------------------------------------------------------------------*/
+        public void ClearLog()
+        {
+            m_lvLog.Items.Clear();
+        }
+
+        /* G E T  L I S T  V I E W  I T E M */
+        /*----------------------------------------------------------------------------
+        	%%Function: GetListViewItem
+        	%%Qualified: AzLog.AzLogWindow.GetListViewItem
+        	%%Contact: rlittle
+        	
+        ----------------------------------------------------------------------------*/
+        private void GetListViewItem(object sender, RetrieveVirtualItemEventArgs e)
+        {
+            e.Item = m_azlv.LviItem(e.ItemIndex);
+        }
+
+
+        private void DoFetchLogEntries(object sender, EventArgs e)
+        {
+            // figure out the timespan being requested
+            DateTime dttmMin, dttmMac;
+
+            AzLogModel.FillMinMacFromStartEnd(m_ebStart.Text, m_ebEnd.Text, out dttmMin, out dttmMac);
+
+            // we don't know what partition we're going to find this data in, so launch a query 
+            // from the first partition for this date range
+            // m_azlm.FetchPartitionsForDateRange(dttmMin, nHourMin, dttmMac, nHourMac);
+            m_azlm.FetchPartitionForDate(dttmMin);
+        }
+
+        public delegate void SyncViewDel(int iFirstSync, int iMacSync);
+
+        private object _syncLock = new Object();
+
+        public object SyncLock
+        {
+            get { return _syncLock; }
+            set { _syncLock = value; }
+        }
+
+        /* A P P E N D  U P D A T E  V I E W  C O R E */
+        /*----------------------------------------------------------------------------
+        	%%Function: AppendUpdateViewCore
+        	%%Qualified: AzLog.AzLogWindow.AppendUpdateViewCore
+        	%%Contact: rlittle
+        	
+            Actually append new items to our view. This adds the items to our views
+            list of log entries (and re-sorts). Then updates our virtual list size
+
+            TODO: Try to keep the view scrolled to the same place.
+        ----------------------------------------------------------------------------*/
+        public void AppendUpdateViewCore(int iMin, int iMac)
+        {
+            // we have new items from iMin to iMac. Add them to the view
+            m_azlv.AppendView(m_azlm, iMin, iMac);
+            m_lvLog.VirtualListSize = m_azlv.Length;
+        }
+
+        /* A P P E N D  U P D A T E  V I E W */
+        /*----------------------------------------------------------------------------
+        	%%Function: AppendUpdateView
+        	%%Qualified: AzLog.AzLogWindow.AppendUpdateView
+        	%%Contact: rlittle
+        	
+            Deal with a request to append new data to our view. This marshals to the
+            UI thread
+        ----------------------------------------------------------------------------*/
+        public void AppendUpdateView(int iMin, int iMac)
+        {
+            if (m_lvLog.InvokeRequired)
+                m_lvLog.BeginInvoke(new AzLogWindow.SyncViewDel(AppendUpdateViewCore), new object[] {iMin, iMac});
+            else
+                AppendUpdateViewCore(iMin, iMac);
+        }
+        #endregion
+
+        #region Context Menus
+        /* S E T U P  C O N T E X T  M E N U */
+        /*----------------------------------------------------------------------------
+        	%%Function: SetupContextMenu
+        	%%Qualified: AzLog.AzLogWindow.SetupContextMenu
+        	%%Contact: rlittle
+        	
+            Setup the context menu for the listview. This creates the "add/remove
+            column" options.
+        ----------------------------------------------------------------------------*/
         private void SetupContextMenu()
         {
             m_ctxmHeader.Items.Clear();
@@ -349,6 +463,14 @@ namespace AzLog
             else {}
         }
 
+        /* H A N D L E  S E L E C T  H E A D E R  I T E M */
+        /*----------------------------------------------------------------------------
+        	%%Function: HandleSelectHeaderItem
+        	%%Qualified: AzLog.AzLogWindow.HandleSelectHeaderItem
+        	%%Contact: rlittle
+        	
+            Deal with selecting an item on the header context menu.
+        ----------------------------------------------------------------------------*/
         private void HandleSelectHeaderItem(object sender, EventArgs e)
         {
             // first, figure out what column they right clicked on (this is useful if they are asking
@@ -374,6 +496,16 @@ namespace AzLog
                 }
         }
 
+        /* A D D  H E A D E R */
+        /*----------------------------------------------------------------------------
+        	%%Function: AddHeader
+        	%%Qualified: AzLog.AzLogWindow.AddHeader
+        	%%Contact: rlittle
+        	
+            Add the named header to the view. This handles adding the column
+            and invalidating the current view so it will get rebuild with the
+            correct list view items.
+        ----------------------------------------------------------------------------*/
         private void AddHeader(AzLogViewSettings.DefaultColumnDef dcd, string sColumnInsertBefore)
         {
             int iazlvcInsert = m_azlvs.IazlvcFind(sColumnInsertBefore);
@@ -394,195 +526,48 @@ namespace AzLog
 
             int c = m_lvLog.VirtualListSize;
 
-            SetupListViewForLog(m_azlvs);
+            SetupListViewForView(m_azlvs);
             m_azlv.BumpGeneration();
             m_lvLog.VirtualListSize = c;
         }
 
+        /* R E M O V E  H E A D E R */
+        /*----------------------------------------------------------------------------
+        	%%Function: RemoveHeader
+        	%%Qualified: AzLog.AzLogWindow.RemoveHeader
+        	%%Contact: rlittle
+        	
+            Remove the named header from the list of columns displayed
+
+            This deals with invalidating the current view.
+        ----------------------------------------------------------------------------*/
         private void RemoveHeader(string sColumnName)
         {
             m_azlvs.ShowHideColumn(sColumnName, false);
 
             int c = m_lvLog.VirtualListSize;
 
-            SetupListViewForLog(m_azlvs);
+            SetupListViewForView(m_azlvs);
             m_azlv.BumpGeneration();
             m_lvLog.VirtualListSize = c;
         }
 
+        /* H A N D L E  R E M O V E  H E A D E R  I T E M */
+        /*----------------------------------------------------------------------------
+        	%%Function: HandleRemoveHeaderItem
+        	%%Qualified: AzLog.AzLogWindow.HandleRemoveHeaderItem
+        	%%Contact: rlittle
+        	
+            Menu item handler for removing the current column
+        ----------------------------------------------------------------------------*/
         private void HandleRemoveHeaderItem(object sender, EventArgs e)
         {
             RemoveHeader(((ColumnHeader) ((((ToolStripMenuItem) sender).GetCurrentParent()).Tag)).Text);
             // or we could just get this from m_ctxmHeader.Tag...
         }
-
-        private void HandleFormClosed(object sender, FormClosedEventArgs e)
-        {
-            CloseWindow();
-        }
-
-        //        public bool InvokeRequired { get { return m_lvLog.InvokeRequired; } }
+        #endregion
     }
 
-    public class AzLogView
-    {
-        private List<int> m_pliale;
-        private IComparer<int> m_icle;
-        private AzLogModel m_azlm;
-        private int m_nGeneration;
-
-        public int Length => m_pliale.Count;
-
-        private object m_oSyncView;
-        private AzLogWindow m_azlw;
-
-        private int m_nLogViewGeneration;
-                    // when we change views on the azlw, we have to bump this number so that we know that any cached ListViewItems are now invalid 
-
-        // (this is lazy invalidation).  for now, since we don't actually cache ListViewItems, this is a noop
-        public void ClearLog()
-        {
-            m_azlw.ClearLog();
-        }
-
-        public object OSyncView
-        {
-            get { return m_azlw.OSyncView; }
-            set { m_azlw.OSyncView = value; }
-        }
-
-        public void UpdateViewRegion(int iMin, int iMac)
-        {
-            m_azlw.AppendUpdateView(iMin, iMac);
-        }
-
-        // public bool InvokeRequired { get { return m_azlw.InvokeRequired; } }
-
-        public AzLogView(AzLogWindow azlw)
-        {
-            m_azlw = azlw;
-            m_nLogViewGeneration = (new Random(System.Environment.TickCount)).Next(10000);
-        }
-
-        // only used for unit tests
-        public AzLogView()
-        {
-            m_azlw = null;
-            m_nLogViewGeneration = (new Random(System.Environment.TickCount)).Next(10000);
-        }
-
-        public void BumpGeneration()
-        {
-            m_nLogViewGeneration++;
-        }
-
-        public ListViewItem LviItem(int i)
-        {
-            return m_azlm.LogEntry(m_pliale[i]).LviFetch(m_nLogViewGeneration, m_azlw.ViewSettings);
-        }
-
-        public AzLogEntry AzleItem(int i)
-        {
-            return m_azlm.LogEntry(m_pliale[i]);
-        }
-
-        public void BuildView(AzLogModel azlm, IComparer<int> icle)
-        {
-            m_icle = icle;
-            m_azlm = azlm;
-            m_pliale = new List<int>();
-
-            for (int i = 0; i < m_azlm.LogCount; i++)
-                {
-                m_pliale.Add(i);
-                }
-            m_pliale.Sort(icle);
-        }
-
-        public void AppendView(AzLogModel azlm, int iMin, int iMac)
-        {
-            while (iMin < iMac)
-                m_pliale.Add(iMin++);
-
-            m_pliale.Sort(m_icle);
-        }
-
-        [TestCase("11-15-2015 10:00", new Int64[] {60, 200, 30, 230})]
-        [TestCase("11-15-2015 10:00", new Int64[] {20, 200, 230, 430})]
-        [TestCase("11-15-2015 10:00", new Int64[] {635814444358372408, 635814457244493004, 635814444361184850, 635814444364310162})]
-        [Test]
-        public void TestSort(string sPartition, Int64[] rg)
-        {
-            AzLogModel azlm = new AzLogModel();
-
-            azlm.AddTestDataPartition(DateTime.Parse(sPartition), rg, null);
-            List<Int64> pls = new List<Int64>();
-
-            foreach (Int64 n in rg)
-                pls.Add(n);
-
-            pls.Sort();
-
-            BuildView(azlm, new CompareLogEntryTickCount(azlm));
-
-            for (int i = 0; i < pls.Count; i++)
-                Assert.AreEqual(pls[i], AzleItem(i).EventTickCount);
-        }
-
-        [TestCase("11-15-2015 10:00", "test", new string[] {"test", "test", null, null, null, null, null, null, null, null, null})]
-        [TestCase("11-15-2015 10:00", "test\tparm1", new string[] {"test\tparm1", "test", "parm1", null, null, null, null, null, null, null, null})]
-        [TestCase("11-15-2015 10:00", "test\tparm1\tparm2\tparm3\tparm4\tparm5\tparm6\tparm7\tparm8\tparm9", new string[] {"test\tparm1\tparm2\tparm3\tparm4\tparm5\tparm6\tparm7\tparm8\tparm9", "test", "parm1", "parm2", "parm3", "parm4", "parm5", "parm6", "parm7", "parm8", "parm9"})]
-        [TestCase("11-15-2015 10:00", "test\tparm1\tparm2\tparm3\tparm4\tparm5\tparm6\tparm7\tparm8\tparm9\tparm10", new string[] {"test\tparm1\tparm2\tparm3\tparm4\tparm5\tparm6\tparm7\tparm8\tparm9\tparm10", "test", "parm1", "parm2", "parm3", "parm4", "parm5", "parm6", "parm7", "parm8", "parm9"})]
-        [TestCase("11-15-2015 10:00", "test\tparm1\t\tparm3", new string[] {"test\tparm1\t\tparm3", "test", "parm1", "", "parm3", null, null, null, null, null, null})]
-        [Test]
-        public void TestMessageSplit(string sPartition, string sMessage, string []rgsExpected)
-        {
-            AzLogModel azlm = new AzLogModel();
-
-            azlm.AddTestDataPartition(DateTime.Parse(sPartition), new Int64[] {10}, new string[] {sMessage});
-
-            BuildView(azlm, new CompareLogEntryTickCount(azlm));
-
-            AzLogEntry azle = AzleItem(0);
-
-            Assert.AreEqual(rgsExpected[0], azle.Message);
-            Assert.AreEqual(rgsExpected[1], azle.Message0);
-            Assert.AreEqual(rgsExpected[2], azle.Message1);
-            Assert.AreEqual(rgsExpected[3], azle.Message2);
-            Assert.AreEqual(rgsExpected[4], azle.Message3);
-            Assert.AreEqual(rgsExpected[5], azle.Message4);
-            Assert.AreEqual(rgsExpected[6], azle.Message5);
-            Assert.AreEqual(rgsExpected[7], azle.Message6);
-            Assert.AreEqual(rgsExpected[8], azle.Message7);
-            Assert.AreEqual(rgsExpected[9], azle.Message8);
-        }
-
-        [TestCase("11-15-2015 10:00", new Int64[] {60, 200, 30, 230}, "11-15-2015 12:00", new long[] {360, 300, 330, 430})]
-        [TestCase("11-15-2015 12:00", new Int64[] {360, 300, 330, 430}, "11-15-2015 10:00", new long[] {60, 200, 30, 230})]
-        [TestCase("11-15-2015 10:00", new Int64[] {20, 200, 230, 430}, "11-15-2015 12:00", new long[] {220, 400, 430, 530})]
-        [TestCase("11-15-2015 12:00", new Int64[] {220, 400, 430, 530}, "11-15-2015 10:00", new long[] {20, 200, 230, 430})]
-        [Test]
-        public void TestSortTwoPartitions(string sPartition, Int64[] rg, string sPartition2, Int64[] rg2)
-        {
-            AzLogModel azlm = new AzLogModel();
-
-            azlm.AddTestDataPartition(DateTime.Parse(sPartition), rg, null);
-            azlm.AddTestDataPartition(DateTime.Parse(sPartition2), rg2, null);
-            List<Int64> pls = new List<Int64>();
-
-            foreach (Int64 n in rg)
-                pls.Add(n);
-
-            foreach (Int64 n in rg2)
-                pls.Add(n);
-
-            pls.Sort();
-
-            BuildView(azlm, new CompareLogEntryTickCount(azlm));
-
-            for (int i = 0; i < pls.Count; i++)
-                Assert.AreEqual(pls[i], AzleItem(i).EventTickCount);
-        }
-    }
+  
 }
 

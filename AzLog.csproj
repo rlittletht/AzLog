@@ -96,6 +96,7 @@
     <Compile Include="AzLogTest.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="AzLogView.cs" />
     <Compile Include="AzLogViewSettings.cs" />
     <Compile Include="AzLogWindow.cs">
       <SubType>Form</SubType>
