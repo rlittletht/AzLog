@@ -95,6 +95,12 @@ namespace AzLog
 
         #region View Settings/Selection
 
+        void DirtyView(bool fDirty)
+        {
+            m_pbSave.Enabled = fDirty;
+            m_azlvs.Dirty = fDirty;
+        }
+
         /* C R E A T E  N E W  V I E W */
         /*----------------------------------------------------------------------------
         	%%Function: CreateNewView
@@ -113,10 +119,9 @@ namespace AzLog
 
                 AzLogViewSettings azlvs = m_azlvs.Clone();
                 azlvs.SetName(sName);
-                m_cbView.Items.Add(azlvs);
-                m_cbView.SelectedIndex = m_cbView.Items.Count - 1;
-
-                m_azlvs = azlvs;
+                m_cbView.Items.Insert(m_cbView.Items.Count - 1, azlvs);
+                m_cbView.SelectedIndex = m_cbView.Items.Count - 2;
+                //m_azlvs = azlvs;
                 }
         }
 
@@ -135,6 +140,7 @@ namespace AzLog
             if (azlvs.Name == "<New...>")
                 {
                 CreateNewView();
+                DirtyView(true);
                 }
             else
                 {
@@ -177,6 +183,7 @@ namespace AzLog
 
             m_azlvs.Save();
             m_ilc.SetDefaultView(m_azlvs.Name);
+            DirtyView(false);
         }
 
         /* I  V I E W  F R O M  N A M E */
@@ -252,6 +259,7 @@ namespace AzLog
 
             SetupListViewForView(m_azlvs);
             SetupContextMenu();
+            DirtyView(m_azlvs.Dirty);
         }
 
 
@@ -279,10 +287,13 @@ namespace AzLog
                 AzLogViewSettings.AzLogViewColumn azlvc = azlvs.Column(i);
 
                 m_lvLog.Columns.Add(new ColumnHeader());
-                m_lvLog.Columns[i].Text = azlvc.Name;
+                m_lvLog.Columns[i].Text = azlvc.Title;
+                m_lvLog.Columns[i].Tag = azlvc.Name;
                 m_lvLog.Columns[i].Width = azlvc.Width;
                 }
 
+            if (m_azlv != null)
+                m_azlv.BumpGeneration();
             m_lvLog.EndUpdate();
             // m_lvLog.VirtualListSize = 0;
         }
@@ -396,10 +407,13 @@ namespace AzLog
             m_ctxmHeader.Items.Clear();
 
             ToolStripMenuItem tsmi = new ToolStripMenuItem {Text = "Remove Column...", Tag = null, Checked = false};
-
             tsmi.Click += HandleRemoveHeaderItem;
-
             m_ctxmHeader.Items.Add(tsmi);
+
+            tsmi = new ToolStripMenuItem {Text = "Rename column...", Tag = null, Checked = false};
+            tsmi.Click += HandleRenameHeaderItem;
+            m_ctxmHeader.Items.Add(tsmi);
+
             tsmi = new ToolStripMenuItem {Text = "-------------------", Enabled = false};
 
             m_ctxmHeader.Items.Add(tsmi);
@@ -516,7 +530,7 @@ namespace AzLog
                 if (iazlvc == -1)
                     {
                     // we are adding this column
-                    m_azlvs.AddLogViewColumn(dcd.sName, dcd.nWidthDefault, dcd.lc, true);
+                    m_azlvs.AddLogViewColumn(dcd.sName, dcd.sName, dcd.nWidthDefault, dcd.lc, true);
                     iazlvc = m_azlvs.IazlvcFind(dcd.sName);
                     }
                 else
@@ -532,6 +546,7 @@ namespace AzLog
                 m_azlv.BumpGeneration();
                 m_lvLog.VirtualListSize = c;
                 }
+            DirtyView(true);
         }
 
         /* R E M O V E  H E A D E R */
@@ -556,6 +571,7 @@ namespace AzLog
                 m_azlv.BumpGeneration();
                 m_lvLog.VirtualListSize = c;
                 }
+            DirtyView(true);
         }
 
         /* H A N D L E  R E M O V E  H E A D E R  I T E M */
@@ -569,7 +585,29 @@ namespace AzLog
         private void HandleRemoveHeaderItem(object sender, EventArgs e)
         {
             RemoveHeader(((ColumnHeader) ((((ToolStripMenuItem) sender).GetCurrentParent()).Tag)).Text);
+            DirtyView(true);
             // or we could just get this from m_ctxmHeader.Tag...
+        }
+
+        /* H A N D L E  R E N A M E  H E A D E R  I T E M */
+        /*----------------------------------------------------------------------------
+        	%%Function: HandleRenameHeaderItem
+        	%%Qualified: AzLog.AzLogWindow.HandleRenameHeaderItem
+        	%%Contact: rlittle
+        	
+            Rename the text of the column. The actual column name remains in the tag
+        ----------------------------------------------------------------------------*/
+        private void HandleRenameHeaderItem(object sender, EventArgs e)
+        {
+            ColumnHeader ch = (ColumnHeader) ((((ToolStripMenuItem) sender).GetCurrentParent()).Tag);
+
+            string sName;
+            if (TCore.UI.InputBox.ShowInputBox("New column name", "Column name", ch.Text, out sName))
+                {
+                m_azlvs.AzlvcFromName((string) ch.Tag).Title = sName;
+                ch.Text = sName;
+                }
+            DirtyView(true);
         }
 
         /* D O  C O L U M N  R E O R D E R */
@@ -583,10 +621,35 @@ namespace AzLog
         private void DoColumnReorder(object sender, ColumnReorderedEventArgs e)
         {
             m_azlvs.MoveColumn(e.OldDisplayIndex, e.NewDisplayIndex);   // just notify it of the move, this doesn't change anything until we save because the listview already did the move for us.
+            DirtyView(true);
             // really, this is just about remembering the tab order...
         }
 
+        /* N O T I F Y  C O L U M N  W I D T H  C H A N G E D */
+        /*----------------------------------------------------------------------------
+        	%%Function: NotifyColumnWidthChanged
+        	%%Qualified: AzLog.AzLogWindow.NotifyColumnWidthChanged
+        	%%Contact: rlittle
+        
+            Just make note of the fact that the column widths changed
+        ----------------------------------------------------------------------------*/
+        private void NotifyColumnWidthChanged(object sender, ColumnWidthChangedEventArgs e)
+        {
+            AzLogViewSettings.AzLogViewColumn azlvc = m_azlvs.AzlvcFromName((string) m_lvLog.Columns[e.ColumnIndex].Tag);
+
+            if (azlvc != null)
+                {
+                if (azlvc.Width != m_lvLog.Columns[e.ColumnIndex].Width)
+                    {
+                    azlvc.Width = m_lvLog.Columns[e.ColumnIndex].Width;
+                    DirtyView(true);
+                    }
+                }
+            else if (m_lvLog.Columns[e.ColumnIndex].Tag != null)
+                throw (new Exception("no column found!"));
+        }
         #endregion
+
     }
 
   

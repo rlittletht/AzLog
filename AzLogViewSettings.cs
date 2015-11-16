@@ -16,10 +16,12 @@ namespace AzLog
         private List<AzLogViewColumn> m_plazlvc;
         private List<int> m_pliazlvc; // the mapped tab order for saving later.  starts out with "identity"
         public string Name => m_sName;
+        private bool m_fDirty;
 
         public class AzLogViewColumn
         {
             private string m_sName;
+            private string m_sTitle;
             private int m_nWidth;
             private bool m_fVisible;
             private AzLogEntry.LogColumn m_azlvc;
@@ -27,6 +29,11 @@ namespace AzLog
             public string Name => m_sName;
             public AzLogEntry.LogColumn DataColumn => m_azlvc;
 
+            public string Title
+            {
+                get { return m_sTitle; }
+                set { m_sTitle = value; }
+            }
             public int Width
             {
                 get { return m_nWidth; }
@@ -41,20 +48,21 @@ namespace AzLog
 
             public override string ToString()
             {
-                return m_sName;
+                return m_sTitle;
             }
 
-            public AzLogViewColumn(string sName, int nWidth, AzLogEntry.LogColumn azlvc, bool fVisible)
+            public AzLogViewColumn(string sName, string sTitle, int nWidth, AzLogEntry.LogColumn azlvc, bool fVisible)
             {
                 m_sName = sName;
                 m_nWidth = nWidth;
                 m_azlvc = azlvc;
                 m_fVisible = fVisible;
+                m_sTitle = sTitle;
             }
 
             public AzLogViewColumn Clone()
             {
-                AzLogViewColumn azlvc = new AzLogViewColumn(m_sName, m_nWidth, m_azlvc, m_fVisible);
+                AzLogViewColumn azlvc = new AzLogViewColumn(m_sName, m_sTitle, m_nWidth, m_azlvc, m_fVisible);
 
                 return azlvc;
             }
@@ -79,6 +87,9 @@ namespace AzLog
             return m_sName;
         }
 
+        public bool Dirty { get { return m_fDirty; } set { m_fDirty = value; } }
+        #region Column Handling
+
         public AzLogViewColumn Column(int i)
         {
             return m_plazlvc[i];
@@ -101,6 +112,7 @@ namespace AzLog
         {
             m_plazlvc.Add(azlvc);
             m_pliazlvc.Add(m_pliazlvc.Count);   // adds are always identity mapping because they are appended
+            m_fDirty = true;
         }
 
         public void MoveColumn(int iSource, int iDest)
@@ -113,6 +125,7 @@ namespace AzLog
                 iDest--;
 
             m_pliazlvc.Insert(iDest, iazlvc);
+            m_fDirty = true;
         }
 
         [TestCase("sMessage", 9, 9, 9, "Identity at the end")]
@@ -156,10 +169,15 @@ namespace AzLog
                 }
             return -1;
         }
+        #endregion
 
         public AzLogViewSettings Clone()
         {
             AzLogViewSettings azlvs = new AzLogViewSettings(m_sName);
+
+            azlvs.Dirty = true;
+            azlvs.m_plazlvc.Clear();
+            azlvs.m_pliazlvc.Clear();
 
             int i;
             for (i = 0; i < ColumnCount(); i++)
@@ -180,6 +198,7 @@ namespace AzLog
             m_pliazlvc = new List<int>();
             m_sName = sName;
             Load();
+            m_fDirty = false;
         }
 
         public AzLogViewSettings()
@@ -195,6 +214,7 @@ namespace AzLog
                 new Settings.SettingsElt("Width", Settings.Type.Int, 64, ""),
                 new Settings.SettingsElt("DataLogColumn", Settings.Type.Int, 9, ""),
                 new Settings.SettingsElt("Visible", Settings.Type.Bool, true, ""),
+                new Settings.SettingsElt("Title", Settings.Type.Str, "", "")
             };
 
         /* K E Y  S E T T I N G S */
@@ -251,11 +271,16 @@ namespace AzLog
                 int nWidth = ste.NValue("Width");
                 AzLogEntry.LogColumn azlc = (AzLogEntry.LogColumn) ste.NValue("DataLogColumn");
                 bool fVisible = ste.FValue("Visible");
+                string sTitle = ste.SValue("Title");
 
-                AddLogViewColumn((string) ste.Tag, nWidth, azlc, fVisible);
+                if (sTitle == "")
+                    sTitle = (string) ste.Tag;
+
+                AddLogViewColumn((string) ste.Tag, sTitle, nWidth, azlc, fVisible);
                 }
 
             rk.Close();
+            m_fDirty = false;
         }
 
         /* S A V E */
@@ -297,10 +322,12 @@ namespace AzLog
                 ste.SetNValue("Width", azlvc.Width);
                 ste.SetNValue("DataLogColumn", ((int) azlvc.DataColumn));
                 ste.SetFValue("Visible", azlvc.Visible);
+                ste.SetSValue("Title", azlvc.Title);
 
                 ste.Save();
                 }
             rk.Close();
+            m_fDirty = false;
         }
         #endregion
 
@@ -361,13 +388,14 @@ namespace AzLog
             foreach (DefaultColumnDef dcd in _rgdcd)
                 {
                 if (dcd.fVisibleDefault)
-                    AddLogViewColumn(dcd.sName, dcd.nWidthDefault, dcd.lc, true);
+                    AddLogViewColumn(dcd.sName, dcd.sName, dcd.nWidthDefault, dcd.lc, true);
                 }
         }
 
-        public void AddLogViewColumn(string sName, int nWidth, AzLogEntry.LogColumn azlc, bool fVisible)
+        public void AddLogViewColumn(string sName, string sTitle, int nWidth, AzLogEntry.LogColumn azlc, bool fVisible)
         {
-            AddColumn(new AzLogViewColumn(sName, nWidth, azlc, fVisible));
+            AddColumn(new AzLogViewColumn(sName, sTitle, nWidth, azlc, fVisible));
+            m_fDirty = true;
         }
 
         #endregion 
@@ -388,8 +416,10 @@ namespace AzLog
 
             if (azlvc != null)
                 azlvc.Width = nWidth;
+            m_fDirty = true;
         }
 
+        // TODO: Need to make this work for Show. Right now it assumes hide always.
         public bool ShowHideColumn(string sName, bool fVisible)
         {
             AzLogViewColumn azlvc = AzlvcFromName(sName);
@@ -397,6 +427,7 @@ namespace AzLog
             if (azlvc != null)
                 {
                 m_plazlvc.Remove(azlvc);
+                m_fDirty = true;
 //                bool fVisibleSav = azlvc.Visible;
                 //azlvc.Visible = fVisible;
                 //return fVisibleSav;

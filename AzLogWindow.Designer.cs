@@ -101,6 +101,7 @@
             this.m_lvLog.View = System.Windows.Forms.View.Details;
             this.m_lvLog.VirtualMode = true;
             this.m_lvLog.ColumnReordered += new System.Windows.Forms.ColumnReorderedEventHandler(this.DoColumnReorder);
+            this.m_lvLog.ColumnWidthChanged += new System.Windows.Forms.ColumnWidthChangedEventHandler(this.NotifyColumnWidthChanged);
             this.m_lvLog.RetrieveVirtualItem += new System.Windows.Forms.RetrieveVirtualItemEventHandler(this.GetListViewItem);
             // 
             // ctxMenuList
