@@ -168,6 +168,7 @@
             this.m_pbEndFF.TabIndex = 20;
             this.m_pbEndFF.Text = ">>";
             this.m_pbEndFF.UseVisualStyleBackColor = true;
+            this.m_pbEndFF.Click += new System.EventHandler(this.EndBumpFastForward);
             // 
             // m_pbStartFF
             // 
@@ -177,6 +178,7 @@
             this.m_pbStartFF.TabIndex = 22;
             this.m_pbStartFF.Text = ">>";
             this.m_pbStartFF.UseVisualStyleBackColor = true;
+            this.m_pbStartFF.Click += new System.EventHandler(this.StartBumpFastForward);
             // 
             // m_pbStartF
             // 
@@ -186,6 +188,7 @@
             this.m_pbStartF.TabIndex = 21;
             this.m_pbStartF.Text = ">";
             this.m_pbStartF.UseVisualStyleBackColor = true;
+            this.m_pbStartF.Click += new System.EventHandler(this.StartBumpForward);
             // 
             // m_pbEndR
             // 
@@ -195,6 +198,7 @@
             this.m_pbEndR.TabIndex = 24;
             this.m_pbEndR.Text = "<";
             this.m_pbEndR.UseVisualStyleBackColor = true;
+            this.m_pbEndR.Click += new System.EventHandler(this.EndBumpRewind);
             // 
             // m_pbEndFR
             // 
@@ -204,6 +208,7 @@
             this.m_pbEndFR.TabIndex = 23;
             this.m_pbEndFR.Text = "<<";
             this.m_pbEndFR.UseVisualStyleBackColor = true;
+            this.m_pbEndFR.Click += new System.EventHandler(this.EndBumpFastRewind);
             // 
             // m_pbStartR
             // 
@@ -213,6 +218,7 @@
             this.m_pbStartR.TabIndex = 26;
             this.m_pbStartR.Text = "<";
             this.m_pbStartR.UseVisualStyleBackColor = true;
+            this.m_pbStartR.Click += new System.EventHandler(this.StartBumpReverse);
             // 
             // m_pbStartFR
             // 
@@ -222,6 +228,7 @@
             this.m_pbStartFR.TabIndex = 25;
             this.m_pbStartFR.Text = "<<";
             this.m_pbStartFR.UseVisualStyleBackColor = true;
+            this.m_pbStartFR.Click += new System.EventHandler(this.StartBumpFastReverse);
             // 
             // AzLogWindow
             // 

@@ -671,6 +671,47 @@ namespace AzLog
         }
         #endregion
 
+        void BumpEndHours(TextBox eb, int nHours, bool fStart)
+        {
+            // figure out the timespan being requested
+            DateTime dttmMin, dttmMac;
+
+            AzLogModel.FillMinMacFromStartEnd(eb.Text, eb.Text, out dttmMin, out dttmMac);
+
+            // update our filter so we will see this
+
+            // we intimately know which items to edit. if this ever turns out to be false, then we will have to find
+            // the right parts of the filter, or just rebuild it. but that will be slower (ack)
+            AzLogFilter.AzLogFilterOperation azlfo = m_azlv.Filter.Operations[fStart ? 0 : 1];  // start is first item, end is last
+            
+            if (azlfo.Op != AzLogFilter.AzLogFilterOperation.OperationType.Value ||
+                !azlfo.Condition.RHS.FEvaluate(AzLogFilter.AzLogFilterCondition.CmpOp.Eq, new AzLogFilter.AzLogFilterValue(dttmMac), null))
+                {
+                throw new Exception("did not find correct end date value in filter");
+                }
+
+            // now add an hour to the end
+            dttmMac = dttmMac.AddHours(nHours);
+            azlfo.Condition.RHS.OValue = dttmMac;   // update our filter to include the new date range, otherwise the model will get new data and we won't show it
+            m_azlv.RebuildView();
+            // 10/26/2015 9:00
+
+            eb.Text = dttmMac.ToString("MM/dd/yyyy HH:mm");
+
+            // at this point, all our changes were to "dttmMac" (dttmMin started out same as dttmMac...so we could just 
+            // blissfully use dttmMac.  But for the fetch, it matters if we are growing or shrinking our range
+            if (fStart)
+                {
+                if (nHours < 0)
+                    m_azlm.FFetchPartitionsForDateRange(dttmMac, dttmMin); // i know, confusing. but we modified dttmMac...
+                }
+            else
+                {
+                if (nHours > 0)
+                    m_azlm.FFetchPartitionsForDateRange(dttmMin, dttmMac);
+                }
+        }
+    
         /* E N D  B U M P  F O R W A R D */
         /*----------------------------------------------------------------------------
         	%%Function: EndBumpForward
@@ -681,29 +722,42 @@ namespace AzLog
         ----------------------------------------------------------------------------*/
         private void EndBumpForward(object sender, EventArgs e)
         {
-            // figure out the timespan being requested
-            DateTime dttmMin, dttmMac;
+            BumpEndHours(m_ebEnd, 1, false);
+        }
 
-            AzLogModel.FillMinMacFromStartEnd(m_ebEnd.Text, m_ebEnd.Text, out dttmMin, out dttmMac);
+        private void EndBumpFastForward(object sender, EventArgs e)
+        {
+            BumpEndHours(m_ebEnd, 12, false);
+        }
 
-            // update our filter so we will see this
+        private void EndBumpRewind(object sender, EventArgs e)
+        {
+            BumpEndHours(m_ebEnd, -1, false);
+        }
 
-            // for now, we just know that the 2nd condition is our "end dttm"
-            AzLogFilter.AzLogFilterOperation azlfo = m_azlv.Filter.Operations[1];
-            if (azlfo.Op != AzLogFilter.AzLogFilterOperation.OperationType.Value ||
-                !azlfo.Condition.RHS.FEvaluate(AzLogFilter.AzLogFilterCondition.CmpOp.Eq, new AzLogFilter.AzLogFilterValue(dttmMac), null))
-                {
-                throw new Exception("did not find correct end date value in filter");
-                }
+        private void EndBumpFastRewind(object sender, EventArgs e)
+        {
+            BumpEndHours(m_ebEnd, -12, false);
+        }
 
-            // now add an hour to the end
-            dttmMac = dttmMac.AddHours(1);
-            azlfo.Condition.RHS.OValue = dttmMac;   // update our filter to include the new date range, otherwise the model will get new data and we won't show it
-            m_azlv.RebuildView();
-            // 10/26/2015 9:00
+        private void StartBumpFastForward(object sender, EventArgs e)
+        {
+            BumpEndHours(m_ebStart, 12, true);
+        }
 
-            m_ebEnd.Text = dttmMac.ToString("MM/dd/yyyy HH:mm");
-            m_azlm.FFetchPartitionsForDateRange(dttmMin, dttmMac);
+        private void StartBumpForward(object sender, EventArgs e)
+        {
+            BumpEndHours(m_ebStart, 1, true);
+        }
+
+        private void StartBumpReverse(object sender, EventArgs e)
+        {
+            BumpEndHours(m_ebStart, -1, true);
+        }
+
+        private void StartBumpFastReverse(object sender, EventArgs e)
+        {
+            BumpEndHours(m_ebStart, -12, true);
         }
     }
 
