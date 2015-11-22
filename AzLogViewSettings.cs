@@ -426,7 +426,19 @@ namespace AzLog
 
             if (azlvc != null)
                 {
-                m_plazlvc.Remove(azlvc);
+                // we can't just remove this from m_plazlvc -- we also have to update our tab order mapping
+                // because we just changed all the indexes
+                int iazlvc = m_plazlvc.IndexOf(azlvc);
+
+                for (int i = 0; i < m_pliazlvc.Count; i++)
+                    {
+                    if (m_pliazlvc[i] == iazlvc)
+                        m_pliazlvc.RemoveAt(i);
+                    else if (m_pliazlvc[i] > iazlvc)
+                        m_pliazlvc[i]--;
+                    }
+
+                m_plazlvc.RemoveAt(iazlvc);
                 m_fDirty = true;
 //                bool fVisibleSav = azlvc.Visible;
                 //azlvc.Visible = fVisible;

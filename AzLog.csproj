@@ -91,6 +91,7 @@
       <DependentUpon>AzLog.cs</DependentUpon>
     </Compile>
     <Compile Include="AzLogEntries.cs" />
+    <Compile Include="AzLogFilter.cs" />
     <Compile Include="AzLogModel.cs" />
     <Compile Include="AzLogParts.cs" />
     <Compile Include="AzLogTest.cs">

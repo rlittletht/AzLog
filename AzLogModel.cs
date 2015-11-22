@@ -126,13 +126,13 @@ namespace AzLog
         #region Data Retrieval
         /* F E T C H  P A R T I T I O N S  F O R  D A T E  R A N G E */
         /*----------------------------------------------------------------------------
-        	%%Function: FetchPartitionsForDateRange
-        	%%Qualified: AzLog.AzLogModel.FetchPartitionsForDateRange
+        	%%Function: FFetchPartitionsForDateRange
+        	%%Qualified: AzLog.AzLogModel.FFetchPartitionsForDateRange
         	%%Contact: rlittle
         	
             Fetch all the partitions in the given range.
         ----------------------------------------------------------------------------*/
-        public async Task<bool> FetchPartitionsForDateRange(DateTime dttmMin, DateTime dttmMac)
+        public bool FFetchPartitionsForDateRange(DateTime dttmMin, DateTime dttmMac)
         {
 
             while (dttmMin < dttmMac)
@@ -140,7 +140,7 @@ namespace AzLog
                 if (m_azles.GetPartState(dttmMin) != AzLogPartState.Complete)
                     {
                     m_azles.UpdatePart(dttmMin, dttmMin.AddHours(1), AzLogPartState.Pending);
-                    FetchPartitionForDate(dttmMin);
+                    FetchPartitionForDateAsync(dttmMin);
                     }
                 dttmMin = dttmMin.AddHours(1);
                 }
@@ -149,14 +149,14 @@ namespace AzLog
 
         /* F E T C H  P A R T I T I O N  F O R  D A T E */
         /*----------------------------------------------------------------------------
-        	%%Function: FetchPartitionForDate
-        	%%Qualified: AzLog.AzLogModel.FetchPartitionForDate
+        	%%Function: FetchPartitionForDateAsync
+        	%%Qualified: AzLog.AzLogModel.FetchPartitionForDateAsync
         	%%Contact: rlittle
         	
             Fetch the partition for the given dttm (assumes that the hour is also
             filled in)
         ----------------------------------------------------------------------------*/
-        public async Task<bool> FetchPartitionForDate(DateTime dttm)
+        public async Task<bool> FetchPartitionForDateAsync(DateTime dttm)
         {
             TableQuery<AzLogEntryEntity> tq =
                 new TableQuery<AzLogEntryEntity>().Where(

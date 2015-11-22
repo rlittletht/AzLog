@@ -40,6 +40,14 @@
             this.m_cbView = new System.Windows.Forms.ComboBox();
             this.m_pbSave = new System.Windows.Forms.Button();
             this.m_ctxmHeader = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.m_pbEndF = new System.Windows.Forms.Button();
+            this.m_pbEndFF = new System.Windows.Forms.Button();
+            this.m_pbStartFF = new System.Windows.Forms.Button();
+            this.m_pbStartF = new System.Windows.Forms.Button();
+            this.m_pbEndR = new System.Windows.Forms.Button();
+            this.m_pbEndFR = new System.Windows.Forms.Button();
+            this.m_pbStartR = new System.Windows.Forms.Button();
+            this.m_pbStartFR = new System.Windows.Forms.Button();
             this.ctxMenuList.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -55,7 +63,7 @@
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(187, 50);
+            this.label2.Location = new System.Drawing.Point(326, 28);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(26, 13);
             this.label2.TabIndex = 13;
@@ -63,7 +71,7 @@
             // 
             // m_ebEnd
             // 
-            this.m_ebEnd.Location = new System.Drawing.Point(219, 47);
+            this.m_ebEnd.Location = new System.Drawing.Point(289, 44);
             this.m_ebEnd.Name = "m_ebEnd";
             this.m_ebEnd.Size = new System.Drawing.Size(100, 20);
             this.m_ebEnd.TabIndex = 12;
@@ -72,7 +80,7 @@
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(46, 50);
+            this.label1.Location = new System.Drawing.Point(78, 29);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(29, 13);
             this.label1.TabIndex = 15;
@@ -80,7 +88,7 @@
             // 
             // m_ebStart
             // 
-            this.m_ebStart.Location = new System.Drawing.Point(81, 47);
+            this.m_ebStart.Location = new System.Drawing.Point(63, 44);
             this.m_ebStart.Name = "m_ebStart";
             this.m_ebStart.Size = new System.Drawing.Size(100, 20);
             this.m_ebStart.TabIndex = 14;
@@ -121,7 +129,7 @@
             // m_cbView
             // 
             this.m_cbView.FormattingEnabled = true;
-            this.m_cbView.Location = new System.Drawing.Point(348, 46);
+            this.m_cbView.Location = new System.Drawing.Point(580, 42);
             this.m_cbView.Name = "m_cbView";
             this.m_cbView.Size = new System.Drawing.Size(121, 21);
             this.m_cbView.TabIndex = 17;
@@ -129,7 +137,7 @@
             // 
             // m_pbSave
             // 
-            this.m_pbSave.Location = new System.Drawing.Point(485, 45);
+            this.m_pbSave.Location = new System.Drawing.Point(717, 41);
             this.m_pbSave.Name = "m_pbSave";
             this.m_pbSave.Size = new System.Drawing.Size(75, 23);
             this.m_pbSave.TabIndex = 18;
@@ -142,11 +150,92 @@
             this.m_ctxmHeader.Name = "m_ctxmHeader";
             this.m_ctxmHeader.Size = new System.Drawing.Size(61, 4);
             // 
+            // m_pbEndF
+            // 
+            this.m_pbEndF.Location = new System.Drawing.Point(384, 42);
+            this.m_pbEndF.Name = "m_pbEndF";
+            this.m_pbEndF.Size = new System.Drawing.Size(28, 23);
+            this.m_pbEndF.TabIndex = 19;
+            this.m_pbEndF.Text = ">";
+            this.m_pbEndF.UseVisualStyleBackColor = true;
+            this.m_pbEndF.Click += new System.EventHandler(this.EndBumpForward);
+            // 
+            // m_pbEndFF
+            // 
+            this.m_pbEndFF.Location = new System.Drawing.Point(409, 42);
+            this.m_pbEndFF.Name = "m_pbEndFF";
+            this.m_pbEndFF.Size = new System.Drawing.Size(28, 23);
+            this.m_pbEndFF.TabIndex = 20;
+            this.m_pbEndFF.Text = ">>";
+            this.m_pbEndFF.UseVisualStyleBackColor = true;
+            // 
+            // m_pbStartFF
+            // 
+            this.m_pbStartFF.Location = new System.Drawing.Point(185, 42);
+            this.m_pbStartFF.Name = "m_pbStartFF";
+            this.m_pbStartFF.Size = new System.Drawing.Size(28, 23);
+            this.m_pbStartFF.TabIndex = 22;
+            this.m_pbStartFF.Text = ">>";
+            this.m_pbStartFF.UseVisualStyleBackColor = true;
+            // 
+            // m_pbStartF
+            // 
+            this.m_pbStartF.Location = new System.Drawing.Point(160, 42);
+            this.m_pbStartF.Name = "m_pbStartF";
+            this.m_pbStartF.Size = new System.Drawing.Size(28, 23);
+            this.m_pbStartF.TabIndex = 21;
+            this.m_pbStartF.Text = ">";
+            this.m_pbStartF.UseVisualStyleBackColor = true;
+            // 
+            // m_pbEndR
+            // 
+            this.m_pbEndR.Location = new System.Drawing.Point(262, 42);
+            this.m_pbEndR.Name = "m_pbEndR";
+            this.m_pbEndR.Size = new System.Drawing.Size(28, 23);
+            this.m_pbEndR.TabIndex = 24;
+            this.m_pbEndR.Text = "<";
+            this.m_pbEndR.UseVisualStyleBackColor = true;
+            // 
+            // m_pbEndFR
+            // 
+            this.m_pbEndFR.Location = new System.Drawing.Point(238, 42);
+            this.m_pbEndFR.Name = "m_pbEndFR";
+            this.m_pbEndFR.Size = new System.Drawing.Size(28, 23);
+            this.m_pbEndFR.TabIndex = 23;
+            this.m_pbEndFR.Text = "<<";
+            this.m_pbEndFR.UseVisualStyleBackColor = true;
+            // 
+            // m_pbStartR
+            // 
+            this.m_pbStartR.Location = new System.Drawing.Point(36, 42);
+            this.m_pbStartR.Name = "m_pbStartR";
+            this.m_pbStartR.Size = new System.Drawing.Size(28, 23);
+            this.m_pbStartR.TabIndex = 26;
+            this.m_pbStartR.Text = "<";
+            this.m_pbStartR.UseVisualStyleBackColor = true;
+            // 
+            // m_pbStartFR
+            // 
+            this.m_pbStartFR.Location = new System.Drawing.Point(12, 42);
+            this.m_pbStartFR.Name = "m_pbStartFR";
+            this.m_pbStartFR.Size = new System.Drawing.Size(28, 23);
+            this.m_pbStartFR.TabIndex = 25;
+            this.m_pbStartFR.Text = "<<";
+            this.m_pbStartFR.UseVisualStyleBackColor = true;
+            // 
             // AzLogWindow
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(898, 623);
+            this.Controls.Add(this.m_pbStartR);
+            this.Controls.Add(this.m_pbStartFR);
+            this.Controls.Add(this.m_pbEndR);
+            this.Controls.Add(this.m_pbEndFR);
+            this.Controls.Add(this.m_pbStartFF);
+            this.Controls.Add(this.m_pbStartF);
+            this.Controls.Add(this.m_pbEndFF);
+            this.Controls.Add(this.m_pbEndF);
             this.Controls.Add(this.m_pbSave);
             this.Controls.Add(this.m_cbView);
             this.Controls.Add(this.m_lvLog);
@@ -177,5 +266,13 @@
         private System.Windows.Forms.ContextMenuStrip m_ctxmHeader;
         private System.Windows.Forms.ContextMenuStrip ctxMenuList;
         private System.Windows.Forms.ToolStripMenuItem tsmiFilter;
+        private System.Windows.Forms.Button m_pbEndF;
+        private System.Windows.Forms.Button m_pbEndFF;
+        private System.Windows.Forms.Button m_pbStartFF;
+        private System.Windows.Forms.Button m_pbStartF;
+        private System.Windows.Forms.Button m_pbEndR;
+        private System.Windows.Forms.Button m_pbEndFR;
+        private System.Windows.Forms.Button m_pbStartR;
+        private System.Windows.Forms.Button m_pbStartFR;
     }
 }

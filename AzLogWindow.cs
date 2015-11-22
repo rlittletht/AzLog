@@ -95,6 +95,13 @@ namespace AzLog
 
         #region View Settings/Selection
 
+        /* D I R T Y  V I E W */
+        /*----------------------------------------------------------------------------
+        	%%Function: DirtyView
+        	%%Qualified: AzLog.AzLogWindow.DirtyView
+        	%%Contact: rlittle
+        	
+        ----------------------------------------------------------------------------*/
         void DirtyView(bool fDirty)
         {
             m_pbSave.Enabled = fDirty;
@@ -337,8 +344,8 @@ namespace AzLog
 
             // we don't know what partition we're going to find this data in, so launch a query 
             // from the first partition for this date range
-            // m_azlm.FetchPartitionsForDateRange(dttmMin, nHourMin, dttmMac, nHourMac);
-            m_azlm.FetchPartitionForDate(dttmMin);
+            // m_azlm.FFetchPartitionsForDateRange(dttmMin, nHourMin, dttmMac, nHourMac);
+            m_azlm.FetchPartitionForDateAsync(dttmMin);
         }
 
         public delegate void SyncViewDel(int iFirstSync, int iMacSync);
@@ -506,7 +513,7 @@ namespace AzLog
             else
                 {
                 tsmi.Checked = true;
-                AddHeader(dcd, ch.Text);
+                AddHeader(dcd, (string)ch.Tag);
                 }
         }
 
@@ -650,6 +657,28 @@ namespace AzLog
         }
         #endregion
 
+        /* E N D  B U M P  F O R W A R D */
+        /*----------------------------------------------------------------------------
+        	%%Function: EndBumpForward
+        	%%Qualified: AzLog.AzLogWindow.EndBumpForward
+        	%%Contact: rlittle
+        	
+            Bump the end for this window forward by a single partition (an hour)
+        ----------------------------------------------------------------------------*/
+        private void EndBumpForward(object sender, EventArgs e)
+        {
+            // figure out the timespan being requested
+            DateTime dttmMin, dttmMac;
+
+            AzLogModel.FillMinMacFromStartEnd(m_ebEnd.Text, m_ebEnd.Text, out dttmMin, out dttmMac);
+
+            // now add an hour to the end
+            dttmMac = dttmMac.AddHours(1);
+            // 10/26/2015 9:00
+            m_ebEnd.Text = dttmMac.ToString("MM/dd/yyyy HH:mm");
+
+            m_azlm.FFetchPartitionsForDateRange(dttmMin, dttmMac);
+        }
     }
 
   

@@ -110,8 +110,8 @@ namespace AzLog
 
             // we don't know what partition we're going to find this data in, so launch a query 
             // from the first partition for this date range
-            //m_azlm.FetchPartitionsForDateRange(dttmMin, nHourMin, dttmMac, nHourMac);
-            m_azlm.FetchPartitionsForDateRange(dttmMin, dttmMac);
+            //m_azlm.FFetchPartitionsForDateRange(dttmMin, nHourMin, dttmMac, nHourMac);
+            m_azlm.FFetchPartitionsForDateRange(dttmMin, dttmMac);
         }
 
 #if nomore
