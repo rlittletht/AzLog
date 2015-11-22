@@ -65,7 +65,7 @@ namespace AzLog
         public AzLogFilter()
         {
             m_plazlfo = new List<AzLogFilterOperation>();
-            m_idFilter = Guid.NewGuid();
+            InvalFilterID();
         }
 
         /* A D D */
@@ -78,7 +78,7 @@ namespace AzLog
         ----------------------------------------------------------------------------*/
         public void Add(AzLogFilterCondition azlfc)
         {
-            m_idFilter = Guid.NewGuid();
+            InvalFilterID();
             m_plazlfo.Add(new AzLogFilterOperation(AzLogFilterOperation.OperationType.Value, azlfc));
         }
 
@@ -92,8 +92,22 @@ namespace AzLog
         ----------------------------------------------------------------------------*/
         public void Add(AzLogFilterOperation.OperationType ot)
         {
-            m_idFilter = Guid.NewGuid();
+            InvalFilterID();
             m_plazlfo.Add(new AzLogFilterOperation(ot, null));
+        }
+
+        public List<AzLogFilterOperation> Operations => m_plazlfo;
+
+        /* I N V A L  F I L T E R  I  D */
+        /*----------------------------------------------------------------------------
+        	%%Function: InvalFilterID
+        	%%Qualified: AzLog.AzLogFilter.InvalFilterID
+        	%%Contact: rlittle
+        	
+        ----------------------------------------------------------------------------*/
+        public void InvalFilterID()
+        {
+            m_idFilter = Guid.NewGuid();        
         }
 
         /* F  E V A L U A T E */
@@ -152,15 +166,15 @@ namespace AzLog
             public DateTime m_dttmStart;
             public DateTime m_dttmEnd;
             public DateTime m_dttmRow;
-            public Dictionary<string, string> m_mpColumnValue;
+            public Dictionary<AzLogEntry.LogColumn, string> m_mpColumnValue;
 
 
-            public object OGetValue(AzLogFilterValue.ValueType vt, AzLogFilterValue.DataSource ds, string sDataSourceArg)
+            public object OGetValue(AzLogFilterValue.ValueType vt, AzLogFilterValue.DataSource ds, AzLogEntry.LogColumn lc)
             {
                 switch (ds)
                     {
                     case AzLogFilterValue.DataSource.Column:
-                        return m_mpColumnValue[sDataSourceArg];
+                        return m_mpColumnValue[lc];
                     case AzLogFilterValue.DataSource.DttmStart:
                         return m_dttmStart;
                     case AzLogFilterValue.DataSource.DttmEnd:
@@ -193,10 +207,10 @@ namespace AzLog
         {
             AzLogFilter azlf = new AzLogFilter();
             TestAzLogFilterValueMock mock = new TestAzLogFilterValueMock();
-            mock.m_mpColumnValue = new Dictionary<string, string>();
-            mock.m_mpColumnValue.Add("Test", "TestValue");
+            mock.m_mpColumnValue = new Dictionary<AzLogEntry.LogColumn, string>();
+            mock.m_mpColumnValue.Add(AzLogEntry.LogColumn.AppName, "TestValue");
 
-            azlf.Add(new AzLogFilterCondition(AzLogFilterValue.ValueType.String, AzLogFilterValue.DataSource.Column, "Test", AzLogFilterCondition.CmpOp.Eq, "TestValue"));
+            azlf.Add(new AzLogFilterCondition(AzLogFilterValue.ValueType.String, AzLogFilterValue.DataSource.Column, AzLogEntry.LogColumn.AppName, AzLogFilterCondition.CmpOp.Eq, "TestValue"));
             Assert.AreEqual(true, azlf.FEvaluate(mock));
         }
 
@@ -213,8 +227,8 @@ namespace AzLog
             TestAzLogFilterValueMock mock = new TestAzLogFilterValueMock();
             mock.m_dttmRow = DateTime.Parse(sDttmRow);
 
-            azlf.Add(new AzLogFilterCondition(AzLogFilterValue.ValueType.DateTime, AzLogFilterValue.DataSource.DttmRow, null, cmpop1, DateTime.Parse(sCmp1)));
-            azlf.Add(new AzLogFilterCondition(AzLogFilterValue.ValueType.DateTime, AzLogFilterValue.DataSource.DttmRow, null, cmpop2, DateTime.Parse(sCmp2)));
+            azlf.Add(new AzLogFilterCondition(AzLogFilterValue.ValueType.DateTime, AzLogFilterValue.DataSource.DttmRow, AzLogEntry.LogColumn.Nil, cmpop1, DateTime.Parse(sCmp1)));
+            azlf.Add(new AzLogFilterCondition(AzLogFilterValue.ValueType.DateTime, AzLogFilterValue.DataSource.DttmRow, AzLogEntry.LogColumn.Nil, cmpop2, DateTime.Parse(sCmp2)));
             azlf.Add(AzLogFilterOperation.OperationType.And);
 
             Assert.AreEqual(fExpected, azlf.FEvaluate(mock));
@@ -246,8 +260,24 @@ namespace AzLog
 
             private object m_oValue;
             private DataSource m_ds;
-            private string m_sDataSourceArg;
+            private AzLogEntry.LogColumn m_lc;
             private ValueType m_vt;
+
+            /* O  V A L U E */
+            /*----------------------------------------------------------------------------
+	            %%Function: OValue
+	            %%Contact: rlittle
+	
+                WARNING: Be VERY CAREFUL using this -- this gives you DIRECT ACCESS to the
+                internals of the filter, and lets you (almost requires that you) bypass
+                all the view rebuilding/invalidation.  THIS IS GOOD if you are just
+                doing somethig like extending the range of the view
+            ----------------------------------------------------------------------------*/
+            public object OValue
+            {
+                get { return m_oValue; }
+                set { m_oValue = value; }
+            }
 
             public AzLogFilterValue() {} // for unit test only
             /* A Z  L O G  F I L T E R  V A L U E */
@@ -258,11 +288,11 @@ namespace AzLog
             	
                 Create a value that is backed by the data source
             ----------------------------------------------------------------------------*/
-            public AzLogFilterValue(ValueType vt, DataSource ds, string sDataSourceParam)
+            public AzLogFilterValue(ValueType vt, DataSource ds, AzLogEntry.LogColumn lc)
             {
                 m_vt = vt;
                 m_ds = ds;
-                m_sDataSourceArg = sDataSourceParam;
+                m_lc = lc;
             }
 
             /* A Z  L O G  F I L T E R  V A L U E */
@@ -307,7 +337,7 @@ namespace AzLog
             ----------------------------------------------------------------------------*/
             public DateTime Dttm(ILogFilterItem ilf)
             {
-                object o = m_ds == DataSource.Static ? m_oValue : ilf.OGetValue(m_vt, m_ds, m_sDataSourceArg);
+                object o = m_ds == DataSource.Static ? m_oValue : ilf.OGetValue(m_vt, m_ds, m_lc);
 
                 if (m_vt != ValueType.DateTime)
                     throw new Exception("type mismatch");
@@ -325,7 +355,7 @@ namespace AzLog
             ----------------------------------------------------------------------------*/
             public string String(ILogFilterItem ilf)
             {
-                object o = m_ds == DataSource.Static ? m_oValue : ilf.OGetValue(m_vt, m_ds, m_sDataSourceArg);
+                object o = m_ds == DataSource.Static ? m_oValue : ilf.OGetValue(m_vt, m_ds, m_lc);
 
                 if (m_vt != ValueType.String)
                     throw new Exception("type mismatch");
@@ -497,7 +527,7 @@ namespace AzLog
                 mock.m_dttmEnd = DateTime.Parse("5/5/1995 3:00");
                 mock.m_dttmRow = DateTime.Parse("5/5/1995 1:30");
 
-                AzLogFilterValue azlfvLHS = new AzLogFilterValue(ValueType.DateTime, DataSource.DttmStart, null);
+                AzLogFilterValue azlfvLHS = new AzLogFilterValue(ValueType.DateTime, DataSource.DttmStart, AzLogEntry.LogColumn.Nil);
 
                 Assert.AreEqual(true, azlfvLHS.FEvaluate(AzLogFilterCondition.CmpOp.Gte, new AzLogFilterValue(DateTime.Parse("5/5/1995")), mock));
                 Assert.AreEqual(true, azlfvLHS.FEvaluate(AzLogFilterCondition.CmpOp.Gte, new AzLogFilterValue(DateTime.Parse("5/4/1995 19:00")), mock));
@@ -505,7 +535,7 @@ namespace AzLog
                 Assert.AreEqual(false, azlfvLHS.FEvaluate(AzLogFilterCondition.CmpOp.Gte, new AzLogFilterValue(DateTime.Parse("5/5/1995 3:00")), mock));
                 Assert.AreEqual(false, azlfvLHS.FEvaluate(AzLogFilterCondition.CmpOp.Gte, new AzLogFilterValue(DateTime.Parse("5/5/1995 4:00")), mock));
 
-                azlfvLHS = new AzLogFilterValue(ValueType.DateTime, DataSource.DttmEnd, null);
+                azlfvLHS = new AzLogFilterValue(ValueType.DateTime, DataSource.DttmEnd, AzLogEntry.LogColumn.Nil);
 
                 Assert.AreEqual(true, azlfvLHS.FEvaluate(AzLogFilterCondition.CmpOp.Gte, new AzLogFilterValue(DateTime.Parse("5/5/1995")), mock));
                 Assert.AreEqual(true, azlfvLHS.FEvaluate(AzLogFilterCondition.CmpOp.Gte, new AzLogFilterValue(DateTime.Parse("5/4/1995 19:00")), mock));
@@ -513,7 +543,7 @@ namespace AzLog
                 Assert.AreEqual(true, azlfvLHS.FEvaluate(AzLogFilterCondition.CmpOp.Gte, new AzLogFilterValue(DateTime.Parse("5/5/1995 3:00")), mock));
                 Assert.AreEqual(false, azlfvLHS.FEvaluate(AzLogFilterCondition.CmpOp.Gte, new AzLogFilterValue(DateTime.Parse("5/5/1995 4:00")), mock));
 
-                azlfvLHS = new AzLogFilterValue(ValueType.DateTime, DataSource.DttmRow, null);
+                azlfvLHS = new AzLogFilterValue(ValueType.DateTime, DataSource.DttmRow, AzLogEntry.LogColumn.Nil);
 
                 Assert.AreEqual(true, azlfvLHS.FEvaluate(AzLogFilterCondition.CmpOp.Gte, new AzLogFilterValue(DateTime.Parse("5/5/1995")), mock));
                 Assert.AreEqual(true, azlfvLHS.FEvaluate(AzLogFilterCondition.CmpOp.Gte, new AzLogFilterValue(DateTime.Parse("5/4/1995 19:00")), mock));
@@ -526,10 +556,10 @@ namespace AzLog
             public static void TestDataSourceColumn()
             {
                 TestAzLogFilterValueMock mock = new TestAzLogFilterValueMock();
-                mock.m_mpColumnValue = new Dictionary<string, string>();
-                mock.m_mpColumnValue.Add("Test", "TestValue");
+                mock.m_mpColumnValue = new Dictionary<AzLogEntry.LogColumn, string>();
+                mock.m_mpColumnValue.Add(AzLogEntry.LogColumn.AppName, "TestValue");
 
-                AzLogFilterValue azlfvLHS = new AzLogFilterValue(ValueType.String, DataSource.Column, "Test");
+                AzLogFilterValue azlfvLHS = new AzLogFilterValue(ValueType.String, DataSource.Column, AzLogEntry.LogColumn.AppName);
 
                 Assert.AreEqual(true, azlfvLHS.FEvaluate(AzLogFilterCondition.CmpOp.Gte, new AzLogFilterValue("TestValue"), mock));
             }
@@ -545,7 +575,7 @@ namespace AzLog
         // ============================================================================
         public interface ILogFilterItem
         {
-            object OGetValue(AzLogFilterValue.ValueType vt, AzLogFilterValue.DataSource ds, string sDataSourceParam);
+            object OGetValue(AzLogFilterValue.ValueType vt, AzLogFilterValue.DataSource ds, AzLogEntry.LogColumn lc);
         }
 
         // ============================================================================
@@ -578,6 +608,8 @@ namespace AzLog
             private AzLogFilterValue m_azlfvLHS;
             private AzLogFilterValue m_azlfvRHS;
 
+            public AzLogFilterValue LHS => m_azlfvLHS;
+            public AzLogFilterValue RHS => m_azlfvRHS;
             /* _  I N I T */
             /*----------------------------------------------------------------------------
             	%%Function: _Init
@@ -585,9 +617,9 @@ namespace AzLog
             	%%Contact: rlittle
             	
             ----------------------------------------------------------------------------*/
-            private void _Init(AzLogFilterValue.ValueType vt, AzLogFilterValue.DataSource dsLeft, string sDataSourceParamLeft, CmpOp cmpop, string sValueRight)
+            private void _Init(AzLogFilterValue.ValueType vt, AzLogFilterValue.DataSource dsLeft, AzLogEntry.LogColumn lc, CmpOp cmpop, string sValueRight)
             {
-                m_azlfvLHS = new AzLogFilterValue(vt, dsLeft, sDataSourceParamLeft);
+                m_azlfvLHS = new AzLogFilterValue(vt, dsLeft, lc);
                 m_azlfvRHS = new AzLogFilterValue(sValueRight);
                 m_cmpop = cmpop;
             }
@@ -599,9 +631,9 @@ namespace AzLog
             	%%Contact: rlittle
             	
             ----------------------------------------------------------------------------*/
-            private void _Init(AzLogFilterValue.ValueType vt, AzLogFilterValue.DataSource dsLeft, string sDataSourceParamLeft, CmpOp cmpop, DateTime dttmValueRight)
+            private void _Init(AzLogFilterValue.ValueType vt, AzLogFilterValue.DataSource dsLeft, AzLogEntry.LogColumn lc, CmpOp cmpop, DateTime dttmValueRight)
             {
-                m_azlfvLHS = new AzLogFilterValue(vt, dsLeft, sDataSourceParamLeft);
+                m_azlfvLHS = new AzLogFilterValue(vt, dsLeft, lc);
                 m_azlfvRHS = new AzLogFilterValue(dttmValueRight);
                 m_cmpop = cmpop;
             }
@@ -613,9 +645,9 @@ namespace AzLog
             	%%Contact: rlittle
             	
             ----------------------------------------------------------------------------*/
-            public AzLogFilterCondition(AzLogFilterValue.ValueType vt, AzLogFilterValue.DataSource dsLeft, string sDataSourceParamLeft, CmpOp cmpop, string sValueRight)
+            public AzLogFilterCondition(AzLogFilterValue.ValueType vt, AzLogFilterValue.DataSource dsLeft, AzLogEntry.LogColumn lc, CmpOp cmpop, string sValueRight)
             {
-                _Init(vt, dsLeft, sDataSourceParamLeft, cmpop, sValueRight);
+                _Init(vt, dsLeft, lc, cmpop, sValueRight);
             }
 
             /* A Z  L O G  F I L T E R  C O N D I T I O N */
@@ -625,9 +657,9 @@ namespace AzLog
             	%%Contact: rlittle
             	
             ----------------------------------------------------------------------------*/
-            public AzLogFilterCondition(AzLogFilterValue.ValueType vt, AzLogFilterValue.DataSource dsLeft, string sDataSourceParamLeft, CmpOp cmpop, DateTime dttmValueRight)
+            public AzLogFilterCondition(AzLogFilterValue.ValueType vt, AzLogFilterValue.DataSource dsLeft, AzLogEntry.LogColumn lc, CmpOp cmpop, DateTime dttmValueRight)
             {
-                _Init(vt, dsLeft, sDataSourceParamLeft, cmpop, dttmValueRight);
+                _Init(vt, dsLeft, lc, cmpop, dttmValueRight);
             }
 
             /* F  E V A L U A T E */

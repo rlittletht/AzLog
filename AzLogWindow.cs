@@ -48,12 +48,13 @@ namespace AzLog
         	%%Contact: rlittle
         	
         ----------------------------------------------------------------------------*/
-        public static AzLogWindow CreateNewWindow(AzLogModel azlm, string sViewName, ILogClient ilc)
+        public static AzLogWindow CreateNewWindow(AzLogModel azlm, string sViewName, AzLogFilter azlf, ILogClient ilc)
         {
             AzLogWindow azlw = new AzLogWindow();
 
             azlw.SetView(sViewName);
             azlw.m_azlv = new AzLogView(azlw);
+            azlw.m_azlv.SetFilter(azlf);
             azlw.m_ilc = ilc;
             azlw.m_azlm = azlm;
             azlw.m_azlv.BuildView(azlw.m_azlm, new CompareLogEntryTickCount(azlw.m_azlm));
@@ -378,6 +379,19 @@ namespace AzLog
             m_lvLog.EndUpdate();
         }
 
+        /* I N V A L  W I N D O W  F U L L */
+        /*----------------------------------------------------------------------------
+        	%%Function: InvalWindowFull
+        	%%Qualified: AzLog.AzLogWindow.InvalWindowFull
+        	%%Contact: rlittle
+        	
+        ----------------------------------------------------------------------------*/
+        public void InvalWindowFull()
+        {
+            m_lvLog.BeginUpdate();
+            m_lvLog.VirtualListSize = m_azlv.Length;
+            m_lvLog.EndUpdate();
+        }
         /* A P P E N D  U P D A T E  V I E W */
         /*----------------------------------------------------------------------------
         	%%Function: AppendUpdateView
@@ -672,11 +686,23 @@ namespace AzLog
 
             AzLogModel.FillMinMacFromStartEnd(m_ebEnd.Text, m_ebEnd.Text, out dttmMin, out dttmMac);
 
+            // update our filter so we will see this
+
+            // for now, we just know that the 2nd condition is our "end dttm"
+            AzLogFilter.AzLogFilterOperation azlfo = m_azlv.Filter.Operations[1];
+            if (azlfo.Op != AzLogFilter.AzLogFilterOperation.OperationType.Value ||
+                !azlfo.Condition.RHS.FEvaluate(AzLogFilter.AzLogFilterCondition.CmpOp.Eq, new AzLogFilter.AzLogFilterValue(dttmMac), null))
+                {
+                throw new Exception("did not find correct end date value in filter");
+                }
+
             // now add an hour to the end
             dttmMac = dttmMac.AddHours(1);
+            azlfo.Condition.RHS.OValue = dttmMac;   // update our filter to include the new date range, otherwise the model will get new data and we won't show it
+            m_azlv.RebuildView();
             // 10/26/2015 9:00
-            m_ebEnd.Text = dttmMac.ToString("MM/dd/yyyy HH:mm");
 
+            m_ebEnd.Text = dttmMac.ToString("MM/dd/yyyy HH:mm");
             m_azlm.FFetchPartitionsForDateRange(dttmMin, dttmMac);
         }
     }

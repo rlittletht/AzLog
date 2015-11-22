@@ -14,8 +14,10 @@ namespace AzLog
         private List<int> m_pliale;
         private IComparer<int> m_icle;
         private AzLogModel m_azlm;
+        private AzLogFilter m_azlf;
 
         public int Length => m_pliale.Count;
+        public AzLogFilter Filter => m_azlf;
 
         private AzLogWindow m_azlw;
 
@@ -51,9 +53,10 @@ namespace AzLog
             m_azlw = null;
             m_nLogViewGeneration = (new Random(System.Environment.TickCount)).Next(10000);
         }
+
         #endregion
 
-        #region Core Model / Update
+        #region Core Model / Update / Filter
 
         /* C L E A R  L O G */
         /*----------------------------------------------------------------------------
@@ -66,6 +69,20 @@ namespace AzLog
         public void ClearLog()
         {
             m_azlw.ClearLog();
+        }
+
+        /* S E T  F I L T E R */
+        /*----------------------------------------------------------------------------
+        	%%Function: SetFilter
+        	%%Qualified: AzLog.AzLogView.SetFilter
+        	%%Contact: rlittle
+        	
+        ----------------------------------------------------------------------------*/
+        public void SetFilter(AzLogFilter azlf)
+        {
+            m_azlf = azlf;
+            if (m_pliale != null && m_pliale.Count > 0)
+                RebuildView();
         }
 
         public object SyncLock
@@ -129,6 +146,28 @@ namespace AzLog
             return m_azlm.LogEntry(m_pliale[i]);
         }
 
+        /* R E B U I L D  V I E W */
+        /*----------------------------------------------------------------------------
+        	%%Function: RebuildView
+        	%%Qualified: AzLog.AzLogView.RebuildView
+        	%%Contact: rlittle
+        	
+            This is a complete, nuclear rebuild. 
+        ----------------------------------------------------------------------------*/
+        public void RebuildView()
+        {
+            m_pliale = new List<int>();
+
+            for (int i = 0; i < m_azlm.LogCount; i++)
+                {
+                AppendItemToView(i);
+                }
+            m_pliale.Sort(m_icle);
+            if (m_azlw != null)
+                m_azlw.InvalWindowFull();
+
+        }
+
         /* B U I L D  V I E W */
         /*----------------------------------------------------------------------------
         	%%Function: BuildView
@@ -147,15 +186,23 @@ namespace AzLog
         {
             m_icle = icle;
             m_azlm = azlm;
-            m_pliale = new List<int>();
-
-            for (int i = 0; i < m_azlm.LogCount; i++)
-                {
-                m_pliale.Add(i);
-                }
-            m_pliale.Sort(icle);
+            RebuildView();
         }
 
+        /* A P P E N D  I T E M  T O  V I E W */
+        /*----------------------------------------------------------------------------
+        	%%Function: AppendItemToView
+        	%%Qualified: AzLog.AzLogView.AppendItemToView
+        	%%Contact: rlittle
+        	
+            Append a single item to our view -- make sure it matches our filter
+        ----------------------------------------------------------------------------*/
+        private void AppendItemToView(int i)
+        {
+            AzLogEntry azle = m_azlm.LogEntry(i);
+            if (m_azlf.FEvaluate(azle))
+                m_pliale.Add(i);
+        }
         /* A P P E N D  V I E W */
         /*----------------------------------------------------------------------------
         	%%Function: AppendView
@@ -171,7 +218,11 @@ namespace AzLog
         public void AppendView(int iMin, int iMac)
         {
             while (iMin < iMac)
-                m_pliale.Add(iMin++);
+                {
+                // for each item, make sure it matches our filter criteria
+                AppendItemToView(iMin);
+                iMin++;
+                }
 
             m_pliale.Sort(m_icle);
         }

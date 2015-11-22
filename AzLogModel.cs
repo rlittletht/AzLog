@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.WindowsAzure.Storage.Table;
+using NUnit.Framework;
 using NUnit.Framework.Constraints;
 
 namespace AzLog
@@ -196,11 +197,36 @@ namespace AzLog
         	
             Create a valid partition name for the given dttm and hour
         ----------------------------------------------------------------------------*/
-        string SPartitionFromDate(DateTime dttm, int nHour)
+        static string SPartitionFromDate(DateTime dttm, int nHour)
         {
             return String.Format("{0:D4}{1:D2}{2:D2}{3:D2}", dttm.Year, dttm.Month, dttm.Day, nHour);
         }
 
+        /* D T T M  F R O M  P A R T I T I O N */
+        /*----------------------------------------------------------------------------
+        	%%Function: DttmFromPartition
+        	%%Qualified: AzLog.AzLogModel.DttmFromPartition
+        	%%Contact: rlittle
+        	
+            Convert a partition string into a datetime.
+        ----------------------------------------------------------------------------*/
+        public static DateTime DttmFromPartition(string sPartition)
+        {
+            return new DateTime(Int32.Parse(sPartition.Substring(0, 4)), Int32.Parse(sPartition.Substring(4, 2)), Int32.Parse(sPartition.Substring(6, 2)),
+                                Int32.Parse(sPartition.Substring(8, 2)), 0, 0);
+        }
+
+        [TestCase("1995050501", "5/5/1995 1:00")]
+        [TestCase("1995050601", "5/6/1995 1:00")]
+        [TestCase("1995010523", "1/5/1995 23:00")]
+        [TestCase("1995050500", "5/5/1995 0:00")]
+        [Test]
+        public static void TestDttmFromPartition(string sPartition, string sExpected)
+        {
+            DateTime dttmExpected = DateTime.Parse(sExpected);
+
+            Assert.AreEqual(dttmExpected, DttmFromPartition(sPartition));
+        }
         /* F I L L  M I N  M A C  F R O M  S T A R T  E N D */
         /*----------------------------------------------------------------------------
         	%%Function: FillMinMacFromStartEnd

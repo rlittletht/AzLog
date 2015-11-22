@@ -98,15 +98,25 @@ namespace AzLog
 
         private void DoFetchLogEntries(object sender, EventArgs e)
         {
-            AzLogWindow azlw = AzLogWindow.CreateNewWindow(m_azlm, m_sDefaultView, this);
-
-            azlw.Show();
-
-            m_azlm.AddView(azlw.View);
             // figure out the timespan being requested
             DateTime dttmMin, dttmMac;
 
             AzLogModel.FillMinMacFromStartEnd(m_ebStart.Text, m_ebEnd.Text, out dttmMin, out dttmMac);
+
+            AzLogFilter azlf = new AzLogFilter();
+
+            // create a basic filter based on the range they asked for
+            azlf.Add(new AzLogFilter.AzLogFilterCondition(AzLogFilter.AzLogFilterValue.ValueType.DateTime, AzLogFilter.AzLogFilterValue.DataSource.DttmRow, AzLogEntry.LogColumn.Nil, 
+                                                          AzLogFilter.AzLogFilterCondition.CmpOp.Gte, dttmMin));
+            azlf.Add(new AzLogFilter.AzLogFilterCondition(AzLogFilter.AzLogFilterValue.ValueType.DateTime, AzLogFilter.AzLogFilterValue.DataSource.DttmRow, AzLogEntry.LogColumn.Nil, 
+                                                          AzLogFilter.AzLogFilterCondition.CmpOp.Lt, dttmMac));
+            azlf.Add(AzLogFilter.AzLogFilterOperation.OperationType.And);
+
+            AzLogWindow azlw = AzLogWindow.CreateNewWindow(m_azlm, m_sDefaultView, azlf, this);
+
+            azlw.Show();
+
+            m_azlm.AddView(azlw.View);
 
             // we don't know what partition we're going to find this data in, so launch a query 
             // from the first partition for this date range

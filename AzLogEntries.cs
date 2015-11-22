@@ -11,7 +11,7 @@ namespace AzLog
 {
     // we're going to store a lot of these, so let's make them smaller, more convenient that AzLogEntryEntitys
     // (also we don't want to be bound strcitly to the azure log format)
-    public class AzLogEntry
+    public class AzLogEntry : AzLogFilter.ILogFilterItem
     {
         private string m_sPartition;
         private Guid m_guidRowKey;
@@ -27,6 +27,7 @@ namespace AzLog
 
         public enum LogColumn : int
         {
+            Nil = -1,
             Partition = 0,
             RowKey = 1,
             EventTickCount = 2,
@@ -130,6 +131,18 @@ namespace AzLog
         public string Message8 => m_rgsMessageParts.Length <= 8 ? null : m_rgsMessageParts[8];
         public string Message9 => m_rgsMessageParts.Length <= 9 ? null : m_rgsMessageParts[9];
 
+        public object OGetValue(AzLogFilter.AzLogFilterValue.ValueType vt, AzLogFilter.AzLogFilterValue.DataSource ds, LogColumn lc)
+        {
+            if (ds == AzLogFilter.AzLogFilterValue.DataSource.DttmRow)
+                {
+                // get the datetime from the partition
+                return AzLogModel.DttmFromPartition(Partition);
+                }
+            if (ds == AzLogFilter.AzLogFilterValue.DataSource.Column)
+                return GetColumn(lc);
+
+            throw new Exception("bad datasource in OGetValue under AzLogEntry");
+        }
         public string GetColumn(LogColumn lc)
         {
             switch (lc)
