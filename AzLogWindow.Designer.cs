@@ -126,7 +126,7 @@
             this.tsmiFilter.Name = "tsmiFilter";
             this.tsmiFilter.Size = new System.Drawing.Size(152, 22);
             this.tsmiFilter.Text = "Filter to this...";
-            this.tsmiFilter.Click += new System.EventHandler(this.FilterToContext);
+            this.tsmiFilter.Click += new System.EventHandler(this.CreateFilterToContext);
             // 
             // m_cbView
             // 

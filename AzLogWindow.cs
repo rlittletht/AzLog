@@ -55,6 +55,18 @@ namespace AzLog
             azlw.SetView(sViewName);
             azlw.m_azlv = new AzLogView(azlw);
             azlw.m_azlv.SetFilter(azlf);
+
+            // propagate the filter values we were given into the textboxes on our window
+            AzLogFilter.AzLogFilterCondition azlfc;
+
+            azlfc = azlf.Operations[0].Condition;
+            if (azlfc.LHS.Source == AzLogFilter.AzLogFilterValue.DataSource.DttmRow && azlfc.Comparison == AzLogFilter.AzLogFilterCondition.CmpOp.Gte)
+                azlw.m_ebStart.Text = azlfc.RHS.Dttm(null).ToString("MM/dd/yy HH:mm");
+
+            azlfc = azlf.Operations[1].Condition;
+            if (azlfc.LHS.Source == AzLogFilter.AzLogFilterValue.DataSource.DttmRow && azlfc.Comparison == AzLogFilter.AzLogFilterCondition.CmpOp.Lt)
+                azlw.m_ebEnd.Text = azlfc.RHS.Dttm(null).ToString("MM/dd/yy HH:mm");
+
             azlw.m_ilc = ilc;
             azlw.m_azlm = azlm;
             azlw.m_azlv.BuildView(azlw.m_azlm, new CompareLogEntryTickCount(azlw.m_azlm));
@@ -697,6 +709,15 @@ namespace AzLog
 
         #region Filtering
 
+        /* B U M P  D T T M  F I L T E R */
+        /*----------------------------------------------------------------------------
+        	%%Function: BumpDttmFilter
+        	%%Qualified: AzLog.AzLogWindow.BumpDttmFilter
+        	%%Contact: rlittle
+        	
+            Bump forward or backward the datetime filter by the given nHours. fStart
+            determines if we are bumping the start or end of the range
+        ----------------------------------------------------------------------------*/
         private void BumpDttmFilter(TextBox eb, int nHours, bool fStart)
         {
             // figure out the timespan being requested
@@ -738,67 +759,32 @@ namespace AzLog
                 }
         }
 
-        /* E N D  B U M P  F O R W A R D */
+        private void EndBumpForward(object sender, EventArgs e)         { BumpDttmFilter(m_ebEnd, 1, false); }
+        private void EndBumpFastForward(object sender, EventArgs e)     { BumpDttmFilter(m_ebEnd, 12, false); }
+        private void EndBumpRewind(object sender, EventArgs e)          { BumpDttmFilter(m_ebEnd, -1, false); }
+        private void EndBumpFastRewind(object sender, EventArgs e)      { BumpDttmFilter(m_ebEnd, -12, false); }
+        private void StartBumpFastForward(object sender, EventArgs e)   { BumpDttmFilter(m_ebStart, 12, true); }
+        private void StartBumpForward(object sender, EventArgs e)       { BumpDttmFilter(m_ebStart, 1, true); }
+        private void StartBumpReverse(object sender, EventArgs e)       { BumpDttmFilter(m_ebStart, -1, true); }
+        private void StartBumpFastReverse(object sender, EventArgs e)   { BumpDttmFilter(m_ebStart, -12, true); }
+
+        /* F I L T E R  T O  C O N T E X T */
         /*----------------------------------------------------------------------------
-        	%%Function: EndBumpForward
-        	%%Qualified: AzLog.AzLogWindow.EndBumpForward
+        	%%Function: CreateFilterToContext
+        	%%Qualified: AzLog.AzLogWindow.CreateFilterToContext
         	%%Contact: rlittle
         	
-            Bump the end for this window forward by a single partition (an hour)
+            Grabt he ContextMenuContext that we stashed away when the context menu
+            was popping up and then make a filter for that.
+
+            (we can't evaluate the context here because the mousemove that happened 
+            to select the context menu item will screw up the context of *where* they
+            were when they right clicked for the context menu.
         ----------------------------------------------------------------------------*/
-        private void EndBumpForward(object sender, EventArgs e)
-        {
-            BumpDttmFilter(m_ebEnd, 1, false);
-        }
-
-        private void EndBumpFastForward(object sender, EventArgs e)
-        {
-            BumpDttmFilter(m_ebEnd, 12, false);
-        }
-
-        private void EndBumpRewind(object sender, EventArgs e)
-        {
-            BumpDttmFilter(m_ebEnd, -1, false);
-        }
-
-        private void EndBumpFastRewind(object sender, EventArgs e)
-        {
-            BumpDttmFilter(m_ebEnd, -12, false);
-        }
-
-        private void StartBumpFastForward(object sender, EventArgs e)
-        {
-            BumpDttmFilter(m_ebStart, 12, true);
-        }
-
-        private void StartBumpForward(object sender, EventArgs e)
-        {
-            BumpDttmFilter(m_ebStart, 1, true);
-        }
-
-        private void StartBumpReverse(object sender, EventArgs e)
-        {
-            BumpDttmFilter(m_ebStart, -1, true);
-        }
-
-        private void StartBumpFastReverse(object sender, EventArgs e)
-        {
-            BumpDttmFilter(m_ebStart, -12, true);
-        }
-
-        private void FilterToContext(object sender, EventArgs e)
+        private void CreateFilterToContext(object sender, EventArgs e)
         {
             ContextMenuContext cmc = (ContextMenuContext)((ToolStripMenuItem) sender).Tag;
 
-#if no
-            // Figure out where they are right clicking (column and row)
-            Point ptLocal = m_lvLog.PointToClient(Cursor.Position);
-
-            ListViewItem lvi = m_lvLog.GetItemAt(ptLocal.X, ptLocal.Y);
-            AzLogEntry azle = (AzLogEntry) lvi.Tag;
-
-            ColumnHeader ch = TCore.ListViewSupp.HeaderSupp.ColumnFromPoint(m_lvLog, ptLocal.X);
-#endif // no
             m_azlv.Filter.Add(new AzLogFilter.AzLogFilterCondition(AzLogFilter.AzLogFilterValue.ValueType.String, AzLogFilter.AzLogFilterValue.DataSource.Column, cmc.lc, AzLogFilter.AzLogFilterCondition.CmpOp.Eq, cmc.azle.GetColumn(cmc.lc)));
             m_azlv.Filter.Add(AzLogFilter.AzLogFilterOperation.OperationType.And);
             m_azlv.RebuildView();

@@ -263,6 +263,10 @@ namespace AzLog
             private AzLogEntry.LogColumn m_lc;
             private ValueType m_vt;
 
+            public DataSource Source => m_ds;
+            public AzLogEntry.LogColumn DataColumn => m_lc;
+            public string SValue => (string) m_oValue;
+            
             /* O  V A L U E */
             /*----------------------------------------------------------------------------
 	            %%Function: OValue
@@ -607,6 +611,8 @@ namespace AzLog
             private CmpOp m_cmpop;
             private AzLogFilterValue m_azlfvLHS;
             private AzLogFilterValue m_azlfvRHS;
+
+            public CmpOp Comparison => m_cmpop;
 
             public AzLogFilterValue LHS => m_azlfvLHS;
             public AzLogFilterValue RHS => m_azlfvRHS;
