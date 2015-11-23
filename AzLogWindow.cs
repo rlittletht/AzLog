@@ -790,7 +790,15 @@ namespace AzLog
             m_azlv.RebuildView();
         }
 
-#endregion
+        #endregion
+
+        private void DoEditRemoveFilters(object sender, EventArgs e)
+        {
+            AzLogFilter azlfNew = AzEditFilters.EditFilters(m_azlv.Filter.Clone());
+
+            if (azlfNew != null)
+                m_azlv.SetFilter(azlfNew);
+        }
     }
 
   

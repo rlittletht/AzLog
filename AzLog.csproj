@@ -84,6 +84,12 @@
     <Compile Include="AzAddAccount.Designer.cs">
       <DependentUpon>AzAddAccount.cs</DependentUpon>
     </Compile>
+    <Compile Include="AzEditFilters.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="AzEditFilters.Designer.cs">
+      <DependentUpon>AzEditFilters.cs</DependentUpon>
+    </Compile>
     <Compile Include="AzLog.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -110,6 +116,9 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="AzAddAccount.resx">
       <DependentUpon>AzAddAccount.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="AzEditFilters.resx">
+      <DependentUpon>AzEditFilters.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="AzLog.resx">
       <DependentUpon>AzLog.cs</DependentUpon>

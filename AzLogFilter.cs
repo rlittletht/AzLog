@@ -39,6 +39,36 @@ namespace AzLog
                 m_azlfc = azlfc;
             }
 
+            /* S  D E S C R I B E */
+            /*----------------------------------------------------------------------------
+            	%%Function: SDescribe
+            	%%Qualified: AzLog.AzLogFilter.AzLogFilterOperation.SDescribe
+            	%%Contact: rlittle
+            	
+                Return a human readable version of this operation
+            ----------------------------------------------------------------------------*/
+            public string SDescribe()
+            {
+                if (m_lfo == OperationType.And)
+                    return "And";
+                if (m_lfo == OperationType.Or)
+                    return "Or";
+                return m_azlfc.SDescribe();
+            }
+
+            /* C L O N E */
+            /*----------------------------------------------------------------------------
+            	%%Function: Clone
+            	%%Qualified: AzLog.AzLogFilter.AzLogFilterOperation.Clone
+            	%%Contact: rlittle
+            	
+                return a deep clone of this operation
+            ----------------------------------------------------------------------------*/
+            public AzLogFilterOperation Clone()
+            {
+                return new AzLogFilterOperation(m_lfo, m_azlfc?.Clone());
+            }
+
             public AzLogFilterCondition Condition => m_azlfc;
             public OperationType Op => m_lfo;
         }
@@ -55,6 +85,8 @@ namespace AzLog
 
         // NOTE: don't save any filter id with the data part if the only thing in the filter is date ranges -- every data part that comes back is unfiltered at that point
 
+        #region Construct/Deconstruct
+
         /* A Z  L O G  F I L T E R */
         /*----------------------------------------------------------------------------
         	%%Function: AzLogFilter
@@ -68,6 +100,26 @@ namespace AzLog
             InvalFilterID();
         }
 
+        /* C L O N E */
+        /*----------------------------------------------------------------------------
+        	%%Function: Clone
+        	%%Qualified: AzLog.AzLogFilter.Clone
+        	%%Contact: rlittle
+        	
+            Do a deep clone of all the operations in this filter. 
+        ----------------------------------------------------------------------------*/
+        public AzLogFilter Clone()
+        {
+            AzLogFilter azlfNew = new AzLogFilter();
+
+            foreach (AzLogFilterOperation azlfo in m_plazlfo)
+                azlfNew.m_plazlfo.Add(azlfo.Clone());
+
+            return azlfNew;
+        }
+        #endregion
+
+        #region Model Manipulation
         /* A D D */
         /*----------------------------------------------------------------------------
         	%%Function: Add
@@ -96,6 +148,20 @@ namespace AzLog
             m_plazlfo.Add(new AzLogFilterOperation(ot, null));
         }
 
+        /* R E M O V E */
+        /*----------------------------------------------------------------------------
+        	%%Function: Remove
+        	%%Qualified: AzLog.AzLogFilter.Remove
+        	%%Contact: rlittle
+        	
+            Remove a particular operation
+        ----------------------------------------------------------------------------*/
+        public void Remove(int i)
+        {
+            InvalFilterID();
+            m_plazlfo.RemoveAt(i);
+        }
+
         public List<AzLogFilterOperation> Operations => m_plazlfo;
 
         /* I N V A L  F I L T E R  I  D */
@@ -109,6 +175,7 @@ namespace AzLog
         {
             m_idFilter = Guid.NewGuid();        
         }
+        #endregion
 
         /* F  E V A L U A T E */
         /*----------------------------------------------------------------------------
@@ -283,6 +350,58 @@ namespace AzLog
                 set { m_oValue = value; }
             }
 
+            /* S  D E S C R I B E */
+            /*----------------------------------------------------------------------------
+            	%%Function: SDescribe
+            	%%Qualified: AzLog.AzLogFilter.AzLogFilterValue.SDescribe
+            	%%Contact: rlittle
+            	
+                return a string describing this value
+            ----------------------------------------------------------------------------*/
+            public string SDescribe()
+            {
+                if (m_ds == DataSource.DttmRow)
+                    return "Item[Date/Time]";
+
+                if (m_ds == DataSource.Static)
+                    {
+                    if (m_vt == ValueType.DateTime)
+                        return string.Format("Date({0})", ((DateTime) m_oValue).ToString("MM/dd/yy HH:mm"));
+                    else
+                        {
+                        return string.Format("String(\"{0}\")", (String) m_oValue);
+                        }
+                    }
+
+                return string.Format("Item[{0}]", AzLogViewSettings.GetColumnName(m_lc));
+            }
+
+            /* C L O N E */
+            /*----------------------------------------------------------------------------
+            	%%Function: Clone
+            	%%Qualified: AzLog.AzLogFilter.AzLogFilterValue.Clone
+            	%%Contact: rlittle
+            	
+                Return a deep clone of this filter value
+            ----------------------------------------------------------------------------*/
+            public AzLogFilterValue Clone()
+            {
+                AzLogFilterValue azlfvNew = new AzLogFilterValue();
+
+                if (m_ds == DataSource.Static)
+                    {
+                    if (m_vt == ValueType.String)
+                        azlfvNew.m_oValue = string.Copy((string) m_oValue); // don't use Clone() -- that just returns a reference to the original string
+                    else if (m_vt == ValueType.DateTime)
+                        azlfvNew.m_oValue = ((DateTime) m_oValue);
+                    }
+
+                azlfvNew.m_ds = m_ds;
+                azlfvNew.m_lc = m_lc;
+                azlfvNew.m_vt = m_vt;
+
+                return azlfvNew;
+            }
             public AzLogFilterValue() {} // for unit test only
             /* A Z  L O G  F I L T E R  V A L U E */
             /*----------------------------------------------------------------------------
@@ -616,6 +735,9 @@ namespace AzLog
 
             public AzLogFilterValue LHS => m_azlfvLHS;
             public AzLogFilterValue RHS => m_azlfvRHS;
+
+            #region Construction/Deconstruction
+
             /* _  I N I T */
             /*----------------------------------------------------------------------------
             	%%Function: _Init
@@ -666,6 +788,80 @@ namespace AzLog
             public AzLogFilterCondition(AzLogFilterValue.ValueType vt, AzLogFilterValue.DataSource dsLeft, AzLogEntry.LogColumn lc, CmpOp cmpop, DateTime dttmValueRight)
             {
                 _Init(vt, dsLeft, lc, cmpop, dttmValueRight);
+            }
+
+            public AzLogFilterCondition() { }
+            /* C L O N E */
+            /*----------------------------------------------------------------------------
+            	%%Function: Clone
+            	%%Qualified: AzLog.AzLogFilter.AzLogFilterCondition.Clone
+            	%%Contact: rlittle
+            	
+                Return a deep clone of this filter condition
+            ----------------------------------------------------------------------------*/
+            public AzLogFilterCondition Clone()
+            {
+                AzLogFilterCondition azlfcNew = new AzLogFilterCondition();
+
+                azlfcNew.m_azlfvLHS = m_azlfvLHS.Clone();
+                azlfcNew.m_azlfvRHS = m_azlfvRHS.Clone();
+                azlfcNew.m_cmpop = m_cmpop;
+
+                return azlfcNew;
+            }
+            #endregion
+
+            /* S  D E S C R I B E */
+            /*----------------------------------------------------------------------------
+            	%%Function: SDescribe
+            	%%Qualified: AzLog.AzLogFilter.AzLogFilterCondition.SDescribe
+            	%%Contact: rlittle
+            	
+                Return a human readable version of the condition
+            ----------------------------------------------------------------------------*/
+            public string SDescribe()
+            {
+                string sOp = "";
+                switch (m_cmpop)
+                    {
+                    case CmpOp.Gt:
+                        sOp = ">";
+                        break;
+                    case CmpOp.Gte:
+                        sOp = ">=";
+                        break;
+                    case CmpOp.Lt:
+                        sOp = "<";
+                        break;
+                    case CmpOp.Lte:
+                        sOp = "<=";
+                        break;
+                    case CmpOp.Eq:
+                        sOp = "==";
+                        break;
+                    case CmpOp.Ne:
+                        sOp = "!=";
+                        break;
+                    case CmpOp.SGt:
+                        sOp = ":>";
+                        break;
+                    case CmpOp.SGte:
+                        sOp = ":>=";
+                        break;
+                    case CmpOp.SLt:
+                        sOp = ":<";
+                        break;
+                    case CmpOp.SLte:
+                        sOp = ":<=";
+                        break;
+                    case CmpOp.SEq:
+                        sOp = ":==";
+                        break;
+                    case CmpOp.SNe:
+                        sOp = ":!=";
+                        break;
+                    }
+                return String.Format("{0} {1} {2}", m_azlfvLHS.SDescribe(), sOp, m_azlfvRHS.SDescribe());
             }
 
             /* F  E V A L U A T E */

@@ -143,52 +143,53 @@ namespace AzLog
 
             throw new Exception("bad datasource in OGetValue under AzLogEntry");
         }
+
         public string GetColumn(LogColumn lc)
         {
             switch (lc)
                 {
-                    case LogColumn.Partition:
-                        return Partition;
-                    case LogColumn.RowKey:
-                        return RowKey.ToString();
-                    case LogColumn.EventTickCount:
-                        return m_nEventTickCount.ToString();
-                    case LogColumn.AppName:
-                        return m_sAppName;
-                    case LogColumn.Level:
-                        return m_sLevel;
-                    case LogColumn.EventID:
-                        return m_nEventID.ToString();
-                    case LogColumn.InstanceID:
-                        return m_nInstanceID.ToString();
-                    case LogColumn.Pid:
-                        return m_nPid.ToString();
-                    case LogColumn.Tid:
-                        return m_nTid.ToString();
-                    case LogColumn.Message:
-                        return m_sMessage;
-                    case LogColumn.Message0:
-                        return Message0;
-                    case LogColumn.Message1:
-                        return Message1;
-                    case LogColumn.Message2:
-                        return Message2;
-                    case LogColumn.Message3:
-                        return Message3;
-                    case LogColumn.Message4:
-                        return Message4;
-                    case LogColumn.Message5:
-                        return Message5;
-                    case LogColumn.Message6:
-                        return Message6;
-                    case LogColumn.Message7:
-                        return Message7;
-                    case LogColumn.Message8:
-                        return Message8;
-                    case LogColumn.Message9:
-                        return Message9;
-                    default:
-                        return "";
+                case LogColumn.Partition:
+                    return Partition;
+                case LogColumn.RowKey:
+                    return RowKey.ToString();
+                case LogColumn.EventTickCount:
+                    return m_nEventTickCount.ToString();
+                case LogColumn.AppName:
+                    return m_sAppName;
+                case LogColumn.Level:
+                    return m_sLevel;
+                case LogColumn.EventID:
+                    return m_nEventID.ToString();
+                case LogColumn.InstanceID:
+                    return m_nInstanceID.ToString();
+                case LogColumn.Pid:
+                    return m_nPid.ToString();
+                case LogColumn.Tid:
+                    return m_nTid.ToString();
+                case LogColumn.Message:
+                    return m_sMessage;
+                case LogColumn.Message0:
+                    return Message0;
+                case LogColumn.Message1:
+                    return Message1;
+                case LogColumn.Message2:
+                    return Message2;
+                case LogColumn.Message3:
+                    return Message3;
+                case LogColumn.Message4:
+                    return Message4;
+                case LogColumn.Message5:
+                    return Message5;
+                case LogColumn.Message6:
+                    return Message6;
+                case LogColumn.Message7:
+                    return Message7;
+                case LogColumn.Message8:
+                    return Message8;
+                case LogColumn.Message9:
+                    return Message9;
+                default:
+                    return "";
                 }
         }
 

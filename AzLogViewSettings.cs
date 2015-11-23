@@ -380,6 +380,54 @@ namespace AzLog
         public DefaultColumnDef[] DefaultColumns => _rgdcd;
 
 
+        public static string GetColumnName(AzLogEntry.LogColumn lc)
+        {
+            switch (lc)
+                {
+                case AzLogEntry.LogColumn.Partition:
+                    return "PartitionKey";
+                case AzLogEntry.LogColumn.RowKey:
+                    return "RowKey";
+                case AzLogEntry.LogColumn.EventTickCount:
+                    return "EventTickCount";
+                case AzLogEntry.LogColumn.AppName:
+                    return "AppName";
+                case AzLogEntry.LogColumn.Level:
+                    return "Level";
+                case AzLogEntry.LogColumn.EventID:
+                    return "EventID";
+                case AzLogEntry.LogColumn.InstanceID:
+                    return "InstanceID";
+                case AzLogEntry.LogColumn.Pid:
+                    return "Pid";
+                case AzLogEntry.LogColumn.Tid:
+                    return "Tid";
+                case AzLogEntry.LogColumn.Message:
+                    return "sMessage";
+                case AzLogEntry.LogColumn.Message0:
+                    return "sMessage0";
+                case AzLogEntry.LogColumn.Message1:
+                    return "sMessage1";
+                case AzLogEntry.LogColumn.Message2:
+                    return "sMessage2";
+                case AzLogEntry.LogColumn.Message3:
+                    return "sMessage3";
+                case AzLogEntry.LogColumn.Message4:
+                    return "sMessage4";
+                case AzLogEntry.LogColumn.Message5:
+                    return "sMessage5";
+                case AzLogEntry.LogColumn.Message6:
+                    return "sMessage6";
+                case AzLogEntry.LogColumn.Message7:
+                    return "sMessage7";
+                case AzLogEntry.LogColumn.Message8:
+                    return "sMessage8";
+                case AzLogEntry.LogColumn.Message9:
+                    return "sMessage9";
+                default:
+                    return "";
+                }
+        }
         /* S E T  D E F A U L T */
         /*----------------------------------------------------------------------------
         	%%Function: SetDefault
@@ -396,6 +444,13 @@ namespace AzLog
                 }
         }
 
+        /* A D D  L O G  V I E W  C O L U M N */
+        /*----------------------------------------------------------------------------
+        	%%Function: AddLogViewColumn
+        	%%Qualified: AzLog.AzLogViewSettings.AddLogViewColumn
+        	%%Contact: rlittle
+        	
+        ----------------------------------------------------------------------------*/
         public void AddLogViewColumn(string sName, string sTitle, int nWidth, AzLogEntry.LogColumn azlc, bool fVisible)
         {
             AddColumn(new AzLogViewColumn(sName, sTitle, nWidth, azlc, fVisible));
