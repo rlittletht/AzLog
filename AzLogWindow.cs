@@ -22,7 +22,7 @@ namespace AzLog
         private AzLogModel m_azlm;
         public AzLogView View => m_azlv;
         public AzLogViewSettings ViewSettings => m_azlvs;
-        private ILogClient m_ilc;   // allows setting of default view
+        private ILogClient m_ilc; // allows setting of default view
         private AzLogViewSettings m_azlvs;
 
         #region Construct/Destruct
@@ -78,7 +78,7 @@ namespace AzLog
             m_azlm.RemoveView(m_azlv);
         }
 
-        
+
         /* H A N D L E  F O R M  C L O S E D */
         /*----------------------------------------------------------------------------
         	%%Function: HandleFormClosed
@@ -103,7 +103,7 @@ namespace AzLog
         	%%Contact: rlittle
         	
         ----------------------------------------------------------------------------*/
-        void DirtyView(bool fDirty)
+        private void DirtyView(bool fDirty)
         {
             m_pbSave.Enabled = fDirty;
             m_azlvs.Dirty = fDirty;
@@ -214,7 +214,7 @@ namespace AzLog
                 }
             return (i >= m_cbView.Items.Count) ? -1 : i;
         }
-        
+
         /* P O P U L A T E  V I E W  L I S T */
         /*----------------------------------------------------------------------------
         	%%Function: PopulateViewList
@@ -288,7 +288,7 @@ namespace AzLog
             m_lvLog.Columns.Clear();
 
             //for (i = m_lvLog.Columns.Count - 1; i >= 0; --i)
-                //m_lvLog.Columns.RemoveAt(i);
+            //m_lvLog.Columns.RemoveAt(i);
 
             for (i = 0; i < azlvs.ColumnCount(); i++)
                 {
@@ -305,6 +305,7 @@ namespace AzLog
             m_lvLog.EndUpdate();
             // m_lvLog.VirtualListSize = 0;
         }
+
         #endregion
 
         #region View Contents
@@ -408,11 +409,12 @@ namespace AzLog
             else
                 AppendUpdateViewCore(iMin, iMac);
         }
+
         #endregion
 
         #region Column Headers / Context Menus
-        
-        private HeaderSupp m_hs;    // this is the guts of dealing with right clicking on the header region
+
+        private HeaderSupp m_hs; // this is the guts of dealing with right clicking on the header region
 
         /* S E T U P  C O N T E X T  M E N U */
         /*----------------------------------------------------------------------------
@@ -495,7 +497,27 @@ namespace AzLog
                 m_ctxmHeader.Items[0].Text = "Remove column " + ch.Text;
                 m_ctxmHeader.Show(Control.MousePosition);
                 }
-            else {}
+            else
+                {
+                // we aren't in the collumn headers. now customize our context menu
+                Point ptLocal = m_lvLog.PointToClient(Cursor.Position);
+                ListViewItem lvi = m_lvLog.GetItemAt(ptLocal.X, ptLocal.Y);
+                AzLogEntry azle = (AzLogEntry) lvi.Tag;
+
+                ch = TCore.ListViewSupp.HeaderSupp.ColumnFromPoint(m_lvLog, ptLocal.X);
+                AzLogViewSettings.AzLogViewColumn azlvc = m_azlvs.AzlvcFromName((string)ch.Tag);
+                ContextMenuContext cmc = new ContextMenuContext();
+                cmc.azle = azle;
+                cmc.lc = azlvc.DataColumn;
+                m_ctxmListViewLog.Items[0].Tag = cmc;
+                m_ctxmListViewLog.Items[0].Text = String.Format("Filter to this {0}", ch.Text);
+                }
+        }
+
+        struct ContextMenuContext
+        {
+            public AzLogEntry.LogColumn lc;
+            public AzLogEntry azle;
         }
 
         /* H A N D L E  S E L E C T  H E A D E R  I T E M */
@@ -527,7 +549,7 @@ namespace AzLog
             else
                 {
                 tsmi.Checked = true;
-                AddHeader(dcd, (string)ch.Tag);
+                AddHeader(dcd, (string) ch.Tag);
                 }
         }
 
@@ -641,7 +663,8 @@ namespace AzLog
         ----------------------------------------------------------------------------*/
         private void DoColumnReorder(object sender, ColumnReorderedEventArgs e)
         {
-            m_azlvs.MoveColumn(e.OldDisplayIndex, e.NewDisplayIndex);   // just notify it of the move, this doesn't change anything until we save because the listview already did the move for us.
+            m_azlvs.MoveColumn(e.OldDisplayIndex, e.NewDisplayIndex);
+                // just notify it of the move, this doesn't change anything until we save because the listview already did the move for us.
             DirtyView(true);
             // really, this is just about remembering the tab order...
         }
@@ -669,9 +692,12 @@ namespace AzLog
             else if (m_lvLog.Columns[e.ColumnIndex].Tag != null)
                 throw (new Exception("no column found!"));
         }
+
         #endregion
 
-        void BumpEndHours(TextBox eb, int nHours, bool fStart)
+        #region Filtering
+
+        private void BumpDttmFilter(TextBox eb, int nHours, bool fStart)
         {
             // figure out the timespan being requested
             DateTime dttmMin, dttmMac;
@@ -682,8 +708,8 @@ namespace AzLog
 
             // we intimately know which items to edit. if this ever turns out to be false, then we will have to find
             // the right parts of the filter, or just rebuild it. but that will be slower (ack)
-            AzLogFilter.AzLogFilterOperation azlfo = m_azlv.Filter.Operations[fStart ? 0 : 1];  // start is first item, end is last
-            
+            AzLogFilter.AzLogFilterOperation azlfo = m_azlv.Filter.Operations[fStart ? 0 : 1]; // start is first item, end is last
+
             if (azlfo.Op != AzLogFilter.AzLogFilterOperation.OperationType.Value ||
                 !azlfo.Condition.RHS.FEvaluate(AzLogFilter.AzLogFilterCondition.CmpOp.Eq, new AzLogFilter.AzLogFilterValue(dttmMac), null))
                 {
@@ -692,7 +718,7 @@ namespace AzLog
 
             // now add an hour to the end
             dttmMac = dttmMac.AddHours(nHours);
-            azlfo.Condition.RHS.OValue = dttmMac;   // update our filter to include the new date range, otherwise the model will get new data and we won't show it
+            azlfo.Condition.RHS.OValue = dttmMac; // update our filter to include the new date range, otherwise the model will get new data and we won't show it
             m_azlv.RebuildView();
             // 10/26/2015 9:00
 
@@ -711,7 +737,7 @@ namespace AzLog
                     m_azlm.FFetchPartitionsForDateRange(dttmMin, dttmMac);
                 }
         }
-    
+
         /* E N D  B U M P  F O R W A R D */
         /*----------------------------------------------------------------------------
         	%%Function: EndBumpForward
@@ -722,43 +748,63 @@ namespace AzLog
         ----------------------------------------------------------------------------*/
         private void EndBumpForward(object sender, EventArgs e)
         {
-            BumpEndHours(m_ebEnd, 1, false);
+            BumpDttmFilter(m_ebEnd, 1, false);
         }
 
         private void EndBumpFastForward(object sender, EventArgs e)
         {
-            BumpEndHours(m_ebEnd, 12, false);
+            BumpDttmFilter(m_ebEnd, 12, false);
         }
 
         private void EndBumpRewind(object sender, EventArgs e)
         {
-            BumpEndHours(m_ebEnd, -1, false);
+            BumpDttmFilter(m_ebEnd, -1, false);
         }
 
         private void EndBumpFastRewind(object sender, EventArgs e)
         {
-            BumpEndHours(m_ebEnd, -12, false);
+            BumpDttmFilter(m_ebEnd, -12, false);
         }
 
         private void StartBumpFastForward(object sender, EventArgs e)
         {
-            BumpEndHours(m_ebStart, 12, true);
+            BumpDttmFilter(m_ebStart, 12, true);
         }
 
         private void StartBumpForward(object sender, EventArgs e)
         {
-            BumpEndHours(m_ebStart, 1, true);
+            BumpDttmFilter(m_ebStart, 1, true);
         }
 
         private void StartBumpReverse(object sender, EventArgs e)
         {
-            BumpEndHours(m_ebStart, -1, true);
+            BumpDttmFilter(m_ebStart, -1, true);
         }
 
         private void StartBumpFastReverse(object sender, EventArgs e)
         {
-            BumpEndHours(m_ebStart, -12, true);
+            BumpDttmFilter(m_ebStart, -12, true);
         }
+
+        private void FilterToContext(object sender, EventArgs e)
+        {
+            ContextMenuContext cmc = (ContextMenuContext)((ToolStripMenuItem) sender).Tag;
+
+#if no
+            // Figure out where they are right clicking (column and row)
+            Point ptLocal = m_lvLog.PointToClient(Cursor.Position);
+
+            ListViewItem lvi = m_lvLog.GetItemAt(ptLocal.X, ptLocal.Y);
+            AzLogEntry azle = (AzLogEntry) lvi.Tag;
+
+            ColumnHeader ch = TCore.ListViewSupp.HeaderSupp.ColumnFromPoint(m_lvLog, ptLocal.X);
+#endif // no
+            m_azlv.Filter.Add(new AzLogFilter.AzLogFilterCondition(AzLogFilter.AzLogFilterValue.ValueType.String, AzLogFilter.AzLogFilterValue.DataSource.Column, cmc.lc, AzLogFilter.AzLogFilterCondition.CmpOp.Eq, cmc.azle.GetColumn(cmc.lc)));
+            m_azlv.Filter.Add(AzLogFilter.AzLogFilterOperation.OperationType.And);
+            m_azlv.RebuildView();
+        }
+
+#endregion
     }
 
   

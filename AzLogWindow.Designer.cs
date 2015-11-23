@@ -35,7 +35,7 @@
             this.label1 = new System.Windows.Forms.Label();
             this.m_ebStart = new System.Windows.Forms.TextBox();
             this.m_lvLog = new System.Windows.Forms.ListView();
-            this.ctxMenuList = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.m_ctxmListViewLog = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.tsmiFilter = new System.Windows.Forms.ToolStripMenuItem();
             this.m_cbView = new System.Windows.Forms.ComboBox();
             this.m_pbSave = new System.Windows.Forms.Button();
@@ -48,7 +48,7 @@
             this.m_pbEndFR = new System.Windows.Forms.Button();
             this.m_pbStartR = new System.Windows.Forms.Button();
             this.m_pbStartFR = new System.Windows.Forms.Button();
-            this.ctxMenuList.SuspendLayout();
+            this.m_ctxmListViewLog.SuspendLayout();
             this.SuspendLayout();
             // 
             // m_pbFetch
@@ -100,7 +100,8 @@
             this.m_lvLog.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.m_lvLog.ContextMenuStrip = this.ctxMenuList;
+            this.m_lvLog.ContextMenuStrip = this.m_ctxmListViewLog;
+            this.m_lvLog.FullRowSelect = true;
             this.m_lvLog.Location = new System.Drawing.Point(12, 86);
             this.m_lvLog.Name = "m_lvLog";
             this.m_lvLog.Size = new System.Drawing.Size(874, 525);
@@ -112,19 +113,20 @@
             this.m_lvLog.ColumnWidthChanged += new System.Windows.Forms.ColumnWidthChangedEventHandler(this.NotifyColumnWidthChanged);
             this.m_lvLog.RetrieveVirtualItem += new System.Windows.Forms.RetrieveVirtualItemEventHandler(this.GetListViewItem);
             // 
-            // ctxMenuList
+            // m_ctxmListViewLog
             // 
-            this.ctxMenuList.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.m_ctxmListViewLog.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.tsmiFilter});
-            this.ctxMenuList.Name = "ctxMenuList";
-            this.ctxMenuList.Size = new System.Drawing.Size(146, 26);
-            this.ctxMenuList.Opening += new System.ComponentModel.CancelEventHandler(this.HandleContextOpening);
+            this.m_ctxmListViewLog.Name = "ctxMenuList";
+            this.m_ctxmListViewLog.Size = new System.Drawing.Size(146, 26);
+            this.m_ctxmListViewLog.Opening += new System.ComponentModel.CancelEventHandler(this.HandleContextOpening);
             // 
             // tsmiFilter
             // 
             this.tsmiFilter.Name = "tsmiFilter";
-            this.tsmiFilter.Size = new System.Drawing.Size(145, 22);
+            this.tsmiFilter.Size = new System.Drawing.Size(152, 22);
             this.tsmiFilter.Text = "Filter to this...";
+            this.tsmiFilter.Click += new System.EventHandler(this.FilterToContext);
             // 
             // m_cbView
             // 
@@ -254,7 +256,7 @@
             this.Name = "AzLogWindow";
             this.Text = "AzLogWindow";
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.HandleFormClosed);
-            this.ctxMenuList.ResumeLayout(false);
+            this.m_ctxmListViewLog.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -271,7 +273,7 @@
         private System.Windows.Forms.ComboBox m_cbView;
         private System.Windows.Forms.Button m_pbSave;
         private System.Windows.Forms.ContextMenuStrip m_ctxmHeader;
-        private System.Windows.Forms.ContextMenuStrip ctxMenuList;
+        private System.Windows.Forms.ContextMenuStrip m_ctxmListViewLog;
         private System.Windows.Forms.ToolStripMenuItem tsmiFilter;
         private System.Windows.Forms.Button m_pbEndF;
         private System.Windows.Forms.Button m_pbEndFF;

@@ -295,6 +295,10 @@ namespace AzLog
             the tab order isn't necessarily the same as our column ordering.
 
             the client will tell use the tab ordering via an rgsColumns
+
+            TODO: All this wacky "watch the user moving the columns" is unnecessary.
+            Just use the DisplayIndex int he column header (see GetOrderedHeaders in
+            ListViewSupp.cs)
         ----------------------------------------------------------------------------*/
         public void Save()
         {
@@ -400,6 +404,13 @@ namespace AzLog
 
         #endregion 
 
+        /* A Z L V C  F R O M  N A M E */
+        /*----------------------------------------------------------------------------
+        	%%Function: AzlvcFromName
+        	%%Qualified: AzLog.AzLogViewSettings.AzlvcFromName
+        	%%Contact: rlittle
+        	
+        ----------------------------------------------------------------------------*/
         public AzLogViewColumn AzlvcFromName(string sName)
         {
             foreach (AzLogViewColumn azlvc in m_plazlvc)
