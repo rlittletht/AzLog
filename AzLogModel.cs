@@ -20,8 +20,6 @@ namespace AzLog
     // on time, then you will have to manually open/import more files
     public class AzLogModel
     {
-        private AzTable m_azt = null;
-
         // this deals with partitioning our data and allowing us to have a virtual log
         private AzLogEntries m_azles;
 
@@ -31,11 +29,10 @@ namespace AzLog
 
         // this is the underlying count of log entries
         public int LogCount => m_azles.Length;
-        
-        private AzTableCollection m_aztc;
-        private List<string> m_plsTables;
 
-        public List<string> Tables => m_plsTables;
+        // TODO: Temporary during refactor!
+        public List<AzLogView> Listeners => m_plazlvListeners;
+        public AzLogEntries Log => m_azles;
 
         /* L O G  E N T R Y */
         /*----------------------------------------------------------------------------
@@ -98,41 +95,31 @@ namespace AzLog
         }
         #endregion
 
-        #region Account / Table Support
-
-        /* O P E N  T A B L E */
-        /*----------------------------------------------------------------------------
-        	%%Function: OpenTable
-        	%%Qualified: AzLog.AzLogModel.OpenTable
-        	%%Contact: rlittle
-        	
-            clear all of the views since we are now opening a new table.
-        ----------------------------------------------------------------------------*/
-        public void OpenTable(string sTableName)
-        {
-            foreach (AzLogView azlv in m_plazlvListeners)
-                azlv.ClearLog();
-
-            m_azt = m_aztc.GetTable(sTableName);
-        }
-        
-        /* O P E N  A C C O U N T */
-        /*----------------------------------------------------------------------------
-        	%%Function: OpenAccount
-        	%%Qualified: AzLog.AzLogModel.OpenAccount
-        	%%Contact: rlittle
-        	
-            Open the given Azure account and populate the list of tables that we 
-            know about
-        ----------------------------------------------------------------------------*/
-        public void OpenAccount(string sAccountName, string sAccountKey)
-        {
-            m_aztc = new AzTableCollection(sAccountName, sAccountKey);
-            m_plsTables = m_aztc.PlsTableNames();
-        }
-        #endregion
-
+ 
         #region Data Retrieval
+
+        private AzLogAzure m_azla;
+
+        public void AttachDatasource(AzLogAzure azla)
+        {
+            m_azla = azla;
+        }
+        /* U P D A T E  P A R T */
+        /*----------------------------------------------------------------------------
+        	%%Function: UpdatePart
+        	%%Qualified: AzLog.AzLogModel.UpdatePart
+        	%%Contact: rlittle
+        	
+        ----------------------------------------------------------------------------*/
+        public void UpdatePart(DateTime dttmMin, DateTime dttmMac, AzLogPartState azlps)
+        {
+            m_azles.UpdatePart(dttmMin, dttmMac, azlps);
+        }
+
+        public void AddSegment(TableQuerySegment<AzLogEntryEntity> azleSegment)
+        {
+            m_azles.AddSegment(azleSegment);
+        }
         /* F E T C H  P A R T I T I O N S  F O R  D A T E  R A N G E */
         /*----------------------------------------------------------------------------
         	%%Function: FFetchPartitionsForDateRange
@@ -149,52 +136,16 @@ namespace AzLog
                 if (m_azles.GetPartState(dttmMin) != AzLogPartState.Complete)
                     {
                     m_azles.UpdatePart(dttmMin, dttmMin.AddHours(1), AzLogPartState.Pending);
-                    FetchPartitionForDateAsync(dttmMin);
+                    m_azla.FetchPartitionForDateAsync(this, dttmMin);
                     }
                 dttmMin = dttmMin.AddHours(1);
                 }
             return true;
         }
 
-        /* F E T C H  P A R T I T I O N  F O R  D A T E */
-        /*----------------------------------------------------------------------------
-        	%%Function: FetchPartitionForDateAsync
-        	%%Qualified: AzLog.AzLogModel.FetchPartitionForDateAsync
-        	%%Contact: rlittle
-        	
-            Fetch the partition for the given dttm (assumes that the hour is also
-            filled in)
-        ----------------------------------------------------------------------------*/
-        public async Task<bool> FetchPartitionForDateAsync(DateTime dttm)
+        public void FetchPartitionForDateAsync(DateTime dttmMin)
         {
-            TableQuery<AzLogEntryEntity> tq =
-                new TableQuery<AzLogEntryEntity>().Where(
-                        TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal,
-                                                           SPartitionFromDate(dttm, dttm.Hour)));
-
-            TableQuerySegment<AzLogEntryEntity> azleSegment = null;
-            m_azles.UpdatePart(dttm, dttm.AddHours(1.0), AzLogPartState.Pending);
-
-            while (azleSegment == null || azleSegment.ContinuationToken != null)
-                {
-                azleSegment = await m_azt.Table.ExecuteQuerySegmentedAsync(tq, azleSegment?.ContinuationToken);
-                foreach (AzLogView azlv in m_plazlvListeners)
-                    {
-                    lock (azlv.SyncLock)
-                        {
-                        int iFirst = m_azles.Length;
-
-                        m_azles.AddSegment(azleSegment);
-
-                        int iLast = m_azles.Length;
-
-                        azlv.AppendUpdateRegion(iFirst, iLast);
-                        }
-                    }
-
-                m_azles.UpdatePart(dttm, dttm.AddHours(1.0), AzLogPartState.Complete);
-                }
-            return true;
+            m_azla.FetchPartitionForDateAsync(this, dttmMin);
         }
 
         /* S  P A R T I T I O N  F R O M  D A T E */
@@ -205,7 +156,7 @@ namespace AzLog
         	
             Create a valid partition name for the given dttm and hour
         ----------------------------------------------------------------------------*/
-        static string SPartitionFromDate(DateTime dttm, int nHour)
+        public static string SPartitionFromDate(DateTime dttm, int nHour)
         {
             return String.Format("{0:D4}{1:D2}{2:D2}{3:D2}", dttm.Year, dttm.Month, dttm.Day, nHour);
         }
@@ -235,6 +186,7 @@ namespace AzLog
 
             Assert.AreEqual(dttmExpected, DttmFromPartition(sPartition));
         }
+
         /* F I L L  M I N  M A C  F R O M  S T A R T  E N D */
         /*----------------------------------------------------------------------------
         	%%Function: FillMinMacFromStartEnd

@@ -285,7 +285,7 @@ namespace AzLog
     // The we will use PartitionKey + RowKey as the master key for uniqueness (to allow filling of partial data)
     //
     // for now we will partition the data by day + hour (using the partitions)
-    internal class AzLogEntries
+    public class AzLogEntries
     {
         // this collection must only grow and only append. all views depend on that.
         private List<AzLogEntry> m_plale;

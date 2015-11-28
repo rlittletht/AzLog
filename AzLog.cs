@@ -40,6 +40,7 @@ namespace AzLog
 
         private AzLogModel m_azlm;
         private Settings m_ste;
+        private AzLogAzure m_azla;
 
         public AzLog()
         {
@@ -50,6 +51,7 @@ namespace AzLog
             m_ste = new Settings(_rgsteeApp, "Software\\Thetasoft\\AzLog", "App");
             m_ste.Load();
             m_sDefaultView = m_ste.SValue("DefaultView");
+            m_azla = new AzLogAzure();
         }
 
         public void SetDefaultView(string sView)
@@ -86,13 +88,14 @@ namespace AzLog
             Settings ste = new Settings(_rgsteeAccount, KeyName, "main");
             ste.Load();
 
-            m_azlm.OpenAccount((string) m_cbAccounts.SelectedItem, ste.SValue("AccountKey"));
-            foreach (string s in m_azlm.Tables)
+            m_azla.OpenAccount((string) m_cbAccounts.SelectedItem, ste.SValue("AccountKey"));
+            foreach (string s in m_azla.Tables)
                 m_lbTables.Items.Add(s);
         }
         private void DoSelectTable(object sender, EventArgs e)
         {
-            m_azlm.OpenTable((string) m_lbTables.SelectedItem);
+            m_azla.OpenTable(m_azlm, (string) m_lbTables.SelectedItem);
+            m_azlm.AttachDatasource(m_azla);
             // PopulateLog();
         }
 
