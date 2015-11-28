@@ -10,6 +10,14 @@ using NUnit.Framework.Constraints;
 
 namespace AzLog
 {
+    // The model holds all of the data for all the views. This model is an aggregate of all the
+    // different datasources that have been added/opened. 
+    //
+    // Some datasoures are queryable for more data (like Azure), and some are just static
+    // "imports" of data (like files).  The model doesn't care. If you ask if for more data
+    // it will query all the datasources that can be queried and assumes that the files are
+    // already fully loaded. If your file based logging splits into separate files based 
+    // on time, then you will have to manually open/import more files
     public class AzLogModel
     {
         private AzTable m_azt = null;

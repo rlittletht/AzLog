@@ -96,6 +96,8 @@
     <Compile Include="AzLog.Designer.cs">
       <DependentUpon>AzLog.cs</DependentUpon>
     </Compile>
+    <Compile Include="AzLogDatasource.cs" />
+    <Compile Include="AzLogDatasource_Azure.cs" />
     <Compile Include="AzLogEntries.cs" />
     <Compile Include="AzLogFilter.cs" />
     <Compile Include="AzLogModel.cs" />
