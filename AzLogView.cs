@@ -168,6 +168,27 @@ namespace AzLog
 
         }
 
+        private int m_cAsyncBegun = 0;
+
+        public void BeginAsyncData()
+        {
+            if (m_azlw != null)
+                {
+                m_azlw.BeginDataAsync();
+                m_cAsyncBegun++;
+                }
+        }
+
+        public void CompleteAsyncData()
+        {
+            if (m_cAsyncBegun > 0)
+                {
+                m_cAsyncBegun--;
+                if (m_azlw != null)
+                    m_azlw.CompleteDataAsync();
+                }
+        }
+
         /* B U I L D  V I E W */
         /*----------------------------------------------------------------------------
         	%%Function: BuildView

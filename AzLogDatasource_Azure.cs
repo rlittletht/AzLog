@@ -72,13 +72,16 @@ namespace AzLog
             TableQuerySegment<AzLogEntryEntity> azleSegment = null;
             azlm.UpdatePart(dttm, dttm.AddHours(1.0), AzLogPartState.Pending);
 
+            foreach (AzLogView azlv in azlm.Listeners)
+                azlv.BeginAsyncData();
+
             while (azleSegment == null || azleSegment.ContinuationToken != null)
-            {
+                {
                 azleSegment = await m_azt.Table.ExecuteQuerySegmentedAsync(tq, azleSegment?.ContinuationToken);
                 foreach (AzLogView azlv in azlm.Listeners)
-                {
-                    lock (azlv.SyncLock)
                     {
+                    lock (azlv.SyncLock)
+                        {
                         int iFirst = azlm.Log.Length;
 
                         // TODO: Really, add the segment in the loop?!
@@ -87,11 +90,14 @@ namespace AzLog
                         int iLast = azlm.Log.Length;
 
                         azlv.AppendUpdateRegion(iFirst, iLast);
+                        }
                     }
-                }
 
                 azlm.UpdatePart(dttm, dttm.AddHours(1.0), AzLogPartState.Complete);
-            }
+                }
+            foreach (AzLogView azlv in azlm.Listeners)
+                azlv.CompleteAsyncData();
+
             return true;
         }
 

@@ -50,6 +50,7 @@
             this.m_pbStartFR = new System.Windows.Forms.Button();
             this.label3 = new System.Windows.Forms.Label();
             this.m_pbRemoveFilter = new System.Windows.Forms.Button();
+            this.m_pgbMain = new System.Windows.Forms.ProgressBar();
             this.m_ctxmListViewLog.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -106,7 +107,7 @@
             this.m_lvLog.FullRowSelect = true;
             this.m_lvLog.Location = new System.Drawing.Point(12, 49);
             this.m_lvLog.Name = "m_lvLog";
-            this.m_lvLog.Size = new System.Drawing.Size(889, 572);
+            this.m_lvLog.Size = new System.Drawing.Size(889, 555);
             this.m_lvLog.TabIndex = 16;
             this.m_lvLog.UseCompatibleStateImageBehavior = false;
             this.m_lvLog.View = System.Windows.Forms.View.Details;
@@ -256,11 +257,23 @@
             this.m_pbRemoveFilter.UseVisualStyleBackColor = true;
             this.m_pbRemoveFilter.Click += new System.EventHandler(this.DoEditRemoveFilters);
             // 
+            // m_pgbMain
+            // 
+            this.m_pgbMain.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.m_pgbMain.Location = new System.Drawing.Point(725, 610);
+            this.m_pgbMain.MarqueeAnimationSpeed = 30;
+            this.m_pgbMain.Name = "m_pgbMain";
+            this.m_pgbMain.Size = new System.Drawing.Size(176, 22);
+            this.m_pgbMain.Style = System.Windows.Forms.ProgressBarStyle.Marquee;
+            this.m_pgbMain.TabIndex = 31;
+            this.m_pgbMain.Visible = false;
+            // 
             // AzLogWindow
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(913, 633);
+            this.Controls.Add(this.m_pgbMain);
             this.Controls.Add(this.m_pbRemoveFilter);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.m_pbStartR);
@@ -311,5 +324,6 @@
         private System.Windows.Forms.Button m_pbStartFR;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.Button m_pbRemoveFilter;
+        private System.Windows.Forms.ProgressBar m_pgbMain;
     }
 }

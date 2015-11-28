@@ -405,6 +405,40 @@ namespace AzLog
             m_lvLog.VirtualListSize = m_azlv.Length;
             m_lvLog.EndUpdate();
         }
+
+        private int m_cDataPending = 0;
+
+        /* B E G I N  D A T A  A S Y N C */
+        /*----------------------------------------------------------------------------
+        	%%Function: BeginDataAsync
+        	%%Qualified: AzLog.AzLogWindow.BeginDataAsync
+        	%%Contact: rlittle
+        	
+            Notify this window that there is async data coming
+        ----------------------------------------------------------------------------*/
+        public void BeginDataAsync()
+        {
+            if (m_cDataPending++ > 0)
+                m_pgbMain.Show();
+        }
+
+        /* C O M P L E T E  D A T A  A S Y N C */
+        /*----------------------------------------------------------------------------
+        	%%Function: CompleteDataAsync
+        	%%Qualified: AzLog.AzLogWindow.CompleteDataAsync
+        	%%Contact: rlittle
+        	
+            Notify this window that we are done with pending async data
+        ----------------------------------------------------------------------------*/
+        public void CompleteDataAsync()
+        {
+            if (--m_cDataPending <= 0)
+                {
+                m_cDataPending = 0;
+                m_pgbMain.Hide();
+                }
+        }
+
         /* A P P E N D  U P D A T E  V I E W */
         /*----------------------------------------------------------------------------
         	%%Function: AppendUpdateView
