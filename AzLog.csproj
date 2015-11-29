@@ -84,6 +84,12 @@
     <Compile Include="AzAddAccount.Designer.cs">
       <DependentUpon>AzAddAccount.cs</DependentUpon>
     </Compile>
+    <Compile Include="AzAddDatasource_Azure.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="AzAddDatasource_Azure.Designer.cs">
+      <DependentUpon>AzAddDatasource_Azure.cs</DependentUpon>
+    </Compile>
     <Compile Include="AzEditFilters.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -96,6 +102,7 @@
     <Compile Include="AzLog.Designer.cs">
       <DependentUpon>AzLog.cs</DependentUpon>
     </Compile>
+    <Compile Include="AzLogCollection.cs" />
     <Compile Include="AzLogDatasource.cs" />
     <Compile Include="AzLogDatasource_Azure.cs" />
     <Compile Include="AzLogEntries.cs" />
@@ -118,6 +125,9 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="AzAddAccount.resx">
       <DependentUpon>AzAddAccount.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="AzAddDatasource_Azure.resx">
+      <DependentUpon>AzAddDatasource_Azure.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="AzEditFilters.resx">
       <DependentUpon>AzEditFilters.cs</DependentUpon>

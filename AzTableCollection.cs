@@ -35,6 +35,13 @@ namespace AzLog
         private CloudTableClient m_ctc = null;
         private CloudStorageAccount m_csa = null;
 
+        public string AccountName => m_sAccountName;
+
+        public void Close()
+        {
+            
+        }
+
         public List<string> PlsTableNames()
         {
             string sConnectionString = String.Format("DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1}",

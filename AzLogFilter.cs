@@ -187,6 +187,9 @@ namespace AzLog
         ----------------------------------------------------------------------------*/
         public bool FEvaluate(ILogFilterItem ilf)
         {
+            if (m_plazlfo == null || m_plazlfo.Count == 0)
+                return true;
+
             // evaluate the list using a stack...
             List<bool> plfStack = new List<bool>();
 

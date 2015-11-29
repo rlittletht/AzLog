@@ -296,6 +296,7 @@ namespace AzLog
         public void TestMessageSplit(string sPartition, string sMessage, string[] rgsExpected)
         {
             AzLogModel azlm = new AzLogModel();
+            m_azlf = new AzLogFilter(); // just get a default empty one
 
             azlm.AddTestDataPartition(DateTime.Parse(sPartition), new Int64[] {10}, new string[] {sMessage});
 
