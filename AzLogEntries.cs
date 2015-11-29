@@ -334,14 +334,29 @@ namespace AzLog
                 }
         }
 
-        public void AddSegment(TableQuerySegment<AzLogEntryEntity> qsazle)
+        public void AddSegment(AzLogEntry[] rgazle, int cazle, out int iFirst, out int iLast)
         {
             lock (this)
                 {
+                iFirst = m_plale.Count;
+
+                for (int i = 0; i < cazle; i++)
+                    m_plale.Add(rgazle[i]);
+
+                iLast = m_plale.Count;
+                }
+        }
+
+        public void AddSegment(TableQuerySegment<AzLogEntryEntity> qsazle, out int iFirst, out int iLast)
+        {
+            lock (this)
+                {
+                iFirst = m_plale.Count;
                 foreach (AzLogEntryEntity azlee in qsazle.Results)
                     {
                     m_plale.Add(AzLogEntry.Create(azlee));
                     }
+                iLast = m_plale.Count;
                 }
         }
 

@@ -140,9 +140,41 @@ namespace AzLog
         	%%Contact: rlittle
         	
         ----------------------------------------------------------------------------*/
-        public void AddSegment(TableQuerySegment<AzLogEntryEntity> azleSegment)
+        public void AddSegment(TableQuerySegment<AzLogEntryEntity> azleSegment, out int iFirst, out int iLast)
         {
-            m_azles.AddSegment(azleSegment);
+            m_azles.AddSegment(azleSegment, out iFirst, out iLast);
+            UpdateViewsWithRegion(iFirst, iLast);
+        }
+
+        /* U P D A T E  V I E W S  W I T H  R E G I O N */
+        /*----------------------------------------------------------------------------
+        	%%Function: UpdateViewsWithRegion
+        	%%Qualified: AzLog.AzLogModel.UpdateViewsWithRegion
+        	%%Contact: rlittle
+        	
+        ----------------------------------------------------------------------------*/
+        void UpdateViewsWithRegion(int iFirst, int iLast)
+        {
+            foreach (AzLogView azlv in Listeners)
+            {
+                lock (azlv.SyncLock)
+                {
+                    azlv.AppendUpdateRegion(iFirst, iLast);
+                }
+            }
+        }
+
+        /* A D D  S E G M E N T */
+        /*----------------------------------------------------------------------------
+        	%%Function: AddSegment
+        	%%Qualified: AzLog.AzLogModel.AddSegment
+        	%%Contact: rlittle
+        	
+        ----------------------------------------------------------------------------*/
+        public void AddSegment(AzLogEntry[] rgazle, int cazle, out int iFirst, out int iLast)
+        {
+            m_azles.AddSegment(rgazle, cazle, out iFirst, out iLast);
+            UpdateViewsWithRegion(iFirst, iLast);
         }
 
         /* F E T C H  P A R T I T I O N S  F O R  D A T E  R A N G E */
@@ -155,22 +187,24 @@ namespace AzLog
         ----------------------------------------------------------------------------*/
         public bool FFetchPartitionsForDateRange(DateTime dttmMin, DateTime dttmMac)
         {
-            for (int i = 0; i < m_pliazldsSources.Count; i++)
-                {
-                IAzLogDatasource iazlds = m_pliazldsSources[i];
+            DateTime dttm = dttmMin;
 
-                while (dttmMin < dttmMac)
+            while (dttm < dttmMac)
+                {
+                // if its complete or pending, don't query it again...
+                if (m_azles.GetPartState(dttm) != AzLogPartState.Complete && m_azles.GetPartState(dttm) != AzLogPartState.Pending)
                     {
-                    if (m_azles.GetPartState(dttmMin) != AzLogPartState.Complete)
+                    for (int i = 0; i < m_pliazldsSources.Count; i++)
                         {
+                        IAzLogDatasource iazlds = m_pliazldsSources[i];
 #if NOMORE // the marking of Pending happens in the FetchPartitionForDateAsync
     // if this ever comes back, then we will have to get the correct IDataSource.
-                    m_azles.UpdatePart(dttmMin, dttmMin.AddHours(1), AzLogParts.GrfDatasourceForIDatasource(1), AzLogPartState.Pending);
+                        m_azles.UpdatePart(dttmMin, dttmMin.AddHours(1), AzLogParts.GrfDatasourceForIDatasource(1), AzLogPartState.Pending);
 #endif
-                        iazlds.FetchPartitionForDateAsync(this, dttmMin);
+                        iazlds.FetchPartitionForDateAsync(this, dttm);
                         }
-                    dttmMin = dttmMin.AddHours(1);
                     }
+                dttm = dttm.AddHours(1);
                 }
             return true;
         }

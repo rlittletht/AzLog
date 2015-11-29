@@ -1,30 +1,24 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Text;
+using System.IO;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.WindowsAzure.Storage.Table;
-using NUnit.Framework;
-using NUnit.Framework.Constraints;
 using TCore.Settings;
 
 namespace AzLog
 {
-    public class AzLogAzure : IAzLogDatasource
+    // import a text file into log entries
+    class AzLogFile : IAzLogDatasource
     {
-        private AzTable m_azt = null;
-
-        private AzTableCollection m_aztc;
-        private List<string> m_plsTables;
-
+        private string m_sFilename;
+        private int m_iDatasource;
         private string m_sName;
-        private string m_sAccountName;
-        private string m_sTableName;
-        private int m_iDatasource;  // what is our iDatasource (for updating partitions, etc.)
 
-        public List<string> Tables => m_plsTables;
+        public AzLogFile()
+        {
+            m_fDataLoaded = false;
+        }
 
         #region IAzLogDatasource implementation
 
@@ -89,21 +83,10 @@ namespace AzLog
 
         private Settings.SettingsElt[] _rgsteeDatasource =
             {
-                new Settings.SettingsElt("AccountName", Settings.Type.Str, "", ""),
-                new Settings.SettingsElt("TableName", Settings.Type.Str, "", ""),
+                new Settings.SettingsElt("FileName", Settings.Type.Str, "", ""),
+                new Settings.SettingsElt("LogTextFormat", Settings.Type.Str, "", ""),
                 new Settings.SettingsElt("Type", Settings.Type.Str, "", ""),
             };
-
-        public static Settings.SettingsElt[] AccountSettingsDef()
-        {
-            return new Settings.SettingsElt[]
-                       {
-                           new Settings.SettingsElt("AccountKey", Settings.Type.Str, "", ""),
-                           new Settings.SettingsElt("StorageType", Settings.Type.Str, "", ""),
-                           new Settings.SettingsElt("StorageDomain", Settings.Type.Str, "", ""),
-                       };
-
-        }
 
         /* S A V E */
         /*----------------------------------------------------------------------------
@@ -123,9 +106,8 @@ namespace AzLog
             // save everything we need to be able to recreate ourselves
             Settings ste = new Settings(_rgsteeDatasource, sKey, "ds");
 
-            ste.SetSValue("AccountName", m_aztc.AccountName);
-            ste.SetSValue("TableName", m_azt.Table.Name);
-            ste.SetSValue("Type", "AzureTableStorage");
+            ste.SetSValue("FileName", m_sFilename);
+            ste.SetSValue("Type", "TextFile");
             ste.Save();
         }
 
@@ -146,8 +128,7 @@ namespace AzLog
             Settings ste = new Settings(_rgsteeDatasource, sKey, "ds");
 
             ste.Load();
-            m_sAccountName = ste.SValue("AccountName");
-            m_sTableName = ste.SValue("TableName");
+            m_sFilename = ste.SValue("FileName");
             m_sName = sName;
 
             return true;
@@ -163,36 +144,16 @@ namespace AzLog
         ----------------------------------------------------------------------------*/
         public bool FOpen(AzLogModel azlm, string sRegRoot)
         {
-            try
-            {
-                OpenAccount(m_sAccountName, GetAccountKey(sRegRoot, m_sAccountName));
-                OpenTable(azlm, m_sTableName);
-            }
-            catch (Exception exc)
-            {
-                MessageBox.Show(String.Format("Couldn't open azure datasource {0}: {1}", m_sName, exc.Message));
-                return false;
-            }
             return true;
+        }
+
+        public void Close()
+        {
+            
         }
         #endregion
 
         #region Static helpers
-        /* G E T  A C C O U N T  K E Y */
-        /*----------------------------------------------------------------------------
-        	%%Function: GetAccountKey
-        	%%Qualified: AzLog.AzLogAzure.GetAccountKey
-        	%%Contact: rlittle
-        	
-            gets the account key from the registry
-        ----------------------------------------------------------------------------*/
-        public static string GetAccountKey(string sRegRoot, string sAccountName)
-        {
-            Settings ste = new Settings(AccountSettingsDef(), String.Format("{0}\\AzureAccounts\\{1}", sRegRoot, sAccountName), "main");
-            ste.Load();
-
-            return ste.SValue("AccountKey");
-        }
 
         /* L O A D  A Z U R E  D A T A S O U R C E */
         /*----------------------------------------------------------------------------
@@ -202,58 +163,20 @@ namespace AzLog
         	
             Loads this azure datasource
         ----------------------------------------------------------------------------*/
-        public static AzLogAzure LoadAzureDatasource(AzLogModel azlm, string sRegRoot, string sName)
+        public static AzLogFile LoadFileDatasource(AzLogModel azlm, string sRegRoot, string sName)
         {
-            AzLogAzure azla = new AzLogAzure();
+            AzLogFile azlf = new AzLogFile();
 
-            if (azla.FLoad(azlm, sRegRoot, sName))
-                return azla;
+            if (azlf.FLoad(azlm, sRegRoot, sName))
+                return azlf;
 
             return null;
         }
         #endregion
 
-        #region Account / Table Support
+        private bool m_fDataLoaded;
 
-        /* O P E N  T A B L E */
-        /*----------------------------------------------------------------------------
-        	%%Function: OpenTable
-        	%%Qualified: AzLog.AzLogModel.OpenTable
-        	%%Contact: rlittle
-        	
-            clear all of the views since we are now opening a new table.
-        ----------------------------------------------------------------------------*/
-        public void OpenTable(AzLogModel azlm, string sTableName)
-        {
-            if (azlm != null)
-                {
-                foreach (AzLogView azlv in azlm.Listeners)
-                    azlv.ClearLog();
-                }
-
-            m_azt = m_aztc.GetTable(sTableName);
-        }
-
-        /* O P E N  A C C O U N T */
-        /*----------------------------------------------------------------------------
-        	%%Function: OpenAccount
-        	%%Qualified: AzLog.AzLogModel.OpenAccount
-        	%%Contact: rlittle
-        	
-            Open the given Azure account and populate the list of tables that we 
-            know about
-        ----------------------------------------------------------------------------*/
-        public void OpenAccount(string sAccountName, string sAccountKey)
-        {
-            m_aztc = new AzTableCollection(sAccountName, sAccountKey);
-            m_plsTables = m_aztc.PlsTableNames();
-        }
-
-        public void Close()
-        {
-            m_aztc.Close();
-        }
-        #endregion
+        private static int s_cChunkSize = 1024;
 
         /* F E T C H  P A R T I T I O N  F O R  D A T E */
         /*----------------------------------------------------------------------------
@@ -261,36 +184,68 @@ namespace AzLog
         	%%Qualified: AzLog.AzLogModel.FetchPartitionForDateAsync
         	%%Contact: rlittle
         	
-            Fetch the partition for the given dttm (assumes that the hour is also
-            filled in)
+            for text files, its all or nothing (there's no query on top of the file)
+            so when they ask for any data, they get all data. we will just remember
+            internally if they have already been given all of our data
         ----------------------------------------------------------------------------*/
         public async Task<bool> FetchPartitionForDateAsync(AzLogModel azlm, DateTime dttm)
         {
-            TableQuery<AzLogEntryEntity> tq =
-                new TableQuery<AzLogEntryEntity>().Where(
-                        TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal,
-                                                           AzLogModel.SPartitionFromDate(dttm, dttm.Hour)));
+            if (m_fDataLoaded)
+                return true;
 
-            TableQuerySegment<AzLogEntryEntity> azleSegment = null;
+            return false;
+#if no
+            // since they asked for this dttm, at least tell them we're pending
             azlm.UpdatePart(dttm, dttm.AddHours(1.0), AzLogParts.GrfDatasourceForIDatasource(m_iDatasource), AzLogPartState.Pending);
 
             foreach (AzLogView azlv in azlm.Listeners)
                 azlv.BeginAsyncData();
 
-            while (azleSegment == null || azleSegment.ContinuationToken != null)
+            AzLogEntry[] rgazle = new AzLogEntry[s_cChunkSize]; // do 1k log entry chunks
+
+            using (StreamReader sr = File.OpenText(m_sFilename))
                 {
-                azleSegment = await m_azt.Table.ExecuteQuerySegmentedAsync(tq, azleSegment?.ContinuationToken);
-                int iFirst, iLast;
+                int i = 0;
 
-                azlm.AddSegment(azleSegment, out iFirst, out iLast);
+                while (!sr.EndOfStream)
+                    {
+                    string s = await sr.ReadLineAsync();
 
-                azlm.UpdatePart(dttm, dttm.AddHours(1.0), AzLogParts.GrfDatasourceForIDatasource(m_iDatasource), AzLogPartState.Complete);
+                    rgazle[i++] = AzleFromLine(s);
+
+                    if (i >= s_cChunkSize)
+                        {
+                        int iFirst, iLast;
+                        azlm.AddSegment(rgazle, i, out iFirst, out iLast);
+                        }
+
+                    }
+                }
+                while (azleSegment == null || azleSegment.ContinuationToken != null)
+                {
+                    azleSegment = await m_azt.Table.ExecuteQuerySegmentedAsync(tq, azleSegment?.ContinuationToken);
+                    foreach (AzLogView azlv in azlm.Listeners)
+                    {
+                        lock (azlv.SyncLock)
+                        {
+                            int iFirst = azlm.Log.Length;
+
+                            // TODO: Really, add the segment in the loop?!
+                            azlm.AddSegment(azleSegment, out iFirst, out iLast);
+
+                            int iLast = azlm.Log.Length;
+
+                            azlv.AppendUpdateRegion(iFirst, iLast);
+                        }
+                    }
+
+                    azlm.UpdatePart(dttm, dttm.AddHours(1.0), AzLogParts.GrfDatasourceForIDatasource(m_iDatasource), AzLogPartState.Complete);
                 }
             foreach (AzLogView azlv in azlm.Listeners)
                 azlv.CompleteAsyncData();
 
             return true;
+#endif
         }
-
     }
 }
