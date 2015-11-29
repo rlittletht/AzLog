@@ -28,11 +28,6 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.m_cbAccounts = new System.Windows.Forms.ComboBox();
-            this.m_pbAddAccount = new System.Windows.Forms.Button();
-            this.m_pbRemove = new System.Windows.Forms.Button();
-            this.m_lbTables = new System.Windows.Forms.ListBox();
-            this.m_pbOpen = new System.Windows.Forms.Button();
             this.m_ebStart = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
@@ -53,51 +48,6 @@
             this.label6 = new System.Windows.Forms.Label();
             this.label7 = new System.Windows.Forms.Label();
             this.SuspendLayout();
-            // 
-            // m_cbAccounts
-            // 
-            this.m_cbAccounts.FormattingEnabled = true;
-            this.m_cbAccounts.Location = new System.Drawing.Point(11, 504);
-            this.m_cbAccounts.Name = "m_cbAccounts";
-            this.m_cbAccounts.Size = new System.Drawing.Size(121, 21);
-            this.m_cbAccounts.TabIndex = 0;
-            // 
-            // m_pbAddAccount
-            // 
-            this.m_pbAddAccount.Location = new System.Drawing.Point(139, 504);
-            this.m_pbAddAccount.Name = "m_pbAddAccount";
-            this.m_pbAddAccount.Size = new System.Drawing.Size(111, 23);
-            this.m_pbAddAccount.TabIndex = 1;
-            this.m_pbAddAccount.Text = "Add/Edit Account";
-            this.m_pbAddAccount.UseVisualStyleBackColor = true;
-            // 
-            // m_pbRemove
-            // 
-            this.m_pbRemove.Location = new System.Drawing.Point(256, 504);
-            this.m_pbRemove.Name = "m_pbRemove";
-            this.m_pbRemove.Size = new System.Drawing.Size(90, 23);
-            this.m_pbRemove.TabIndex = 2;
-            this.m_pbRemove.Text = "Remove";
-            this.m_pbRemove.UseVisualStyleBackColor = true;
-            // 
-            // m_lbTables
-            // 
-            this.m_lbTables.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left)));
-            this.m_lbTables.FormattingEnabled = true;
-            this.m_lbTables.Location = new System.Drawing.Point(552, 101);
-            this.m_lbTables.Name = "m_lbTables";
-            this.m_lbTables.Size = new System.Drawing.Size(113, 433);
-            this.m_lbTables.TabIndex = 3;
-            // 
-            // m_pbOpen
-            // 
-            this.m_pbOpen.Location = new System.Drawing.Point(352, 504);
-            this.m_pbOpen.Name = "m_pbOpen";
-            this.m_pbOpen.Size = new System.Drawing.Size(90, 23);
-            this.m_pbOpen.TabIndex = 4;
-            this.m_pbOpen.Text = "Open Account";
-            this.m_pbOpen.UseVisualStyleBackColor = true;
             // 
             // m_ebStart
             // 
@@ -276,7 +226,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(668, 546);
+            this.ClientSize = new System.Drawing.Size(492, 311);
             this.Controls.Add(this.label7);
             this.Controls.Add(this.label6);
             this.Controls.Add(this.label5);
@@ -296,11 +246,6 @@
             this.Controls.Add(this.m_ebEnd);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.m_ebStart);
-            this.Controls.Add(this.m_pbOpen);
-            this.Controls.Add(this.m_lbTables);
-            this.Controls.Add(this.m_pbRemove);
-            this.Controls.Add(this.m_pbAddAccount);
-            this.Controls.Add(this.m_cbAccounts);
             this.Name = "AzLog";
             this.Text = "Form1";
             this.ResumeLayout(false);
@@ -309,12 +254,6 @@
         }
 
         #endregion
-
-        private System.Windows.Forms.ComboBox m_cbAccounts;
-        private System.Windows.Forms.Button m_pbAddAccount;
-        private System.Windows.Forms.Button m_pbRemove;
-        private System.Windows.Forms.ListBox m_lbTables;
-        private System.Windows.Forms.Button m_pbOpen;
         private System.Windows.Forms.TextBox m_ebStart;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label label2;
