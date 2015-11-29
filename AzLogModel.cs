@@ -59,6 +59,7 @@ namespace AzLog
         {
             m_azles = new AzLogEntries();
             m_plazlvListeners = new List<AzLogView>();
+            m_pliazldsSources = new List<IAzLogDatasource>();
         }
         #endregion
 
@@ -98,12 +99,30 @@ namespace AzLog
  
         #region Data Retrieval
 
-        private AzLogAzure m_azla;
+        private List<IAzLogDatasource> m_pliazldsSources;
+         
+        // private AzLogAzure m_azla;
 
-        public void AttachDatasource(AzLogAzure azla)
+        /* A T T A C H  D A T A S O U R C E */
+        /*----------------------------------------------------------------------------
+        	%%Function: AttachDatasource
+        	%%Qualified: AzLog.AzLogModel.AttachDatasource
+        	%%Contact: rlittle
+        	
+        ----------------------------------------------------------------------------*/
+        public void AttachDatasource(IAzLogDatasource iazlds)
         {
-            m_azla = azla;
+            string sName = iazlds.GetName();
+
+            // make sure its not already there
+            foreach (IAzLogDatasource iazldsT in m_pliazldsSources)
+                if (String.Compare(iazldsT.GetName(), sName, true) == 0)
+                    throw new Exception("attaching the same datasource more than once");
+
+            m_pliazldsSources.Add(iazlds);
+            iazlds.SetDatasourceIndex(m_pliazldsSources.Count - 1);
         }
+
         /* U P D A T E  P A R T */
         /*----------------------------------------------------------------------------
         	%%Function: UpdatePart
@@ -111,15 +130,23 @@ namespace AzLog
         	%%Contact: rlittle
         	
         ----------------------------------------------------------------------------*/
-        public void UpdatePart(DateTime dttmMin, DateTime dttmMac, AzLogPartState azlps)
+        public void UpdatePart(DateTime dttmMin, DateTime dttmMac, Int32 grfDatasource, AzLogPartState azlps)
         {
-            m_azles.UpdatePart(dttmMin, dttmMac, azlps);
+            m_azles.UpdatePart(dttmMin, dttmMac, grfDatasource, azlps);
         }
 
+        /* A D D  S E G M E N T */
+        /*----------------------------------------------------------------------------
+        	%%Function: AddSegment
+        	%%Qualified: AzLog.AzLogModel.AddSegment
+        	%%Contact: rlittle
+        	
+        ----------------------------------------------------------------------------*/
         public void AddSegment(TableQuerySegment<AzLogEntryEntity> azleSegment)
         {
             m_azles.AddSegment(azleSegment);
         }
+
         /* F E T C H  P A R T I T I O N S  F O R  D A T E  R A N G E */
         /*----------------------------------------------------------------------------
         	%%Function: FFetchPartitionsForDateRange
@@ -130,22 +157,30 @@ namespace AzLog
         ----------------------------------------------------------------------------*/
         public bool FFetchPartitionsForDateRange(DateTime dttmMin, DateTime dttmMac)
         {
-
-            while (dttmMin < dttmMac)
+            for (int i = 0; i < m_pliazldsSources.Count; i++)
                 {
-                if (m_azles.GetPartState(dttmMin) != AzLogPartState.Complete)
+                IAzLogDatasource iazlds = m_pliazldsSources[i];
+
+                while (dttmMin < dttmMac)
                     {
-                    m_azles.UpdatePart(dttmMin, dttmMin.AddHours(1), AzLogPartState.Pending);
-                    m_azla.FetchPartitionForDateAsync(this, dttmMin);
+                    if (m_azles.GetPartState(dttmMin) != AzLogPartState.Complete)
+                        {
+#if NOMORE // the marking of Pending happens in the FetchPartitionForDateAsync
+    // if this ever comes back, then we will have to get the correct IDataSource.
+                    m_azles.UpdatePart(dttmMin, dttmMin.AddHours(1), AzLogParts.GrfDatasourceForIDatasource(1), AzLogPartState.Pending);
+#endif
+                        AzLogAzure azla = (AzLogAzure)iazlds;
+                        azla.FetchPartitionForDateAsync(this, dttmMin);
+                        }
+                    dttmMin = dttmMin.AddHours(1);
                     }
-                dttmMin = dttmMin.AddHours(1);
                 }
             return true;
         }
 
         public void FetchPartitionForDateAsync(DateTime dttmMin)
         {
-            m_azla.FetchPartitionForDateAsync(this, dttmMin);
+            FFetchPartitionsForDateRange(dttmMin, dttmMin.AddHours(1));
         }
 
         /* S  P A R T I T I O N  F R O M  D A T E */
@@ -213,9 +248,9 @@ namespace AzLog
             dttmEnd = dttmEnd.AddSeconds(-dttmEnd.Second);
             dttmMac = dttmEnd.AddMinutes(-dttmEnd.Minute);
         }
-        #endregion
+#endregion
         
-        #region TestSupport
+#region TestSupport
         public void AddTestDataPartition(DateTime dttmPartition, Int64[] rgTickCount, string []rgs)
         {
             AzLogEntries azles = new AzLogEntries();
@@ -230,9 +265,9 @@ namespace AzLog
                 m_azles.AddLogEntry(azle);
                 }
 
-            azles.UpdatePart(dttmPartition, dttmPartition.AddHours(1), AzLogPartState.Complete);
+            azles.UpdatePart(dttmPartition, dttmPartition.AddHours(1), AzLogParts.GrfDatasourceForIDatasource(1), AzLogPartState.Complete);
         }
-        #endregion
+#endregion
 
     }
 

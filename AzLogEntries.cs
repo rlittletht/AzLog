@@ -318,11 +318,11 @@ namespace AzLog
             return azlps;
         }
 
-        public void UpdatePart(DateTime dttmMin, DateTime dttmMac, AzLogPartState azpls)
+        public void UpdatePart(DateTime dttmMin, DateTime dttmMac, Int32 grfDatasource, AzLogPartState azpls)
         {
             lock (this)
                 {
-                m_azlps.SetPartState(dttmMin, dttmMac, azpls);
+                m_azlps.SetPartState(dttmMin, dttmMac, grfDatasource, azpls);
                 }
         }
 

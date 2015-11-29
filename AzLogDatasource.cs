@@ -16,6 +16,8 @@ namespace AzLog
         string ToString();
         string GetName();
         void SetName(string sName);
+        int GetDatasourceIndex();
+        void SetDatasourceIndex(int i);
 
         void Save(string sRegRoot);
         bool FOpen(AzLogModel azlm, string sRegRoot);

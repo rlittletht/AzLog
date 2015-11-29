@@ -22,10 +22,31 @@ namespace AzLog
         private string m_sName;
         private string m_sAccountName;
         private string m_sTableName;
+        private int m_iDatasource;  // what is our iDatasource (for updating partitions, etc.)
 
         public List<string> Tables => m_plsTables;
 
         #region IAzLogDatasource implementation
+
+        /* S E T  D A T A S O U R C E  I N D E X */
+        /*----------------------------------------------------------------------------
+        	%%Function: SetDatasourceIndex
+        	%%Qualified: AzLog.AzLogAzure.SetDatasourceIndex
+        	%%Contact: rlittle
+        	
+            When we update partitions with Complete/pending, we need to know what
+            our index is.
+        ----------------------------------------------------------------------------*/
+        public void SetDatasourceIndex(int i)
+        {
+            m_iDatasource = i;
+        }
+
+        public int GetDatasourceIndex()
+        {
+            return m_iDatasource;
+        }
+
         /* T O  S T R I N G */
         /*----------------------------------------------------------------------------
         	%%Function: ToString
@@ -251,7 +272,7 @@ namespace AzLog
                                                            AzLogModel.SPartitionFromDate(dttm, dttm.Hour)));
 
             TableQuerySegment<AzLogEntryEntity> azleSegment = null;
-            azlm.UpdatePart(dttm, dttm.AddHours(1.0), AzLogPartState.Pending);
+            azlm.UpdatePart(dttm, dttm.AddHours(1.0), AzLogParts.GrfDatasourceForIDatasource(m_iDatasource), AzLogPartState.Pending);
 
             foreach (AzLogView azlv in azlm.Listeners)
                 azlv.BeginAsyncData();
@@ -274,7 +295,7 @@ namespace AzLog
                         }
                     }
 
-                azlm.UpdatePart(dttm, dttm.AddHours(1.0), AzLogPartState.Complete);
+                azlm.UpdatePart(dttm, dttm.AddHours(1.0), AzLogParts.GrfDatasourceForIDatasource(m_iDatasource), AzLogPartState.Complete);
                 }
             foreach (AzLogView azlv in azlm.Listeners)
                 azlv.CompleteAsyncData();
