@@ -101,8 +101,6 @@ namespace AzLog
 
         private List<IAzLogDatasource> m_pliazldsSources;
          
-        // private AzLogAzure m_azla;
-
         /* A T T A C H  D A T A S O U R C E */
         /*----------------------------------------------------------------------------
         	%%Function: AttachDatasource
@@ -169,8 +167,7 @@ namespace AzLog
     // if this ever comes back, then we will have to get the correct IDataSource.
                     m_azles.UpdatePart(dttmMin, dttmMin.AddHours(1), AzLogParts.GrfDatasourceForIDatasource(1), AzLogPartState.Pending);
 #endif
-                        AzLogAzure azla = (AzLogAzure)iazlds;
-                        azla.FetchPartitionForDateAsync(this, dttmMin);
+                        iazlds.FetchPartitionForDateAsync(this, dttmMin);
                         }
                     dttmMin = dttmMin.AddHours(1);
                     }

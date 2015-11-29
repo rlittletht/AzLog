@@ -22,6 +22,7 @@ namespace AzLog
         void Save(string sRegRoot);
         bool FOpen(AzLogModel azlm, string sRegRoot);
         bool FLoad(AzLogModel azlm, string sRegRoot, string sName);
+        Task<bool> FetchPartitionForDateAsync(AzLogModel azlm, DateTime dttm);
         void Close();
     }
 
