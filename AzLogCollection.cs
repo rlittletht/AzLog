@@ -112,7 +112,7 @@ namespace AzLog
 
             int i = 0;
             foreach (IAzLogDatasource iazlds in m_pliazld)
-                rgs[i++] = iazlds.ToString();
+                rgs[i++] = iazlds.GetName();
 
             m_ste.SetRgsValue("Datasources", rgs);
             m_ste.Save();

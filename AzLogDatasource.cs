@@ -54,7 +54,8 @@ namespace AzLog
             string sType = ste.SValue("Type");
             if (string.Compare(sType, "AzureTableStorage") == 0)
                 return AzLogAzure.LoadAzureDatasource(null, sRegRoot, sName);
-
+            if (string.Compare(sType, "TextFile") == 0)
+                return AzLogFile.LoadFileDatasource(null, sRegRoot, sName);
             return null;
         }
     }

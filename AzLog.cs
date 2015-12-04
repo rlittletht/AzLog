@@ -155,7 +155,7 @@ namespace AzLog
                     if (!iazlds.FOpen(null, s_sRegRoot))
                         throw new Exception(String.Format("couldn't open datasource {0}", iazlds.ToString()));
 
-                    m_azlm.AttachDatasource((AzLogAzure) iazlds);
+                    m_azlm.AttachDatasource(iazlds);
                     }
             }
 

@@ -34,7 +34,7 @@
             this.m_ebEnd = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
             this.m_ebStart = new System.Windows.Forms.TextBox();
-            this.m_lvLog = new System.Windows.Forms.ListView();
+            this.m_lvLog = new TCore.UI.ListViewEx();
             this.m_ctxmListViewLog = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.tsmiFilter = new System.Windows.Forms.ToolStripMenuItem();
             this.m_cbView = new System.Windows.Forms.ComboBox();
@@ -62,6 +62,7 @@
             this.m_pbFetch.TabIndex = 11;
             this.m_pbFetch.Text = "Fetch";
             this.m_pbFetch.UseVisualStyleBackColor = true;
+            this.m_pbFetch.Click += new System.EventHandler(this.DoFetch);
             // 
             // label2
             // 
@@ -308,7 +309,7 @@
         private System.Windows.Forms.TextBox m_ebEnd;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.TextBox m_ebStart;
-        private System.Windows.Forms.ListView m_lvLog;
+        private TCore.UI.ListViewEx m_lvLog;
         private System.Windows.Forms.ComboBox m_cbView;
         private System.Windows.Forms.Button m_pbSave;
         private System.Windows.Forms.ContextMenuStrip m_ctxmHeader;

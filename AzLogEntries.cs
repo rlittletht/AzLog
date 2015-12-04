@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -193,6 +194,75 @@ namespace AzLog
                 }
         }
 
+        public void SetColumn(LogColumn lc, string s)
+        {
+            if (s == null)
+                return;
+
+            switch (lc)
+                {
+                case LogColumn.Partition:
+                    Partition = s;
+                    break;
+                case LogColumn.RowKey:
+                    RowKey = Guid.Parse(s);
+                    break;
+                case LogColumn.EventTickCount:
+                    m_nEventTickCount = Int64.Parse(s);
+                    break;
+                case LogColumn.AppName:
+                    m_sAppName = s;
+                    break;
+                case LogColumn.Level:
+                    m_sLevel = s;
+                    break;
+                case LogColumn.EventID:
+                    m_nEventID = int.Parse(s);
+                    break;
+                case LogColumn.InstanceID:
+                    m_nInstanceID = int.Parse(s);
+                    break;
+                case LogColumn.Pid:
+                    m_nPid = int.Parse(s);
+                    break;
+                case LogColumn.Tid:
+                    m_nTid = int.Parse(s);
+                    break;
+                case LogColumn.Message:
+                    m_sMessage = s;
+                    break;
+                case LogColumn.Message0:
+                    m_rgsMessageParts[0] = s;
+                    break;
+                case LogColumn.Message1:
+                    m_rgsMessageParts[1] = s;
+                    break;
+                case LogColumn.Message2:
+                    m_rgsMessageParts[2] = s;
+                    break;
+                case LogColumn.Message3:
+                    m_rgsMessageParts[3] = s;
+                    break;
+                case LogColumn.Message4:
+                    m_rgsMessageParts[4] = s;
+                    break;
+                case LogColumn.Message5:
+                    m_rgsMessageParts[5] = s;
+                    break;
+                case LogColumn.Message6:
+                    m_rgsMessageParts[6] = s;
+                    break;
+                case LogColumn.Message7:
+                    m_rgsMessageParts[7] = s;
+                    break;
+                case LogColumn.Message8:
+                    m_rgsMessageParts[8] = s;
+                    break;
+                case LogColumn.Message9:
+                    m_rgsMessageParts[9] = s;
+                    break;
+                }
+        }
         /* L V I  F E T C H */
         /*----------------------------------------------------------------------------
         	%%Function: LviFetch
@@ -261,6 +331,18 @@ namespace AzLog
             azle.m_rgsMessageParts = sMessage.Split('\t');
 
             return azle;
+        }
+
+        /* I N I T  M E S S A G E  P A R T S */
+        /*----------------------------------------------------------------------------
+        	%%Function: InitMessageParts
+        	%%Qualified: AzLog.AzLogEntry.InitMessageParts
+        	%%Contact: rlittle
+        	
+        ----------------------------------------------------------------------------*/
+        public void InitMessageParts(int c)
+        {
+            m_rgsMessageParts = new string[c];
         }
 
         /* C R E A T E */

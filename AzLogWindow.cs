@@ -70,9 +70,8 @@ namespace AzLog
             azlw.m_ilc = ilc;
             azlw.m_azlm = azlm;
             azlw.m_azlv.BuildView(azlw.m_azlm, new CompareLogEntryTickCount(azlw.m_azlm));
-
-            azlw.m_lvLog.VirtualListSize = azlw.m_azlv.Length;
-
+            // azlw.m_lvLog.VirtualListSize = azlw.m_azlv.Length;
+            azlw.m_lvLog.SetVirtualListSize(azlw.m_azlv.Length);
             return azlw;
         }
 
@@ -388,7 +387,8 @@ namespace AzLog
             // we have new items from iMin to iMac. Add them to the view
             m_lvLog.BeginUpdate();
             m_azlv.AppendView(iMin, iMac);
-            m_lvLog.VirtualListSize = m_azlv.Length;
+            // m_lvLog.VirtualListSize = m_azlv.Length;
+            m_lvLog.SetVirtualListSize(m_azlv.Length);
             m_lvLog.EndUpdate();
         }
 
@@ -402,7 +402,8 @@ namespace AzLog
         public void InvalWindowFull()
         {
             m_lvLog.BeginUpdate();
-            m_lvLog.VirtualListSize = m_azlv.Length;
+//            m_lvLog.VirtualListSize = m_azlv.Length;
+            m_lvLog.SetVirtualListSize(m_azlv.Length);
             m_lvLog.EndUpdate();
         }
 
@@ -633,7 +634,8 @@ namespace AzLog
 
                 SetupListViewForView(m_azlvs);
                 m_azlv.BumpGeneration();
-                m_lvLog.VirtualListSize = c;
+                m_lvLog.SetVirtualListSize(c);
+                // m_lvLog.VirtualListSize = c;
                 }
             DirtyView(true);
         }
@@ -658,7 +660,8 @@ namespace AzLog
 
                 SetupListViewForView(m_azlvs);
                 m_azlv.BumpGeneration();
-                m_lvLog.VirtualListSize = c;
+                m_lvLog.SetVirtualListSize(c);
+                //m_lvLog.VirtualListSize = c;
                 }
             DirtyView(true);
         }
@@ -832,6 +835,40 @@ namespace AzLog
 
             if (azlfNew != null)
                 m_azlv.SetFilter(azlfNew);
+        }
+
+        private void DoFetch(object sender, EventArgs e)
+        {
+            DateTime dttmMin, dttmMac;
+
+            AzLogModel.FillMinMacFromStartEnd(m_ebStart.Text, m_ebEnd.Text, out dttmMin, out dttmMac);
+
+            // update our filter so we will see this
+
+            // we intimately know which items to edit. if this ever turns out to be false, then we will have to find
+            // the right parts of the filter, or just rebuild it. but that will be slower (ack)
+            AzLogFilter.AzLogFilterOperation azlfo = m_azlv.Filter.Operations[0]; // start is first item, end is last
+
+
+            if (azlfo.Op != AzLogFilter.AzLogFilterOperation.OperationType.Value || azlfo.Condition.LHS.Source != AzLogFilter.AzLogFilterValue.DataSource.DttmRow)
+                {
+                throw new Exception("did not find correct value type in filter");
+                }
+
+            azlfo.Condition.RHS.OValue = dttmMin; // update our filter to include the new date range, otherwise the model will get new data and we won't show it
+
+            azlfo = m_azlv.Filter.Operations[1]; // start is first item, end is last
+
+
+            if (azlfo.Op != AzLogFilter.AzLogFilterOperation.OperationType.Value || azlfo.Condition.LHS.Source != AzLogFilter.AzLogFilterValue.DataSource.DttmRow)
+                {
+                throw new Exception("did not find correct value type in filter");
+                }
+
+            azlfo.Condition.RHS.OValue = dttmMac; // update our filter to include the new date range, otherwise the model will get new data and we won't show it
+            m_azlv.RebuildView();
+
+            m_azlm.FFetchPartitionsForDateRange(dttmMin, dttmMac);
         }
     }
 
