@@ -25,11 +25,7 @@ namespace AzLog
     public partial class AzLog : Form, ILogClient
     {
 
-        private Settings.SettingsElt[] _rgsteeApp =
-            {
-                new Settings.SettingsElt("DefaultView", Settings.Type.Str, "", ""),
-                new Settings.SettingsElt("DefaultCollection", Settings.Type.Str, "", ""),
-            };
+        private Settings.SettingsElt[] _rgsteeApp;
 
         private AzLogCollection m_azlc;
         private string m_sDefaultView;
@@ -43,10 +39,20 @@ namespace AzLog
 
         #region Initialization
 
+        private void InitSettings()
+        {
+            _rgsteeApp = new[]
+                             {
+                                 new Settings.SettingsElt("DefaultView", Settings.Type.Str, "", ""),
+                                 new Settings.SettingsElt("DefaultCollection", Settings.Type.Str, "", ""),
+                                 new Settings.SettingsElt("LastStart", Settings.Type.Dttm, m_ebStart, ""),
+                                 new Settings.SettingsElt("LastEnd", Settings.Type.Dttm, m_ebEnd, ""),
+                             };
+        }
         public AzLog()
         {
             InitializeComponent();
-
+            InitSettings();
             m_ste = new Settings(_rgsteeApp, "Software\\Thetasoft\\AzLog", "App");
             m_ste.Load();
             m_sDefaultView = m_ste.SValue("DefaultView");
@@ -54,6 +60,12 @@ namespace AzLog
 
             PopulateCollections();
             PopulateDatasources();
+        }
+
+        private void DoSaveState(object sender, FormClosingEventArgs e)
+        {
+            if (m_ste != null)
+                m_ste.Save();
         }
 
         /* P O P U L A T E  C O L L E C T I O N S */
@@ -173,7 +185,7 @@ namespace AzLog
                                                           AzLogFilter.AzLogFilterCondition.CmpOp.Lt, dttmMac));
             azlf.Add(AzLogFilter.AzLogFilterOperation.OperationType.And);
 
-            AzLogWindow azlw = AzLogWindow.CreateNewWindow(m_azlm, m_sDefaultView, azlf, this);
+            AzLogWindow azlw = AzLogWindow.CreateNewWindow(m_azlm, m_azlc.DefaultView, azlf, this);
 
             azlw.Show();
 

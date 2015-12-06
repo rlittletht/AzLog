@@ -245,7 +245,7 @@ namespace AzLog
                 iMin++;
                 }
 
-            // m_pliale.Sort(m_icle);
+            m_pliale.Sort(m_icle);
         }
         #endregion
 

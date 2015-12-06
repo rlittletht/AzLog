@@ -52,6 +52,9 @@ namespace AzLog
         {
             AzLogWindow azlw = new AzLogWindow();
 
+            if (String.IsNullOrEmpty(sViewName))
+                sViewName = "Default";
+
             azlw.SetView(sViewName);
             azlw.m_azlv = new AzLogView(azlw);
             azlw.m_azlv.SetFilter(azlf);
@@ -61,11 +64,11 @@ namespace AzLog
 
             azlfc = azlf.Operations[0].Condition;
             if (azlfc.LHS.Source == AzLogFilter.AzLogFilterValue.DataSource.DttmRow && azlfc.Comparison == AzLogFilter.AzLogFilterCondition.CmpOp.Gte)
-                azlw.m_ebStart.Text = azlfc.RHS.Dttm(null).ToString("MM/dd/yy HH:mm");
+                azlw.m_ebStart.Text = azlfc.RHS.Dttm(null).ToLocalTime().ToString("MM/dd/yy HH:mm");
 
             azlfc = azlf.Operations[1].Condition;
             if (azlfc.LHS.Source == AzLogFilter.AzLogFilterValue.DataSource.DttmRow && azlfc.Comparison == AzLogFilter.AzLogFilterCondition.CmpOp.Lt)
-                azlw.m_ebEnd.Text = azlfc.RHS.Dttm(null).ToString("MM/dd/yy HH:mm");
+                azlw.m_ebEnd.Text = azlfc.RHS.Dttm(null).ToLocalTime().ToString("MM/dd/yy HH:mm");
 
             azlw.m_ilc = ilc;
             azlw.m_azlm = azlm;
@@ -278,7 +281,8 @@ namespace AzLog
 
             SetupListViewForView(m_azlvs);
             SetupContextMenu();
-            DirtyView(m_azlvs.Dirty);
+            DirtyView(true);
+            
         }
 
 
@@ -558,7 +562,9 @@ namespace AzLog
                 cmc.lc = azlvc.DataColumn;
                 m_ctxmListViewLog.Items[0].Tag = cmc;
                 m_ctxmListViewLog.Items[0].Text = String.Format("Filter to this {0}", ch.Text);
-                }
+                m_ctxmListViewLog.Items[1].Tag = cmc;
+                m_ctxmListViewLog.Items[1].Text = String.Format("Filter out this {0}", ch.Text);
+            }
         }
 
         struct ContextMenuContext
@@ -780,7 +786,7 @@ namespace AzLog
             m_azlv.RebuildView();
             // 10/26/2015 9:00
 
-            eb.Text = dttmMac.ToString("MM/dd/yyyy HH:mm");
+            eb.Text = dttmMac.ToLocalTime().ToString("MM/dd/yyyy HH:mm");
 
             // at this point, all our changes were to "dttmMac" (dttmMin started out same as dttmMac...so we could just 
             // blissfully use dttmMac.  But for the fetch, it matters if we are growing or shrinking our range
@@ -829,6 +835,13 @@ namespace AzLog
 
         #endregion
 
+        /* D O  E D I T  R E M O V E  F I L T E R S */
+        /*----------------------------------------------------------------------------
+        	%%Function: DoEditRemoveFilters
+        	%%Qualified: AzLog.AzLogWindow.DoEditRemoveFilters
+        	%%Contact: rlittle
+        	
+        ----------------------------------------------------------------------------*/
         private void DoEditRemoveFilters(object sender, EventArgs e)
         {
             AzLogFilter azlfNew = AzEditFilters.EditFilters(m_azlv.Filter.Clone());
@@ -837,6 +850,13 @@ namespace AzLog
                 m_azlv.SetFilter(azlfNew);
         }
 
+        /* D O  F E T C H */
+        /*----------------------------------------------------------------------------
+        	%%Function: DoFetch
+        	%%Qualified: AzLog.AzLogWindow.DoFetch
+        	%%Contact: rlittle
+        	
+        ----------------------------------------------------------------------------*/
         private void DoFetch(object sender, EventArgs e)
         {
             DateTime dttmMin, dttmMac;
@@ -870,8 +890,17 @@ namespace AzLog
 
             m_azlm.FFetchPartitionsForDateRange(dttmMin, dttmMac);
         }
-    }
 
-  
+        private void CreateFilterOutContext(object sender, EventArgs e)
+        {
+            ContextMenuContext cmc = (ContextMenuContext)((ToolStripMenuItem)sender).Tag;
+
+            m_azlv.Filter.Add(new AzLogFilter.AzLogFilterCondition(AzLogFilter.AzLogFilterValue.ValueType.String, AzLogFilter.AzLogFilterValue.DataSource.Column, cmc.lc, AzLogFilter.AzLogFilterCondition.CmpOp.SNe, cmc.azle.GetColumn(cmc.lc)));
+            m_azlv.Filter.Add(AzLogFilter.AzLogFilterOperation.OperationType.And);
+            m_azlv.RebuildView();
+        }
+
+    }
 }
 
+ 

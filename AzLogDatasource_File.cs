@@ -182,7 +182,7 @@ namespace AzLog
 
         private bool m_fDataLoaded;
 
-        private static int s_cChunkSize = 1024;
+        private static int s_cChunkSize = 8192;
 
         /* A Z L E  F R O M  L I N E */
         /*----------------------------------------------------------------------------
@@ -230,6 +230,7 @@ namespace AzLog
                 }
 
                 private AzLogEntry.LogColumn m_lc;
+                private AzLogEntry.LogColumn m_lcCopy;  // this allows us to parse the column into two places
                 private Sep m_sep;
                 private int m_cch; // for fixed width
 
@@ -244,11 +245,22 @@ namespace AzLog
                     set { m_cch = value; }
                 }
 
-                public AzLogEntry.LogColumn Column {
+                public AzLogEntry.LogColumn Column
+                {
                     get { return m_lc; }
                     set { m_lc = value; }
                 }
 
+                public AzLogEntry.LogColumn ColumnCopy
+                {
+                    get { return m_lcCopy; }
+                    set { m_lcCopy = value; }
+                }
+
+                public TextLogColumn()
+                {
+                    m_lcCopy = m_lc = AzLogEntry.LogColumn.Nil;
+                }
             }
 
             private List<TextLogColumn> m_pltlc;
@@ -306,6 +318,13 @@ namespace AzLog
                 return true;
             }
 
+            /* F  P A R S E  F I X E D  W I D T H  C O L U M N */
+            /*----------------------------------------------------------------------------
+            	%%Function: FParseFixedWidthColumn
+            	%%Qualified: AzLog.AzLogFile.TextLogConverter.FParseFixedWidthColumn
+            	%%Contact: rlittle
+            	
+            ----------------------------------------------------------------------------*/
             private static bool FParseFixedWidthColumn(string sLine, int cch, int ich, ref int ichLast, ref int ichEnd, int ichMac, bool fLastColumn)
             {
                 if (ich + cch >= ichMac)
@@ -404,8 +423,12 @@ namespace AzLog
                     if (tlc.Column == AzLogEntry.LogColumn.EventTickCount)
                         {
                         DateTime dttm = DateTime.Parse(sLine.Substring(ichFirst, ichEnd - ichFirst + 1));
+                        dttm = dttm.ToUniversalTime();
+
                         azle.SetColumn(AzLogEntry.LogColumn.Partition, dttm.ToString("yyyyMMddHH"));
                         azle.EventTickCount = dttm.Ticks + nLine;
+                        if (tlc.ColumnCopy != AzLogEntry.LogColumn.Nil)
+                            azle.SetColumn(tlc.ColumnCopy, dttm.ToString("MM/dd/yyyy HH:mm:ss"));
                         }
                     else
                         {
@@ -468,10 +491,27 @@ namespace AzLog
                         throw new Exception("bad config format -- no terminating separator");
 
                     int nCol = int.Parse(sConfig.Substring(ich, ichNext - ich));
+                    int nColCopy = -1;
+
+                    if (sConfig[ichNext] == '+') // this means they want to copy this field to another column too
+                        {
+                        int ichFirstCopy = ++ichNext;
+
+                        while (ichNext < ichMac && char.IsDigit(sConfig[ichNext]))
+                            ichNext++;
+
+                        if (ichNext >= ichMac)
+                            throw new Exception("bad config format -- no terminating separator after column copy");
+
+                        nColCopy = int.Parse(sConfig.Substring(ichFirstCopy, ichNext - ichFirstCopy));
+                    }
 
                     char chSep = sConfig[ichNext];
                     TextLogColumn tlcc = new TextLogColumn();
                     tlcc.Column = (AzLogEntry.LogColumn) nCol;
+                    if (nColCopy != -1)
+                        tlcc.ColumnCopy = (AzLogEntry.LogColumn) nColCopy;
+
                     if (chSep == ',')
                         tlcc.Separator = TextLogColumn.Sep.Comma;
                     else if (chSep == ':')
@@ -557,6 +597,9 @@ namespace AzLog
 
             [TestCase("20?6 4:11:10t8t12t13t14t", "TcRec Information: -30257 : cc6689cf-f523-4495-9762-c110ef99da32\t13\t0A7AF47C\t10/26/2015 18:12:23\tOnPacketReceived",
                 null, null, null, null, "Information", null, null, null, "13", null, "cc6689cf-f523-4495-9762-c110ef99da32", "-30257", "0A7AF47C", "10/26/2015 18:12:23", "OnPacketReceived", null,null,null,null,null)]
+
+            [TestCase("20?6 4:11:10t8t12t2+13t14t", "TcRec Information: -30257 : cc6689cf-f523-4495-9762-c110ef99da32\t13\t0A7AF47C\t10/26/2015 18:12:23\tOnPacketReceived",
+                "2015102618", null, "635814799430000000", null, "Information", null, null, null, "13", null, "cc6689cf-f523-4495-9762-c110ef99da32", "-30257", "0A7AF47C", "10/26/2015 18:12:23", "OnPacketReceived", null, null, null, null, null)]
 
             [TestCase("2,", "10/26/2015 18:12:23", "2015102618", null, "635814799430000000", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)]
             [Test]

@@ -51,6 +51,7 @@
             this.label3 = new System.Windows.Forms.Label();
             this.m_pbRemoveFilter = new System.Windows.Forms.Button();
             this.m_pgbMain = new System.Windows.Forms.ProgressBar();
+            this.filterOutThisToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.m_ctxmListViewLog.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -120,15 +121,16 @@
             // m_ctxmListViewLog
             // 
             this.m_ctxmListViewLog.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.tsmiFilter});
+            this.tsmiFilter,
+            this.filterOutThisToolStripMenuItem});
             this.m_ctxmListViewLog.Name = "ctxMenuList";
-            this.m_ctxmListViewLog.Size = new System.Drawing.Size(146, 26);
+            this.m_ctxmListViewLog.Size = new System.Drawing.Size(153, 70);
             this.m_ctxmListViewLog.Opening += new System.ComponentModel.CancelEventHandler(this.HandleContextOpening);
             // 
             // tsmiFilter
             // 
             this.tsmiFilter.Name = "tsmiFilter";
-            this.tsmiFilter.Size = new System.Drawing.Size(145, 22);
+            this.tsmiFilter.Size = new System.Drawing.Size(152, 22);
             this.tsmiFilter.Text = "Filter to this...";
             this.tsmiFilter.Click += new System.EventHandler(this.CreateFilterToContext);
             // 
@@ -269,6 +271,13 @@
             this.m_pgbMain.TabIndex = 31;
             this.m_pgbMain.Visible = false;
             // 
+            // filterOutThisToolStripMenuItem
+            // 
+            this.filterOutThisToolStripMenuItem.Name = "filterOutThisToolStripMenuItem";
+            this.filterOutThisToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.filterOutThisToolStripMenuItem.Text = "Filter out this...";
+            this.filterOutThisToolStripMenuItem.Click += new System.EventHandler(this.CreateFilterOutContext);
+            // 
             // AzLogWindow
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -326,5 +335,6 @@
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.Button m_pbRemoveFilter;
         private System.Windows.Forms.ProgressBar m_pgbMain;
+        private System.Windows.Forms.ToolStripMenuItem filterOutThisToolStripMenuItem;
     }
 }

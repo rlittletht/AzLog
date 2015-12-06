@@ -248,6 +248,8 @@
             this.Controls.Add(this.m_ebStart);
             this.Name = "AzLog";
             this.Text = "Form1";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(DoSaveState);
+
             this.ResumeLayout(false);
             this.PerformLayout();
 

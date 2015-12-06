@@ -274,10 +274,10 @@ namespace AzLog
                 }
 
             dttmStart = dttmStart.AddSeconds(-dttmStart.Second);
-            dttmMin = dttmStart.AddMinutes(-dttmStart.Minute);
+            dttmMin = dttmStart.AddMinutes(-dttmStart.Minute).ToUniversalTime();
 
             dttmEnd = dttmEnd.AddSeconds(-dttmEnd.Second);
-            dttmMac = dttmEnd.AddMinutes(-dttmEnd.Minute);
+            dttmMac = dttmEnd.AddMinutes(-dttmEnd.Minute).ToUniversalTime();
         }
 #endregion
         

@@ -12,6 +12,13 @@ namespace AzLog
         private List<IAzLogDatasource> m_pliazld;
         private string m_sDefaultView;
 
+        /* L O A D  C O L L E C T I O N */
+        /*----------------------------------------------------------------------------
+        	%%Function: LoadCollection
+        	%%Qualified: AzLog.AzLogCollection.LoadCollection
+        	%%Contact: rlittle
+        	
+        ----------------------------------------------------------------------------*/
         public static AzLogCollection LoadCollection(string sRegRoot, string sName)
         {
             AzLogCollection azlc = new AzLogCollection(sName);
@@ -20,6 +27,13 @@ namespace AzLog
             return azlc;
         }
 
+        /* A Z  L O G  C O L L E C T I O N */
+        /*----------------------------------------------------------------------------
+        	%%Function: AzLogCollection
+        	%%Qualified: AzLog.AzLogCollection.AzLogCollection
+        	%%Contact: rlittle
+        	
+        ----------------------------------------------------------------------------*/
         public AzLogCollection(string sName)
         {
             m_sName = sName;
@@ -36,11 +50,16 @@ namespace AzLog
 
         private Settings m_ste;
 
-        private string m_sDefView;
-
+        /* S E T  D E F A U L T  V I E W */
+        /*----------------------------------------------------------------------------
+        	%%Function: SetDefaultView
+        	%%Qualified: AzLog.AzLogCollection.SetDefaultView
+        	%%Contact: rlittle
+        	
+        ----------------------------------------------------------------------------*/
         public void SetDefaultView(string sView)
         {
-            m_sDefView = sView;
+            m_sDefaultView = sView;
 
             // default view is autosaved unless we have never saved this collection
             if (m_ste != null)
@@ -50,12 +69,28 @@ namespace AzLog
                 }
         }
 
+        public string DefaultView => m_sDefaultView;
+
+        /* F  A D D  D A T A S O U R C E */
+        /*----------------------------------------------------------------------------
+        	%%Function: FAddDatasource
+        	%%Qualified: AzLog.AzLogCollection.FAddDatasource
+        	%%Contact: rlittle
+        	
+        ----------------------------------------------------------------------------*/
         public bool FAddDatasource(IAzLogDatasource iazlds)
         {
             m_pliazld.Add(iazlds);
             return true;
         }
 
+        /* F  A D D  D A T A S O U R C E */
+        /*----------------------------------------------------------------------------
+        	%%Function: FAddDatasource
+        	%%Qualified: AzLog.AzLogCollection.FAddDatasource
+        	%%Contact: rlittle
+        	
+        ----------------------------------------------------------------------------*/
         public bool FAddDatasource(string sDatasource, string sRegRoot)
         {
             IAzLogDatasource iazlds = AzLogDatasourceSupport.LoadDatasource(null, sRegRoot, sDatasource);
@@ -65,6 +100,13 @@ namespace AzLog
             return false;
         }
 
+        /* R E M O V E  D A T A S O U R C E */
+        /*----------------------------------------------------------------------------
+        	%%Function: RemoveDatasource
+        	%%Qualified: AzLog.AzLogCollection.RemoveDatasource
+        	%%Contact: rlittle
+        	
+        ----------------------------------------------------------------------------*/
         public void RemoveDatasource(IAzLogDatasource iazlds)
         {
             string sDatasource = iazlds.ToString();
@@ -105,7 +147,7 @@ namespace AzLog
                 m_ste = new Settings(_rgsteeCollection, sKeyName, "main");
                 m_ste.Load();
 
-                m_ste.SetSValue("DefaultView", m_sDefView);
+                m_ste.SetSValue("DefaultView", m_sDefaultView);
                 }
 
             string[] rgs = new string[m_pliazld.Count];
