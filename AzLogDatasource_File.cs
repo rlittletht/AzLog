@@ -181,6 +181,7 @@ namespace AzLog
         #endregion
 
         private bool m_fDataLoaded;
+        private bool m_fDataLoading; // this means that someone has already requested and we are parsing. if they ask for another partition of data, just return since we are getting all the partitions.
 
         private static int s_cChunkSize = 8192;
 
@@ -651,8 +652,10 @@ namespace AzLog
         ----------------------------------------------------------------------------*/
         public async Task<bool> FetchPartitionForDateAsync(AzLogModel azlm, DateTime dttm)
         {
-            if (m_fDataLoaded)
+            if (m_fDataLoaded || m_fDataLoading)
                 return true;
+
+            m_fDataLoading = true;
 
             // since they asked for this dttm, at least tell them we're pending
             azlm.UpdatePart(dttm, dttm.AddHours(1.0), AzLogParts.GrfDatasourceForIDatasource(m_iDatasource), AzLogPartState.Pending);
@@ -694,6 +697,7 @@ namespace AzLog
                 azlv.CompleteAsyncData();
 
             m_fDataLoaded = true;
+            m_fDataLoading = false;
             return true;
         }
     }
