@@ -16,12 +16,13 @@ namespace AzLog
     public partial class AzAddDatasource_Azure : Form
     {
         private string m_sRegRoot;
+
         private Settings.SettingsElt[] _rgsteeAccount =
-            {
-                new Settings.SettingsElt("AccountKey", Settings.Type.Str, "", ""),
-                new Settings.SettingsElt("StorageType", Settings.Type.Str, "", ""),
-                new Settings.SettingsElt("StorageDomain", Settings.Type.Str, "", ""),
-            };
+        {
+            new Settings.SettingsElt("AccountKey", Settings.Type.Str, "", ""),
+            new Settings.SettingsElt("StorageType", Settings.Type.Str, "", ""),
+            new Settings.SettingsElt("StorageDomain", Settings.Type.Str, "", ""),
+        };
 
         /* A Z  A D D  D A T A S O U R C E _  A Z U R E */
         /*----------------------------------------------------------------------------
@@ -38,10 +39,10 @@ namespace AzLog
             InitializeComponent();
             PopulateAccounts();
             if (m_iazlds != null)
-                {
+            {
                 m_ebName.Text = m_iazlds.GetName();
                 SelectCbItem(m_cbStorageType, AzLogDatasourceSupport.TypeToString(m_iazlds.GetSourceType()));
-                }
+            }
         }
 
         void SelectCbItem(ComboBox cb, string sStringToFind)
@@ -49,10 +50,11 @@ namespace AzLog
             int iSel;
 
             for (iSel = 0; iSel < cb.Items.Count; iSel++)
-                {
+            {
                 if (String.Compare(cb.Items[iSel].ToString(), sStringToFind, StringComparison.InvariantCultureIgnoreCase) == 0)
                     break;
-                }
+            }
+
             if (iSel >= cb.Items.Count)
                 return;
 
@@ -76,6 +78,7 @@ namespace AzLog
                 if (s != "Views")
                     m_cbAccounts.Items.Add(s);
             }
+
             rk.Close();
         }
 
@@ -90,20 +93,20 @@ namespace AzLog
         private void DoAddEditAccount(object sender, EventArgs e)
         {
             if (m_cbAccounts.SelectedIndex == -1)
-                {
+            {
                 AzAddAccount.AddStorageAccount(AzLogAzureTable.AccountSettingsDef());
                 m_cbAccounts.Items.Clear();
                 PopulateAccounts();
-                }
+            }
             else
                 AzAddAccount.EditStorageAccount((string) m_cbAccounts.SelectedItem, AzLogAzureTable.AccountSettingsDef());
         }
 
         private IAzLogDatasource m_iazlds;
 
-        private string KeyName => (string)String.Format("{0}\\AzureAccounts\\{1}", m_sRegRoot, m_cbAccounts.SelectedItem);
-        
-        
+        private string KeyName => (string) String.Format("{0}\\AzureAccounts\\{1}", m_sRegRoot, m_cbAccounts.SelectedItem);
+
+
         /* D O  O P E N  A C C O U N T */
         /*----------------------------------------------------------------------------
         	%%Function: DoOpenAccount
@@ -124,26 +127,30 @@ namespace AzLog
             DatasourceType dt = AzLogDatasourceSupport.TypeFromString(m_cbStorageType.Text);
 
             if (dt == DatasourceType.AzureBlob)
-                {
+            {
                 AzLogAzureBlob azla = new AzLogAzureBlob();
 
-                azla.OpenAccount((string) m_cbAccounts.SelectedItem, AzLogAzureBlob.GetAccountKey(m_sRegRoot, (string) m_cbAccounts.SelectedItem));
+                azla.OpenAccount(
+                    (string) m_cbAccounts.SelectedItem,
+                    AzLogAzureBlob.GetAccountKey(m_sRegRoot, (string) m_cbAccounts.SelectedItem));
                 foreach (string s in azla.Containers)
                     m_lbTables.Items.Add(s);
 
                 m_iazlds = azla;
-                }
+            }
             else if (dt == DatasourceType.AzureTable)
-                {
+            {
                 AzLogAzureTable azlt = new AzLogAzureTable();
 
-                azlt.OpenAccount((string) m_cbAccounts.SelectedItem, AzLogAzureTable.GetAccountKey(m_sRegRoot, (string) m_cbAccounts.SelectedItem));
+                azlt.OpenAccount(
+                    (string) m_cbAccounts.SelectedItem,
+                    AzLogAzureTable.GetAccountKey(m_sRegRoot, (string) m_cbAccounts.SelectedItem));
 
                 foreach (string s in azlt.Tables)
                     m_lbTables.Items.Add(s);
 
                 m_iazlds = azlt;
-                }
+            }
         }
 
         /* D O  S E L E C T  T A B L E */
@@ -155,7 +162,7 @@ namespace AzLog
         ----------------------------------------------------------------------------*/
         private void DoSelectTable(object sender, EventArgs e)
         {
-            m_iazlds.OpenContainer(null, (string)m_lbTables.SelectedItem);
+            m_iazlds.OpenContainer(null, (string) m_lbTables.SelectedItem);
         }
 
         /* C R E A T E  D A T A S O U R C E */
@@ -170,11 +177,17 @@ namespace AzLog
             AzAddDatasource_Azure azads = new AzAddDatasource_Azure(sRegRoot);
 
             if (azads.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                if (azads.m_iazlds == null)
                 {
+                    MessageBox.Show("No datasource defined. Aborting add");
+                    return null;
+                }
                 azads.m_iazlds.SetName(azads.m_ebName.Text);
 
                 return azads.m_iazlds;
-                }
+            }
+
             return null;
         }
 
@@ -183,11 +196,12 @@ namespace AzLog
             AzAddDatasource_Azure azads = new AzAddDatasource_Azure(sRegRoot, iazlds);
 
             if (azads.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-                {
+            {
                 azads.m_iazlds.SetName(azads.m_ebName.Text);
 
                 //return azads.m_iazlds;
-                }
+            }
+
             //return null;
         }
     }
