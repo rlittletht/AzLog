@@ -254,6 +254,106 @@ namespace AzLog
             return azle;
         }
 
+        /*----------------------------------------------------------------------------
+            %%Function: CreateFromConfig
+            %%Qualified: AzLog.TextLogConverter.CreateFromConfig
+            %%Contact: rlittle
+
+            Config language:
+
+            This config defines how to parse a text line into an AzLogEntry, which
+            has a set of predefined columns, as well as custom columns. See
+            AzLogEntry.LogColummn for the set of constants we are mapping to.
+
+            Column definition:
+
+            [0-9]+  this is the column we are mapping to
+            ["+"]   an optional "+" character, which means this column is copied to
+                    another builtin column:
+                    [0-9]+  the other column we are mapping to
+            [,:t?]  what is the separator character
+                    , means its a comma
+                    : means its a colon
+                    t means its \t
+                    ? means we have a fixed width, with the width following:
+                    [0-9]+  the fixed width, followed by a space (to terminate the
+                            width)
+        ----------------------------------------------------------------------------*/
+        public static TextLogConverter CreateFromConfig(string sConfig)
+        {
+            TextLogConverter tlc = new TextLogConverter();
+
+            int ich, ichNext;
+            int ichMac = sConfig.Length;
+
+            ich = 0;
+            while (ich < ichMac)
+            {
+                ichNext = ich;
+                while (ichNext < ichMac && char.IsDigit(sConfig[ichNext]))
+                    ichNext++;
+
+                if (ichNext >= ichMac)
+                    throw new Exception("bad config format -- no terminating separator");
+
+                int nCol = int.Parse(sConfig.Substring(ich, ichNext - ich));
+                int nColCopy = -1;
+
+                if (sConfig[ichNext] == '+') // this means they want to copy this field to another column too
+                {
+                    int ichFirstCopy = ++ichNext;
+
+                    while (ichNext < ichMac && char.IsDigit(sConfig[ichNext]))
+                        ichNext++;
+
+                    if (ichNext >= ichMac)
+                        throw new Exception("bad config format -- no terminating separator after column copy");
+
+                    nColCopy = int.Parse(sConfig.Substring(ichFirstCopy, ichNext - ichFirstCopy));
+                }
+
+                char chSep = sConfig[ichNext];
+                TextLogColumn tlcc = new TextLogColumn();
+                tlcc.Column = (AzLogEntry.LogColumn)nCol;
+                if (nColCopy != -1)
+                    tlcc.ColumnCopy = (AzLogEntry.LogColumn)nColCopy;
+
+                if (chSep == ',')
+                    tlcc.Separator = TextLogColumn.Sep.Comma;
+                else if (chSep == ':')
+                    tlcc.Separator = TextLogColumn.Sep.Colon;
+                else if (chSep == 't')
+                    tlcc.Separator = TextLogColumn.Sep.Tab;
+                else if (chSep == '?')
+                {
+                    tlcc.Separator = TextLogColumn.Sep.FixedWidth;
+
+                    int ichFirst = ++ichNext;
+
+                    // the next digits are the cch
+                    while (ichNext < ichMac && char.IsDigit(sConfig[ichNext]))
+                        ichNext++;
+
+                    if (ichFirst >= ichNext)
+                        throw new Exception("bad config format -- no length for fixed width column");
+
+                    if (sConfig[ichNext] != ' ')
+                        throw new Exception("bad config format -- fixed width column width was not terminated with a space");
+
+                    tlcc.Cch = int.Parse(sConfig.Substring(ichFirst, ichNext - ichFirst));
+                }
+                else
+                {
+                    throw new Exception("bad config format. unknown separator");
+                }
+
+                tlc.m_pltlc.Add(tlcc);
+                ich = ichNext + 1;
+            }
+
+            return tlc;
+        }
+
         #region Unit Tests
 
         [TestCase("\"test\"", 0, true, 5, 5, true)]
@@ -275,89 +375,6 @@ namespace AzLog
             Assert.AreEqual(ichLastExpected, ichLast);
             Assert.AreEqual(ichEndExpected, ichEnd);
             Assert.AreEqual(fExpected, fResult);
-        }
-
-        /*----------------------------------------------------------------------------
-        	%%Function: CreateFromConfig
-        	%%Qualified: AzLog.TextLogConverter.CreateFromConfig
-        	%%Contact: rlittle
-        	
-            Config language:
-
-        ----------------------------------------------------------------------------*/
-        public static TextLogConverter CreateFromConfig(string sConfig)
-        {
-            TextLogConverter tlc = new TextLogConverter();
-
-            int ich, ichNext;
-            int ichMac = sConfig.Length;
-
-            ich = 0;
-            while (ich < ichMac)
-                {
-                ichNext = ich;
-                while (ichNext < ichMac && char.IsDigit(sConfig[ichNext]))
-                    ichNext++;
-
-                if (ichNext >= ichMac)
-                    throw new Exception("bad config format -- no terminating separator");
-
-                int nCol = int.Parse(sConfig.Substring(ich, ichNext - ich));
-                int nColCopy = -1;
-
-                if (sConfig[ichNext] == '+') // this means they want to copy this field to another column too
-                    {
-                    int ichFirstCopy = ++ichNext;
-
-                    while (ichNext < ichMac && char.IsDigit(sConfig[ichNext]))
-                        ichNext++;
-
-                    if (ichNext >= ichMac)
-                        throw new Exception("bad config format -- no terminating separator after column copy");
-
-                    nColCopy = int.Parse(sConfig.Substring(ichFirstCopy, ichNext - ichFirstCopy));
-                    }
-
-                char chSep = sConfig[ichNext];
-                TextLogColumn tlcc = new TextLogColumn();
-                tlcc.Column = (AzLogEntry.LogColumn) nCol;
-                if (nColCopy != -1)
-                    tlcc.ColumnCopy = (AzLogEntry.LogColumn) nColCopy;
-
-                if (chSep == ',')
-                    tlcc.Separator = TextLogColumn.Sep.Comma;
-                else if (chSep == ':')
-                    tlcc.Separator = TextLogColumn.Sep.Colon;
-                else if (chSep == 't')
-                    tlcc.Separator = TextLogColumn.Sep.Tab;
-                else if (chSep == '?')
-                    {
-                    tlcc.Separator = TextLogColumn.Sep.FixedWidth;
-
-                    int ichFirst = ++ichNext;
-
-                    // the next digits are the cch
-                    while (ichNext < ichMac && char.IsDigit(sConfig[ichNext]))
-                        ichNext++;
-
-                    if (ichFirst >= ichNext)
-                        throw new Exception("bad config format -- no length for fixed width column");
-
-                    if (sConfig[ichNext] != ' ')
-                        throw new Exception("bad config format -- fixed width column width was not terminated with a space");
-
-                    tlcc.Cch = int.Parse(sConfig.Substring(ichFirst, ichNext - ichFirst));
-                    }
-                else
-                    {
-                    throw new Exception("bad config format. unknown separator");
-                    }
-
-                tlc.m_pltlc.Add(tlcc);
-                ich = ichNext + 1;
-                }
-
-            return tlc;
         }
 
         static private void AssertAzleEqual(AzLogEntry azle, AzLogEntry azleExpected)
@@ -383,6 +400,8 @@ namespace AzLog
             Assert.AreEqual(azleExpected.Message8, azle.Message8);
             Assert.AreEqual(azleExpected.Message9, azle.Message9);
         }
+
+#pragma warning disable format // @formatter:off
         //                                                   0    1      2     3     4     5    6     7     8     9     10    11     12   13    14    15    16    17    18   19  
         //                                                  Part  Row   Tick  App   Level EvID  Inst  Pid   Tid   MsgR  Msg0  Msg1  Msg2  Msg3  Msg4  Msg5  Msg6  Msg7  Msg8  Msg9
         [TestCase("3t", "AppName", null, null, null, "AppName", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)]
@@ -423,11 +442,12 @@ namespace AzLog
             "OnPacketReceived", null, null, null, null, null)]
 
         [TestCase("20?6 4:11:10t8t12t2+13t14t", "TcRec Information: -30257 : cc6689cf-f523-4495-9762-c110ef99da32\t13\t0A7AF47C\t10/26/2015 18:12:23\tOnPacketReceived",
-            "2015102618", null, "635814799430000000", null, "Information", null, null, null, "13", null, "cc6689cf-f523-4495-9762-c110ef99da32", "-30257", "0A7AF47C",
-            "10/26/2015 18:12:23", "OnPacketReceived", null, null, null, null, null)]
+            "2015102701", null, "635815051430000000", null, "Information", null, null, null, "13", null, "cc6689cf-f523-4495-9762-c110ef99da32", "-30257", "0A7AF47C",
+            "10/27/2015 01:12:23", "OnPacketReceived", null, null, null, null, null)]
 
-        [TestCase("2,", "10/26/2015 18:12:23", "2015102618", null, "635814799430000000", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        [TestCase("2,", "10/26/2015 18:12:23", "2015102701", null, "635815051430000000", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
             null, null)]
+#pragma warning restore format // @formatter:on
         [Test]
         public static void TestParseLine(string sConfig, string sLine, string sPartitionExpected, string sRowKeyExpected, string sTickCountExpected, string sAppNameExpected,
             string sLevelExpected, string sEventIDExpected, string sInstanceIDExpected, string sPidExpected, string sTidExpected, string sMessageRawExpected,
@@ -466,5 +486,5 @@ namespace AzLog
         }
 
         #endregion
-    }
+    }  
 }
