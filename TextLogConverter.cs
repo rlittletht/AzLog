@@ -431,30 +431,20 @@ namespace AzLog
             Assert.AreEqual(azleExpected.Message9, azle.Message9);
         }
 
-#pragma warning disable format // @formatter:off
+#pragma warning disable format // @formatter:off — disable formatter after this line
         //                                                   0    1      2     3     4     5    6     7     8     9     10    11     12   13    14    15    16    17    18   19  
         //                                                  Part  Row   Tick  App   Level EvID  Inst  Pid   Tid   MsgR  Msg0  Msg1  Msg2  Msg3  Msg4  Msg5  Msg6  Msg7  Msg8  Msg9
         [TestCase("`AppName`t", "AppName", null, null, null, "AppName", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)]
         [TestCase("`AppName`t", " AppName", null, null, null, "AppName", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)]
         [TestCase("`AppName`t", "  AppName  ", null, null, null, "AppName", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)]
-        [TestCase("3t", "AppName", null, null, null, "AppName", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)]
-        [TestCase("3t", " AppName", null, null, null, "AppName", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)]
-        [TestCase("3t", "  AppName  ", null, null, null, "AppName", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)]
 
         [TestCase("`Message9`t", "AppName", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, "AppName")]
-        [TestCase("19t", "AppName", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, "AppName")]
 
         [TestCase("`AppName`t`Level`t", "AppName\tInformation", null, null, null, "AppName", "Information", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)]
         [TestCase("`AppName`t`Level`t", " AppName\tInformation", null, null, null, "AppName", "Information", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)]
         [TestCase("`AppName`t`Level`t", " AppName \tInformation", null, null, null, "AppName", "Information", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)]
         [TestCase("`AppName`t`Level`t", " AppName \t Information", null, null, null, "AppName", "Information", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)]
         [TestCase("`AppName`t`Level`t", " AppName \t Information ", null, null, null, "AppName", "Information", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)]
-
-        [TestCase("3t4t", "AppName\tInformation", null, null, null, "AppName", "Information", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)]
-        [TestCase("3t4t", " AppName\tInformation", null, null, null, "AppName", "Information", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)]
-        [TestCase("3t4t", " AppName \tInformation", null, null, null, "AppName", "Information", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)]
-        [TestCase("3t4t", " AppName \t Information", null, null, null, "AppName", "Information", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)]
-        [TestCase("3t4t", " AppName \t Information ", null, null, null, "AppName", "Information", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)]
 
         [TestCase("`AppName`,`Level`,", "AppName,Information", null, null, null, "AppName", "Information", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)]
         [TestCase("`AppName`,`Level`,", " AppName,Information", null, null, null, "AppName", "Information", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)]
@@ -463,24 +453,10 @@ namespace AzLog
         [TestCase("`AppName`,`Level`,", " AppName , Information ", null, null, null, "AppName", "Information", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)]
         [TestCase("`AppName`,`Level`,", " \"App,Name\" , Information ", null, null, null, "App,Name", "Information", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)]
 
-        [TestCase("3,4,", "AppName,Information", null, null, null, "AppName", "Information", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)]
-        [TestCase("3,4,", " AppName,Information", null, null, null, "AppName", "Information", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)]
-        [TestCase("3,4,", " AppName ,Information", null, null, null, "AppName", "Information", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)]
-        [TestCase("3,4,", " AppName , Information", null, null, null, "AppName", "Information", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)]
-        [TestCase("3,4,", " AppName , Information ", null, null, null, "AppName", "Information", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)]
-        [TestCase("3,4,", " \"App,Name\" , Information ", null, null, null, "App,Name", "Information", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)]
-
         [TestCase("`AppName`?2 ", "AppName", null, null, null, "Ap", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)]
         [TestCase("`AppName`?2 `Level`,", "AppName", null, null, null, "Ap", "pName", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)]
 
-        [TestCase("3?2 ", "AppName", null, null, null, "Ap", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)]
-        [TestCase("3?2 4,", "AppName", null, null, null, "Ap", "pName", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)]
-
         [TestCase("`Nil`?6 `Level`:`Message1`:`Message0`t`Tid`t`Message2`t`Message3`t`Message4`t", "TcRec Information: -30257 : cc6689cf-f523-4495-9762-c110ef99da32\t13\t0A7AF47C\t10/26/2015 18:12:23\tOnPacketReceived",
-            null, null, null, null, "Information", null, null, null, "13", null, "cc6689cf-f523-4495-9762-c110ef99da32", "-30257", "0A7AF47C", "10/26/2015 18:12:23",
-            "OnPacketReceived", null, null, null, null, null)]
-
-        [TestCase("20?6 4:11:10t8t12t13t14t", "TcRec Information: -30257 : cc6689cf-f523-4495-9762-c110ef99da32\t13\t0A7AF47C\t10/26/2015 18:12:23\tOnPacketReceived",
             null, null, null, null, "Information", null, null, null, "13", null, "cc6689cf-f523-4495-9762-c110ef99da32", "-30257", "0A7AF47C", "10/26/2015 18:12:23",
             "OnPacketReceived", null, null, null, null, null)]
 
@@ -488,13 +464,38 @@ namespace AzLog
             "2015102701", null, "635815051430000000", null, "Information", null, null, null, "13", null, "cc6689cf-f523-4495-9762-c110ef99da32", "-30257", "0A7AF47C",
             "10/27/2015 01:12:23", "OnPacketReceived", null, null, null, null, null)]
 
+        [TestCase("`EventTickCount`,", "10/26/2015 18:12:23", "2015102701", null, "635815051430000000", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+            null, null)]
+
+#if NoDirectIndex
+        [TestCase("3t", "AppName", null, null, null, "AppName", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)]
+        [TestCase("3t", " AppName", null, null, null, "AppName", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)]
+        [TestCase("3t", "  AppName  ", null, null, null, "AppName", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)]
+        [TestCase("19t", "AppName", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, "AppName")]
+        [TestCase("3t4t", "AppName\tInformation", null, null, null, "AppName", "Information", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)]
+        [TestCase("3t4t", " AppName\tInformation", null, null, null, "AppName", "Information", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)]
+        [TestCase("3t4t", " AppName \tInformation", null, null, null, "AppName", "Information", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)]
+        [TestCase("3t4t", " AppName \t Information", null, null, null, "AppName", "Information", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)]
+        [TestCase("3t4t", " AppName \t Information ", null, null, null, "AppName", "Information", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)]
+        [TestCase("3,4,", "AppName,Information", null, null, null, "AppName", "Information", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)]
+        [TestCase("3,4,", " AppName,Information", null, null, null, "AppName", "Information", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)]
+        [TestCase("3,4,", " AppName ,Information", null, null, null, "AppName", "Information", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)]
+        [TestCase("3,4,", " AppName , Information", null, null, null, "AppName", "Information", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)]
+        [TestCase("3,4,", " AppName , Information ", null, null, null, "AppName", "Information", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)]
+        [TestCase("3,4,", " \"App,Name\" , Information ", null, null, null, "App,Name", "Information", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)]
+        [TestCase("3?2 ", "AppName", null, null, null, "Ap", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)]
+        [TestCase("3?2 4,", "AppName", null, null, null, "Ap", "pName", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)]
+        [TestCase("20?6 4:11:10t8t12t13t14t", "TcRec Information: -30257 : cc6689cf-f523-4495-9762-c110ef99da32\t13\t0A7AF47C\t10/26/2015 18:12:23\tOnPacketReceived",
+            null, null, null, null, "Information", null, null, null, "13", null, "cc6689cf-f523-4495-9762-c110ef99da32", "-30257", "0A7AF47C", "10/26/2015 18:12:23",
+            "OnPacketReceived", null, null, null, null, null)]
         [TestCase("20?6 4:11:10t8t12t2+13t14t", "TcRec Information: -30257 : cc6689cf-f523-4495-9762-c110ef99da32\t13\t0A7AF47C\t10/26/2015 18:12:23\tOnPacketReceived",
             "2015102701", null, "635815051430000000", null, "Information", null, null, null, "13", null, "cc6689cf-f523-4495-9762-c110ef99da32", "-30257", "0A7AF47C",
             "10/27/2015 01:12:23", "OnPacketReceived", null, null, null, null, null)]
-
         [TestCase("2,", "10/26/2015 18:12:23", "2015102701", null, "635815051430000000", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
             null, null)]
-#pragma warning restore format // @formatter:on
+#endif // NoDirectIndex
+
+#pragma warning restore format // @formatter:on — disable formatter after this line
         [Test]
         public static void TestParseLine(string sConfig, string sLine, string sPartitionExpected, string sRowKeyExpected, string sTickCountExpected, string sAppNameExpected,
             string sLevelExpected, string sEventIDExpected, string sInstanceIDExpected, string sPidExpected, string sTidExpected, string sMessageRawExpected,
