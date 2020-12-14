@@ -145,6 +145,37 @@ namespace AzLog
             throw new Exception("bad datasource in OGetValue under AzLogEntry");
         }
 
+        private static Dictionary<string, LogColumn> s_mpColumnNames =
+            new Dictionary<string, LogColumn>
+            {
+                {"Nil", LogColumn.Nil},
+                {"Partition", LogColumn.Partition},
+                {"RowKey", LogColumn.RowKey},
+                {"EventTickCount", LogColumn.EventTickCount},
+                {"AppName", LogColumn.AppName},
+                {"Level", LogColumn.Level},
+                {"EventID", LogColumn.EventID},
+                {"InstanceID", LogColumn.InstanceID},
+                {"Pid", LogColumn.Pid},
+                {"Tid", LogColumn.Tid},
+                {"Message", LogColumn.Message},
+                {"Message0", LogColumn.Message0},
+                {"Message1", LogColumn.Message1},
+                {"Message2", LogColumn.Message2},
+                {"Message3", LogColumn.Message3},
+                {"Message4", LogColumn.Message4},
+                {"Message5", LogColumn.Message5},
+                {"Message6", LogColumn.Message6},
+                {"Message7", LogColumn.Message7},
+                {"Message8", LogColumn.Message8},
+                {"Message9", LogColumn.Message9},
+            };
+                
+        public static LogColumn GetColumnIndexByName(string sColumn)
+        {
+            return s_mpColumnNames[sColumn];
+        }
+
         public string GetColumn(LogColumn lc)
         {
             switch (lc)
