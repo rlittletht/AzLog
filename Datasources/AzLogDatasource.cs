@@ -11,6 +11,14 @@ using TCore.Settings;
 
 namespace AzLog
 {
+    public enum DatasourceType
+    {
+        AzureTable,
+        AzureBlob,
+        TextFile,
+        Unknown
+    };
+
     public interface IAzLogDatasource
     {
         string ToString();
@@ -18,6 +26,9 @@ namespace AzLog
         void SetName(string sName);
         int GetDatasourceIndex();
         void SetDatasourceIndex(int i);
+        DatasourceType GetSourceType();
+        void SetSourceType(DatasourceType dt);
+        void OpenContainer(AzLogModel azlm, string sName);
 
         void Save(string sRegRoot);
         bool FOpen(AzLogModel azlm, string sRegRoot);
@@ -28,6 +39,33 @@ namespace AzLog
 
     public class AzLogDatasourceSupport
     {
+        public static DatasourceType TypeFromString(string s)
+        {
+            if (s == "AzureTableStorage")
+                return DatasourceType.AzureTable;
+            if (s == "AzureBlobStorage")
+                return DatasourceType.AzureBlob;
+            if (s == "TextFile")
+                return DatasourceType.TextFile;
+
+            return DatasourceType.Unknown;
+        }
+
+        public static string TypeToString(DatasourceType st)
+        {
+            switch (st)
+                {
+                case DatasourceType.AzureTable:
+                    return "AzureTableStorage";
+                case DatasourceType.AzureBlob:
+                    return "AzureBlobStorage";
+                case DatasourceType.TextFile:
+                    return "TextFile";
+                default:
+                    throw new Exception("illegal storage type");
+                }
+        }
+
         /* L O A D  D A T A S O U R C E */
         /*----------------------------------------------------------------------------
         	%%Function: LoadDatasource
@@ -52,11 +90,20 @@ namespace AzLog
 
             ste.Load();
             string sType = ste.SValue("Type");
-            if (string.Compare(sType, "AzureTableStorage") == 0)
-                return AzLogAzure.LoadAzureDatasource(null, sRegRoot, sName);
-            if (string.Compare(sType, "TextFile") == 0)
-                return AzLogFile.LoadFileDatasource(null, sRegRoot, sName);
-            return null;
+            DatasourceType dt;
+
+            dt = TypeFromString(sType);
+            switch (dt)
+                {
+                case DatasourceType.TextFile:
+                    return AzLogFile.LoadFileDatasource(null, sRegRoot, sName);
+                case DatasourceType.AzureTable:
+                    return AzLogAzureTable.LoadAzureDatasource(null, sRegRoot, sName);
+                case DatasourceType.AzureBlob:
+                    return AzLogAzureBlob.LoadAzureDatasource(null, sRegRoot, sName);
+                default:
+                    throw new Exception("unknown datasourcetype");
+                }
         }
     }
 }

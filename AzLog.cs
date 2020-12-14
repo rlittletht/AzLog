@@ -340,6 +340,11 @@ namespace AzLog
         {
             TCore.UI.RenderSupp.RenderHeadingLine(sender, e);
         }
+
+        private void DoEditDatasource(object sender, EventArgs e)
+        {
+            AzAddDatasource_Azure.EditDatasource("Software\\Thetasoft\\AzLog", (IAzLogDatasource)m_lbAvailableDatasources.SelectedItem);
+        }
     }
 }
 

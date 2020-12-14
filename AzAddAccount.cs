@@ -13,8 +13,11 @@ namespace AzLog
 {
     public partial class AzAddAccount : Form
     {
-        public AzAddAccount(Settings.SettingsElt[] rgsteeAccount)
+        private string m_sRegRoot;
+
+        public AzAddAccount(Settings.SettingsElt[] rgsteeAccount, string sRegRoot)
         {
+            m_sRegRoot = sRegRoot;
             InitializeComponent();
             this.CancelButton = m_pbCancel;
 
@@ -32,7 +35,7 @@ namespace AzLog
 
         public void LoadSettings(string sAccountName)
         {
-            Settings ste = new Settings(_rgsteeAccount, String.Format("Software\\Thetasoft\\AzLog\\{0}", sAccountName),
+            Settings ste = new Settings(_rgsteeAccount, String.Format("{0}\\AzureAccounts\\{1}", m_sRegRoot, sAccountName),
                                         sAccountName);
 
             ste.Load();
@@ -45,7 +48,7 @@ namespace AzLog
         {
             string sAccountName = m_ebAccountName.Text;
 
-            Settings ste = new Settings(_rgsteeAccount, String.Format("Software\\Thetasoft\\AzLog\\{0}", sAccountName),
+            Settings ste = new Settings(_rgsteeAccount, String.Format("{0}\\AzureAccounts\\{1}", m_sRegRoot, sAccountName),
                                         sAccountName);
             ste.Save();
             this.Close();
@@ -53,7 +56,7 @@ namespace AzLog
 
         public static bool EditStorageAccount(string sAccountName, Settings.SettingsElt[] rgsteeAccount)
         {
-            AzAddAccount azaa = new AzAddAccount(rgsteeAccount);
+            AzAddAccount azaa = new AzAddAccount(rgsteeAccount, "Software\\Thetasoft\\AzLog");
             azaa.LoadSettings(sAccountName);
             azaa.ShowDialog();
 
@@ -69,7 +72,7 @@ namespace AzLog
         ----------------------------------------------------------------------------*/
         public static bool AddStorageAccount(Settings.SettingsElt[] rgsteeAccount)
         {
-            AzAddAccount azaa = new AzAddAccount(rgsteeAccount);
+            AzAddAccount azaa = new AzAddAccount(rgsteeAccount, "Software\\Thetasoft\\AzLog");
 
             return azaa.ShowDialog() == System.Windows.Forms.DialogResult.OK;
         }

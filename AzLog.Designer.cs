@@ -120,6 +120,7 @@
             this.m_pbEditDatasource.TabIndex = 15;
             this.m_pbEditDatasource.Text = "Edit Datasource";
             this.m_pbEditDatasource.UseVisualStyleBackColor = true;
+            this.m_pbEditDatasource.Click += new System.EventHandler(this.DoEditDatasource);
             // 
             // m_pbNewCollection
             // 
@@ -248,8 +249,7 @@
             this.Controls.Add(this.m_ebStart);
             this.Name = "AzLog";
             this.Text = "Form1";
-            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(DoSaveState);
-
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.DoSaveState);
             this.ResumeLayout(false);
             this.PerformLayout();
 

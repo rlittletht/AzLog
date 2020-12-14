@@ -17,7 +17,6 @@ namespace AzLog
         }
 
         public CloudTable Table => m_act;
-
     }
 
     class AzTableCollection

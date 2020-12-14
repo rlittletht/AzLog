@@ -362,7 +362,8 @@ namespace AzLog
         #endregion
     }
 
-    // We need an uber collection that supports virtualized set of AzLogEntries. Preferably partitioned. Supporting filtered and sorted views that doesn't change the underlying collection
+    // We need an uber collection that supports virtualized set of AzLogEntries. Preferably partitioned. 
+    // Supporting filtered and sorted views that doesn't change the underlying collection
     // we also need to know the ranges of data that are "complete", "pending", or "partial"
     // The we will use PartitionKey + RowKey as the master key for uniqueness (to allow filling of partial data)
     //
