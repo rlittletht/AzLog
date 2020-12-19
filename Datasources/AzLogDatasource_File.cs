@@ -16,6 +16,8 @@ namespace AzLog
         private string m_sFilename;
         private int m_iDatasource;
         private string m_sName;
+        private DateTime m_dttmFirst = DateTime.MaxValue;
+        private DateTime m_dttmLast = DateTime.MinValue;
 
         public AzLogFile()
         {
@@ -231,7 +233,65 @@ namespace AzLog
             return m_tlc.ParseLine(sLine, nLine);
         }
 
- 
+        public bool FGetMinMacDateTime(AzLogModel azlm, out DateTime dttmMin, out DateTime dttmMac)
+        {
+            if (!m_fDataLoaded)
+            {
+                LoadCompleteModel(azlm).Wait();
+
+                m_fDataLoaded = true;
+                m_fDataLoading = false;
+            }
+
+            dttmMin = m_dttmFirst;
+            dttmMac = m_dttmLast.AddDays(1);
+
+            return true;
+        }
+        public async Task LoadCompleteModel(AzLogModel azlm)
+        {
+            AzLogEntry[] rgazle = new AzLogEntry[s_cChunkSize]; // do 1k log entry chunks
+
+            using (StreamReader sr = File.OpenText(m_sFilename))
+            {
+                int iLine = 0;
+                int cChunk = 0;
+                int iFirst, iLast;
+
+                while (!sr.EndOfStream)
+                {
+                    string s = sr.ReadLine();
+                    AzLogEntry azle = null;
+                    try
+                    {
+                        azle = AzleFromLine(s, iLine++);
+                    }
+                    catch
+                    {
+                    }
+
+                    if (azle == null)
+                        continue;
+
+                    DateTime dttm = AzLogModel.DttmFromPartition(azle.Partition);
+                    if (m_dttmFirst > dttm)
+                        m_dttmFirst = dttm;
+                    if (m_dttmLast < dttm)
+                        m_dttmLast = dttm;
+
+                    rgazle[cChunk++] = azle;
+
+                    if (cChunk >= s_cChunkSize)
+                    {
+                        azlm.AddSegment(rgazle, cChunk, out iFirst, out iLast);
+                        cChunk = 0;
+                    }
+                }
+                if (cChunk > 0)
+                    azlm.AddSegment(rgazle, cChunk, out iFirst, out iLast);
+            }
+        }
+
         /* F E T C H  P A R T I T I O N  F O R  D A T E */
         /*----------------------------------------------------------------------------
         	%%Function: FetchPartitionForDateAsync
@@ -255,40 +315,8 @@ namespace AzLog
             foreach (AzLogView azlv in azlm.Listeners)
                 azlv.BeginAsyncData();
 
-            AzLogEntry[] rgazle = new AzLogEntry[s_cChunkSize]; // do 1k log entry chunks
+            await LoadCompleteModel(azlm);
 
-            using (StreamReader sr = File.OpenText(m_sFilename))
-                {
-                int iLine = 0;
-                int cChunk = 0;
-                int iFirst, iLast;
-
-                while (!sr.EndOfStream)
-                    {
-                    string s = await sr.ReadLineAsync();
-                    AzLogEntry azle = null;
-                    try
-                    {
-                        azle = AzleFromLine(s, iLine++);
-                    }
-                    catch
-                    {
-                    }
-
-                    if (azle == null)
-                        continue;
-
-                    rgazle[cChunk++] = azle;
-
-                    if (cChunk >= s_cChunkSize)
-                        {
-                        azlm.AddSegment(rgazle, cChunk, out iFirst, out iLast);
-                        cChunk = 0;
-                        }
-                    }
-                if (cChunk > 0)
-                    azlm.AddSegment(rgazle, cChunk, out iFirst, out iLast);
-                }
             azlm.UpdatePart(dttm, dttm.AddHours(1.0), AzLogParts.GrfDatasourceForIDatasource(m_iDatasource), AzLogPartState.Complete);
 
             foreach (AzLogView azlv in azlm.Listeners)

@@ -233,6 +233,19 @@ namespace AzLog
 
             m_azc = m_azcc.GetContainer(sContainerName);
         }
+
+        /*----------------------------------------------------------------------------
+        	%%Function: FGetMinMacDateTime
+        	%%Qualified: AzLog.AzLogAzureBlob.FGetMinMacDateTime
+        	
+        ----------------------------------------------------------------------------*/
+        public bool FGetMinMacDateTime(AzLogModel azlm, out DateTime dttmMin, out DateTime dttmMax)
+        {
+            dttmMin = DateTime.MaxValue;
+            dttmMax = DateTime.MinValue;
+
+            return false;
+        }
         #endregion
 
         #region Static helpers

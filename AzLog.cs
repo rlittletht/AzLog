@@ -47,6 +47,7 @@ namespace AzLog
                                  new Settings.SettingsElt("DefaultCollection", Settings.Type.Str, "", ""),
                                  new Settings.SettingsElt("LastStart", Settings.Type.Dttm, m_ebStart, ""),
                                  new Settings.SettingsElt("LastEnd", Settings.Type.Dttm, m_ebEnd, ""),
+                                 new Settings.SettingsElt("LastAllDates", Settings.Type.Bool, m_cbAllDates, 0)
                              };
         }
         public AzLog()
@@ -174,7 +175,20 @@ namespace AzLog
             // figure out the timespan being requested
             DateTime dttmMin, dttmMac;
 
-            AzLogModel.FillMinMacFromStartEnd(m_ebStart.Text, m_ebEnd.Text, out dttmMin, out dttmMac);
+            if (m_cbAllDates.Checked)
+            {
+                if (!m_azlm.FGetMinMacDateRange(out dttmMin, out dttmMac))
+                {
+                    MessageBox.Show("Cannot automatically set date range -- this option only works when at least one datasource is a file. Setting date range to today.");
+
+                    dttmMin = DateTime.Today;
+                    dttmMac = dttmMin.AddDays(1);
+                }
+            }
+            else
+            {
+                AzLogModel.FillMinMacFromStartEnd(m_ebStart.Text, m_ebEnd.Text, out dttmMin, out dttmMac);
+            }
 
             AzLogFilter azlf = new AzLogFilter();
 
@@ -344,6 +358,13 @@ namespace AzLog
         private void DoEditDatasource(object sender, EventArgs e)
         {
             AzAddDatasource_Azure.EditDatasource("Software\\Thetasoft\\AzLog", (IAzLogDatasource)m_lbAvailableDatasources.SelectedItem);
+        }
+
+        private void OnAllDatesCheckedChanged(object sender, EventArgs e)
+        {
+            bool fAllDates = ((CheckBox) sender).Checked;
+            m_ebStart.Enabled = !fAllDates;
+            m_ebEnd.Enabled = !fAllDates;
         }
     }
 }

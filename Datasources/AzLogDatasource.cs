@@ -34,6 +34,7 @@ namespace AzLog
         bool FOpen(AzLogModel azlm, string sRegRoot);
         bool FLoad(AzLogModel azlm, string sRegRoot, string sName);
         Task<bool> FetchPartitionForDateAsync(AzLogModel azlm, DateTime dttm);
+        bool FGetMinMacDateTime(AzLogModel azlm, out DateTime dttmMin, out DateTime dttmMax);
         void Close();
     }
 

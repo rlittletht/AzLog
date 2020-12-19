@@ -261,6 +261,14 @@ namespace AzLog
                 ste = new Settings(_rgsteeColumn, sKey, sColumn);
                 ste.Load();
                 int nTabOrder = ste.NValue("TabOrder");
+                if (mpnste.ContainsKey(nTabOrder))
+                {
+                    // duplicate tab order. just find the next unused item
+                    int nNewTabOrder = 0;
+                    while (mpnste.ContainsKey(nNewTabOrder))
+                        nNewTabOrder++;
+                    nTabOrder = nNewTabOrder;
+                }
                 mpnste.Add(nTabOrder, ste);
                 }
 

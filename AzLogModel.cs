@@ -177,6 +177,40 @@ namespace AzLog
             UpdateViewsWithRegion(iFirst, iLast);
         }
 
+        /*----------------------------------------------------------------------------
+        	%%Function: FGetMinMacDateRange
+        	%%Qualified: AzLog.AzLogModel.FGetMinMacDateRange
+        	
+            try to automatically set the date range. This can only be done for a 
+            text file datasource.
+
+            enumerate all datasources and ask them for the auto range. if the source
+            cannot automatically fulfill, they will just return false (only text 
+            sources right now will return true).
+        ----------------------------------------------------------------------------*/
+        public bool FGetMinMacDateRange(out DateTime dttmMin, out DateTime dttmMac)
+        {
+            bool fResult = false;
+
+            dttmMin = DateTime.MaxValue;
+            dttmMac = DateTime.MinValue;
+
+            foreach (IAzLogDatasource iazlds in m_pliazldsSources)
+            {
+                if (iazlds.FGetMinMacDateTime(this, out DateTime dttmMinLocal, out DateTime dttmMaxLocal))
+                {
+                    if (dttmMin > dttmMinLocal)
+                        dttmMin = dttmMinLocal;
+                    if (dttmMac < dttmMaxLocal)
+                        dttmMac = dttmMaxLocal;
+
+                    fResult = true;
+                }
+            }
+
+            return fResult;
+        }
+
         /* F E T C H  P A R T I T I O N S  F O R  D A T E  R A N G E */
         /*----------------------------------------------------------------------------
         	%%Function: FFetchPartitionsForDateRange

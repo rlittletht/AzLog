@@ -47,6 +47,7 @@
             this.label5 = new System.Windows.Forms.Label();
             this.label6 = new System.Windows.Forms.Label();
             this.label7 = new System.Windows.Forms.Label();
+            this.m_cbAllDates = new System.Windows.Forms.CheckBox();
             this.SuspendLayout();
             // 
             // m_ebStart
@@ -260,11 +261,23 @@
             this.label7.Tag = "Choose collection";
             this.label7.Paint += new System.Windows.Forms.PaintEventHandler(this.RenderHeadingLine);
             // 
+            // m_cbAllDates
+            // 
+            this.m_cbAllDates.AutoSize = true;
+            this.m_cbAllDates.Location = new System.Drawing.Point(482, 534);
+            this.m_cbAllDates.Name = "m_cbAllDates";
+            this.m_cbAllDates.Size = new System.Drawing.Size(52, 24);
+            this.m_cbAllDates.TabIndex = 28;
+            this.m_cbAllDates.Text = "All";
+            this.m_cbAllDates.UseVisualStyleBackColor = true;
+            this.m_cbAllDates.CheckedChanged += new System.EventHandler(this.OnAllDatesCheckedChanged);
+            // 
             // AzLog
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(881, 582);
+            this.Controls.Add(this.m_cbAllDates);
             this.Controls.Add(this.label7);
             this.Controls.Add(this.label6);
             this.Controls.Add(this.label5);
@@ -313,6 +326,7 @@
         private System.Windows.Forms.Label label5;
         private System.Windows.Forms.Label label6;
         private System.Windows.Forms.Label label7;
+        private System.Windows.Forms.CheckBox m_cbAllDates;
     }
 }
 
