@@ -225,7 +225,7 @@ namespace AzLog
 
                 // now we have the string
                 if (tlc.Column == AzLogEntry.LogColumn.EventTickCount)
-                    {
+                {
                     DateTime dttm = DateTime.Parse(sLine.Substring(ichFirst, ichEnd - ichFirst + 1));
                     dttm = dttm.ToUniversalTime();
 
@@ -233,11 +233,15 @@ namespace AzLog
                     azle.EventTickCount = dttm.Ticks + nLine;
                     if (tlc.ColumnCopy != AzLogEntry.LogColumn.Nil)
                         azle.SetColumn(tlc.ColumnCopy, dttm.ToString("MM/dd/yyyy HH:mm:ss"));
-                    }
+
+                    // and manufacture a partition as well
+                    azle.SetColumn(AzLogEntry.LogColumn.Partition, AzLogModel.SPartitionFromDate(dttm, dttm.Hour));
+                }
                 else
-                    {
+                {
                     azle.SetColumn(tlc.Column, sLine.Substring(ichFirst, ichEnd - ichFirst + 1));
-                    }
+                }
+
                 if (tlc.Separator == TextLogColumn.Sep.FixedWidth)
                     ich = ichLast;
                 else
@@ -245,8 +249,8 @@ namespace AzLog
                 ilc++;
                 if (ich >= ichMac)
                     {
-                    if (ilc < m_pltlc.Count)
-                        return null;
+//                    if (ilc < m_pltlc.Count)
+//                        return null;
                     break;
                     }
                 }

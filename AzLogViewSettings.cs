@@ -354,28 +354,33 @@ namespace AzLog
         }
 
         private DefaultColumnDef[] _rgdcd = new DefaultColumnDef[]
-                                                {
-                                                    new DefaultColumnDef("PartitionKey", AzLogEntry.LogColumn.Partition, 64),
-                                                    new DefaultColumnDef("RowKey", AzLogEntry.LogColumn.RowKey, 64),
-                                                    new DefaultColumnDef("EventTickCount", AzLogEntry.LogColumn.EventTickCount, 64),
-                                                    new DefaultColumnDef("AppName", AzLogEntry.LogColumn.AppName, 64),
-                                                    new DefaultColumnDef("Level", AzLogEntry.LogColumn.Level, 64),
-                                                    new DefaultColumnDef("EventID", AzLogEntry.LogColumn.EventID, 64),
-                                                    new DefaultColumnDef("InstanceID", AzLogEntry.LogColumn.InstanceID, 64),
-                                                    new DefaultColumnDef("Pid", AzLogEntry.LogColumn.Pid, 64),
-                                                    new DefaultColumnDef("nTid", AzLogEntry.LogColumn.Tid, 64),
-                                                    new DefaultColumnDef("sMessage", AzLogEntry.LogColumn.Message, 64),
-                                                    new DefaultColumnDef("sMessage0", AzLogEntry.LogColumn.Message0, 64, false),
-                                                    new DefaultColumnDef("sMessage1", AzLogEntry.LogColumn.Message1, 64, false),
-                                                    new DefaultColumnDef("sMessage2", AzLogEntry.LogColumn.Message2, 64, false),
-                                                    new DefaultColumnDef("sMessage3", AzLogEntry.LogColumn.Message3, 64, false),
-                                                    new DefaultColumnDef("sMessage4", AzLogEntry.LogColumn.Message4, 64, false),
-                                                    new DefaultColumnDef("sMessage5", AzLogEntry.LogColumn.Message5, 64, false),
-                                                    new DefaultColumnDef("sMessage6", AzLogEntry.LogColumn.Message6, 64, false),
-                                                    new DefaultColumnDef("sMessage7", AzLogEntry.LogColumn.Message7, 64, false),
-                                                    new DefaultColumnDef("sMessage8", AzLogEntry.LogColumn.Message8, 64, false),
-                                                    new DefaultColumnDef("sMessage9", AzLogEntry.LogColumn.Message9, 64, false)
-                                                };
+        {
+            new DefaultColumnDef("PartitionKey", AzLogEntry.LogColumn.Partition, 64),
+            new DefaultColumnDef("RowKey", AzLogEntry.LogColumn.RowKey, 64),
+            new DefaultColumnDef("EventTickCount", AzLogEntry.LogColumn.EventTickCount, 64),
+            new DefaultColumnDef("AppName", AzLogEntry.LogColumn.AppName, 64),
+            new DefaultColumnDef("Level", AzLogEntry.LogColumn.Level, 64),
+            new DefaultColumnDef("EventID", AzLogEntry.LogColumn.EventID, 64),
+            new DefaultColumnDef("InstanceID", AzLogEntry.LogColumn.InstanceID, 64),
+            new DefaultColumnDef("Pid", AzLogEntry.LogColumn.Pid, 64),
+            new DefaultColumnDef("nTid", AzLogEntry.LogColumn.Tid, 64),
+            new DefaultColumnDef("UlsTimestamp", AzLogEntry.LogColumn.UlsTimestamp, 64, false),
+            new DefaultColumnDef("UlsArea", AzLogEntry.LogColumn.UlsArea, 64, false),
+            new DefaultColumnDef("UlsCategory", AzLogEntry.LogColumn.UlsCategory, 64, false),
+            new DefaultColumnDef("UlsCorrelation", AzLogEntry.LogColumn.UlsCorrelation, 64, false),
+            new DefaultColumnDef("UlsEventID", AzLogEntry.LogColumn.UlsEventID, 64, false),
+            new DefaultColumnDef("sMessage", AzLogEntry.LogColumn.Message, 64),
+            new DefaultColumnDef("sMessage0", AzLogEntry.LogColumn.Message0, 64, false),
+            new DefaultColumnDef("sMessage1", AzLogEntry.LogColumn.Message1, 64, false),
+            new DefaultColumnDef("sMessage2", AzLogEntry.LogColumn.Message2, 64, false),
+            new DefaultColumnDef("sMessage3", AzLogEntry.LogColumn.Message3, 64, false),
+            new DefaultColumnDef("sMessage4", AzLogEntry.LogColumn.Message4, 64, false),
+            new DefaultColumnDef("sMessage5", AzLogEntry.LogColumn.Message5, 64, false),
+            new DefaultColumnDef("sMessage6", AzLogEntry.LogColumn.Message6, 64, false),
+            new DefaultColumnDef("sMessage7", AzLogEntry.LogColumn.Message7, 64, false),
+            new DefaultColumnDef("sMessage8", AzLogEntry.LogColumn.Message8, 64, false),
+            new DefaultColumnDef("sMessage9", AzLogEntry.LogColumn.Message9, 64, false)
+        };
 
         public DefaultColumnDef[] DefaultColumns => _rgdcd;
 

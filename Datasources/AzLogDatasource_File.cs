@@ -266,8 +266,14 @@ namespace AzLog
                 while (!sr.EndOfStream)
                     {
                     string s = await sr.ReadLineAsync();
-
-                    AzLogEntry azle = AzleFromLine(s, iLine++);
+                    AzLogEntry azle = null;
+                    try
+                    {
+                        azle = AzleFromLine(s, iLine++);
+                    }
+                    catch
+                    {
+                    }
 
                     if (azle == null)
                         continue;
