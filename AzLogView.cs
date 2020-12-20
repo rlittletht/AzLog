@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Windows.Forms;
 using Microsoft.WindowsAzure.Storage.Table;
 using NUnit.Framework;
@@ -15,6 +16,7 @@ namespace AzLog
         private IComparer<int> m_icle;
         private AzLogModel m_azlm;
         private AzLogFilter m_azlf;
+        private List<AzColorFilter> m_colorFilters = new List<AzColorFilter>();
 
         public int Length => m_pliale.Count;
         public AzLogFilter Filter => m_azlf;
@@ -85,6 +87,30 @@ namespace AzLog
                 RebuildView();
         }
 
+        public void AddColorFilter(AzLogFilter azlf, Color colorBack, Color colorFore)
+        {
+            m_colorFilters.Add(new AzColorFilter(azlf, colorBack, colorFore));
+        }
+
+        public bool FGetColorForItem(AzLogFilter.ILogFilterItem filterItem, out Color colorBack, out Color colorFore)
+        {
+            colorBack = Color.White;
+            colorFore = Color.Black;
+
+            foreach (AzColorFilter colorFilter in m_colorFilters)
+            {
+                if (colorFilter.Matches(filterItem))
+                {
+                    colorBack = colorFilter.BackColor;
+                    colorFore = colorFilter.ForeColor;
+
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         public object SyncLock
         {
             get { return m_azlw.SyncLock; }
@@ -130,7 +156,7 @@ namespace AzLog
         ----------------------------------------------------------------------------*/
         public ListViewItem LviItem(int i)
         {
-            return m_azlm.LogEntry(m_pliale[i]).LviFetch(m_nLogViewGeneration, m_azlw.ViewSettings);
+            return m_azlm.LogEntry(m_pliale[i]).LviFetch(m_nLogViewGeneration, m_azlw.ViewSettings, this);
         }
 
         /* A Z L E  I T E M */
@@ -224,6 +250,7 @@ namespace AzLog
             if (m_azlf.FEvaluate(azle))
                 m_pliale.Add(i);
         }
+
         /* A P P E N D  V I E W */
         /*----------------------------------------------------------------------------
         	%%Function: AppendView

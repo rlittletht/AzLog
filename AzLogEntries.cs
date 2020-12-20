@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Globalization;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -382,16 +383,20 @@ namespace AzLog
             TODO: Fix this by having more than one cache LVI (to support multiple
             windows)
         ----------------------------------------------------------------------------*/
-        public ListViewItem LviFetch(int nGeneration, AzLogViewSettings azlvs)
+        public ListViewItem LviFetch(int nGeneration, AzLogViewSettings azlvs, AzLogView view)
         {
             if (m_lvi == null || m_nGeneration != nGeneration)
                 {
                 m_lvi = new ListViewItem();
+                if (view.FGetColorForItem(this, out Color backColor, out Color foreColor))
+                {
+                    m_lvi.BackColor = backColor;
+                    m_lvi.ForeColor = foreColor;
+                }
 
                 for (int i = 0; i < azlvs.ColumnCount(); i++)
                     {
                     m_lvi.SubItems.Add(new ListViewItem.ListViewSubItem());
-
                     m_lvi.SubItems[i].Text = GetColumn(azlvs.Column(i).DataColumn);
                     m_lvi.Tag = this;
                     }

@@ -405,6 +405,7 @@ namespace AzLog
         ----------------------------------------------------------------------------*/
         public void InvalWindowFull()
         {
+            m_azlv.BumpGeneration();
             m_lvLog.BeginUpdate();
 //            m_lvLog.VirtualListSize = m_azlv.Length;
             m_lvLog.SetVirtualListSize(m_azlv.Length);
@@ -550,7 +551,7 @@ namespace AzLog
                 }
             else
                 {
-                // we aren't in the collumn headers. now customize our context menu
+                // we aren't in the column headers. now customize our context menu
                 Point ptLocal = m_lvLog.PointToClient(Cursor.Position);
                 ListViewItem lvi = m_lvLog.GetItemAt(ptLocal.X, ptLocal.Y);
                 AzLogEntry azle = (AzLogEntry) lvi.Tag;
@@ -564,6 +565,8 @@ namespace AzLog
                 m_ctxmListViewLog.Items[0].Text = String.Format("Filter to this {0}", ch.Text);
                 m_ctxmListViewLog.Items[1].Tag = cmc;
                 m_ctxmListViewLog.Items[1].Text = String.Format("Filter out this {0}", ch.Text);
+                m_ctxmListViewLog.Items[2].Tag = cmc;
+                m_ctxmListViewLog.Items[2].Text = String.Format("Color this {0}", ch.Text);
             }
         }
 
@@ -833,6 +836,26 @@ namespace AzLog
             m_azlv.RebuildView();
         }
 
+        /*----------------------------------------------------------------------------
+        	%%Function: CreateColorContext
+        	%%Qualified: AzLog.AzLogWindow.CreateColorContext
+        	
+            we're going to get called for the color item, so the parent of this item
+            should have our tag
+        ----------------------------------------------------------------------------*/
+        private void CreateColorContext(object sender, EventArgs e)
+        {
+            ToolStripMenuItem subMenuItem = (ToolStripMenuItem) sender;
+            ToolStripMenuItem menuItem = colorThisToolStripMenuItem;
+
+            ContextMenuContext cmc = (ContextMenuContext)(menuItem).Tag;
+
+            AzLogFilter filter = new AzLogFilter();
+            filter.Add(new AzLogFilter.AzLogFilterCondition(AzLogFilter.AzLogFilterValue.ValueType.String, AzLogFilter.AzLogFilterValue.DataSource.Column, cmc.lc, AzLogFilter.AzLogFilterCondition.CmpOp.Eq, cmc.azle.GetColumn(cmc.lc)));
+            m_azlv.AddColorFilter(filter, subMenuItem.BackColor, subMenuItem.ForeColor);
+            m_azlv.RebuildView();
+        }
+
         #endregion
 
         /* D O  E D I T  R E M O V E  F I L T E R S */
@@ -899,7 +922,6 @@ namespace AzLog
             m_azlv.Filter.Add(AzLogFilter.AzLogFilterOperation.OperationType.And);
             m_azlv.RebuildView();
         }
-
     }
 }
 
