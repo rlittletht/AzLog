@@ -922,6 +922,11 @@ namespace AzLog
             m_azlv.Filter.Add(AzLogFilter.AzLogFilterOperation.OperationType.And);
             m_azlv.RebuildView();
         }
+
+        private void DoFilterSave(object sender, EventArgs e)
+        {
+
+        }
     }
 }
 
