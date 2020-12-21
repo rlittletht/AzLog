@@ -17,7 +17,6 @@ namespace AzLog
         }
 
         public CloudTable Table => m_act;
-
     }
 
     class AzTableCollection
@@ -34,6 +33,13 @@ namespace AzLog
         private List<CloudTable> m_plct = null;
         private CloudTableClient m_ctc = null;
         private CloudStorageAccount m_csa = null;
+
+        public string AccountName => m_sAccountName;
+
+        public void Close()
+        {
+            
+        }
 
         public List<string> PlsTableNames()
         {

@@ -261,6 +261,14 @@ namespace AzLog
                 ste = new Settings(_rgsteeColumn, sKey, sColumn);
                 ste.Load();
                 int nTabOrder = ste.NValue("TabOrder");
+                if (mpnste.ContainsKey(nTabOrder))
+                {
+                    // duplicate tab order. just find the next unused item
+                    int nNewTabOrder = 0;
+                    while (mpnste.ContainsKey(nNewTabOrder))
+                        nNewTabOrder++;
+                    nTabOrder = nNewTabOrder;
+                }
                 mpnste.Add(nTabOrder, ste);
                 }
 
@@ -354,32 +362,85 @@ namespace AzLog
         }
 
         private DefaultColumnDef[] _rgdcd = new DefaultColumnDef[]
-                                                {
-                                                    new DefaultColumnDef("PartitionKey", AzLogEntry.LogColumn.Partition, 64),
-                                                    new DefaultColumnDef("RowKey", AzLogEntry.LogColumn.RowKey, 64),
-                                                    new DefaultColumnDef("EventTickCount", AzLogEntry.LogColumn.EventTickCount, 64),
-                                                    new DefaultColumnDef("AppName", AzLogEntry.LogColumn.AppName, 64),
-                                                    new DefaultColumnDef("Level", AzLogEntry.LogColumn.Level, 64),
-                                                    new DefaultColumnDef("EventID", AzLogEntry.LogColumn.EventID, 64),
-                                                    new DefaultColumnDef("InstanceID", AzLogEntry.LogColumn.InstanceID, 64),
-                                                    new DefaultColumnDef("Pid", AzLogEntry.LogColumn.Pid, 64),
-                                                    new DefaultColumnDef("nTid", AzLogEntry.LogColumn.Tid, 64),
-                                                    new DefaultColumnDef("sMessage", AzLogEntry.LogColumn.Message, 64),
-                                                    new DefaultColumnDef("sMessage0", AzLogEntry.LogColumn.Message0, 64, false),
-                                                    new DefaultColumnDef("sMessage1", AzLogEntry.LogColumn.Message1, 64, false),
-                                                    new DefaultColumnDef("sMessage2", AzLogEntry.LogColumn.Message2, 64, false),
-                                                    new DefaultColumnDef("sMessage3", AzLogEntry.LogColumn.Message3, 64, false),
-                                                    new DefaultColumnDef("sMessage4", AzLogEntry.LogColumn.Message4, 64, false),
-                                                    new DefaultColumnDef("sMessage5", AzLogEntry.LogColumn.Message5, 64, false),
-                                                    new DefaultColumnDef("sMessage6", AzLogEntry.LogColumn.Message6, 64, false),
-                                                    new DefaultColumnDef("sMessage7", AzLogEntry.LogColumn.Message7, 64, false),
-                                                    new DefaultColumnDef("sMessage8", AzLogEntry.LogColumn.Message8, 64, false),
-                                                    new DefaultColumnDef("sMessage9", AzLogEntry.LogColumn.Message9, 64, false)
-                                                };
+        {
+            new DefaultColumnDef("PartitionKey", AzLogEntry.LogColumn.Partition, 64),
+            new DefaultColumnDef("RowKey", AzLogEntry.LogColumn.RowKey, 64),
+            new DefaultColumnDef("EventTickCount", AzLogEntry.LogColumn.EventTickCount, 64),
+            new DefaultColumnDef("AppName", AzLogEntry.LogColumn.AppName, 64),
+            new DefaultColumnDef("Level", AzLogEntry.LogColumn.Level, 64),
+            new DefaultColumnDef("EventID", AzLogEntry.LogColumn.EventID, 64),
+            new DefaultColumnDef("InstanceID", AzLogEntry.LogColumn.InstanceID, 64),
+            new DefaultColumnDef("Pid", AzLogEntry.LogColumn.Pid, 64),
+            new DefaultColumnDef("nTid", AzLogEntry.LogColumn.Tid, 64),
+            new DefaultColumnDef("UlsTimestamp", AzLogEntry.LogColumn.UlsTimestamp, 64, false),
+            new DefaultColumnDef("UlsArea", AzLogEntry.LogColumn.UlsArea, 64, false),
+            new DefaultColumnDef("UlsCategory", AzLogEntry.LogColumn.UlsCategory, 64, false),
+            new DefaultColumnDef("UlsCorrelation", AzLogEntry.LogColumn.UlsCorrelation, 64, false),
+            new DefaultColumnDef("UlsEventID", AzLogEntry.LogColumn.UlsEventID, 64, false),
+            new DefaultColumnDef("sMessage", AzLogEntry.LogColumn.Message, 64),
+            new DefaultColumnDef("sMessage0", AzLogEntry.LogColumn.Message0, 64, false),
+            new DefaultColumnDef("sMessage1", AzLogEntry.LogColumn.Message1, 64, false),
+            new DefaultColumnDef("sMessage2", AzLogEntry.LogColumn.Message2, 64, false),
+            new DefaultColumnDef("sMessage3", AzLogEntry.LogColumn.Message3, 64, false),
+            new DefaultColumnDef("sMessage4", AzLogEntry.LogColumn.Message4, 64, false),
+            new DefaultColumnDef("sMessage5", AzLogEntry.LogColumn.Message5, 64, false),
+            new DefaultColumnDef("sMessage6", AzLogEntry.LogColumn.Message6, 64, false),
+            new DefaultColumnDef("sMessage7", AzLogEntry.LogColumn.Message7, 64, false),
+            new DefaultColumnDef("sMessage8", AzLogEntry.LogColumn.Message8, 64, false),
+            new DefaultColumnDef("sMessage9", AzLogEntry.LogColumn.Message9, 64, false)
+        };
 
         public DefaultColumnDef[] DefaultColumns => _rgdcd;
 
 
+        public static string GetColumnName(AzLogEntry.LogColumn lc)
+        {
+            switch (lc)
+                {
+                case AzLogEntry.LogColumn.Partition:
+                    return "PartitionKey";
+                case AzLogEntry.LogColumn.RowKey:
+                    return "RowKey";
+                case AzLogEntry.LogColumn.EventTickCount:
+                    return "EventTickCount";
+                case AzLogEntry.LogColumn.AppName:
+                    return "AppName";
+                case AzLogEntry.LogColumn.Level:
+                    return "Level";
+                case AzLogEntry.LogColumn.EventID:
+                    return "EventID";
+                case AzLogEntry.LogColumn.InstanceID:
+                    return "InstanceID";
+                case AzLogEntry.LogColumn.Pid:
+                    return "Pid";
+                case AzLogEntry.LogColumn.Tid:
+                    return "Tid";
+                case AzLogEntry.LogColumn.Message:
+                    return "sMessage";
+                case AzLogEntry.LogColumn.Message0:
+                    return "sMessage0";
+                case AzLogEntry.LogColumn.Message1:
+                    return "sMessage1";
+                case AzLogEntry.LogColumn.Message2:
+                    return "sMessage2";
+                case AzLogEntry.LogColumn.Message3:
+                    return "sMessage3";
+                case AzLogEntry.LogColumn.Message4:
+                    return "sMessage4";
+                case AzLogEntry.LogColumn.Message5:
+                    return "sMessage5";
+                case AzLogEntry.LogColumn.Message6:
+                    return "sMessage6";
+                case AzLogEntry.LogColumn.Message7:
+                    return "sMessage7";
+                case AzLogEntry.LogColumn.Message8:
+                    return "sMessage8";
+                case AzLogEntry.LogColumn.Message9:
+                    return "sMessage9";
+                default:
+                    return "";
+                }
+        }
         /* S E T  D E F A U L T */
         /*----------------------------------------------------------------------------
         	%%Function: SetDefault
@@ -396,6 +457,13 @@ namespace AzLog
                 }
         }
 
+        /* A D D  L O G  V I E W  C O L U M N */
+        /*----------------------------------------------------------------------------
+        	%%Function: AddLogViewColumn
+        	%%Qualified: AzLog.AzLogViewSettings.AddLogViewColumn
+        	%%Contact: rlittle
+        	
+        ----------------------------------------------------------------------------*/
         public void AddLogViewColumn(string sName, string sTitle, int nWidth, AzLogEntry.LogColumn azlc, bool fVisible)
         {
             AddColumn(new AzLogViewColumn(sName, sTitle, nWidth, azlc, fVisible));

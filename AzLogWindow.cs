@@ -52,6 +52,9 @@ namespace AzLog
         {
             AzLogWindow azlw = new AzLogWindow();
 
+            if (String.IsNullOrEmpty(sViewName))
+                sViewName = "Default";
+
             azlw.SetView(sViewName);
             azlw.m_azlv = new AzLogView(azlw);
             azlw.m_azlv.SetFilter(azlf);
@@ -61,18 +64,17 @@ namespace AzLog
 
             azlfc = azlf.Operations[0].Condition;
             if (azlfc.LHS.Source == AzLogFilter.AzLogFilterValue.DataSource.DttmRow && azlfc.Comparison == AzLogFilter.AzLogFilterCondition.CmpOp.Gte)
-                azlw.m_ebStart.Text = azlfc.RHS.Dttm(null).ToString("MM/dd/yy HH:mm");
+                azlw.m_ebStart.Text = azlfc.RHS.Dttm(null).ToLocalTime().ToString("MM/dd/yy HH:mm");
 
             azlfc = azlf.Operations[1].Condition;
             if (azlfc.LHS.Source == AzLogFilter.AzLogFilterValue.DataSource.DttmRow && azlfc.Comparison == AzLogFilter.AzLogFilterCondition.CmpOp.Lt)
-                azlw.m_ebEnd.Text = azlfc.RHS.Dttm(null).ToString("MM/dd/yy HH:mm");
+                azlw.m_ebEnd.Text = azlfc.RHS.Dttm(null).ToLocalTime().ToString("MM/dd/yy HH:mm");
 
             azlw.m_ilc = ilc;
             azlw.m_azlm = azlm;
             azlw.m_azlv.BuildView(azlw.m_azlm, new CompareLogEntryTickCount(azlw.m_azlm));
-
-            azlw.m_lvLog.VirtualListSize = azlw.m_azlv.Length;
-
+            // azlw.m_lvLog.VirtualListSize = azlw.m_azlv.Length;
+            azlw.m_lvLog.SetVirtualListSize(azlw.m_azlv.Length);
             return azlw;
         }
 
@@ -279,7 +281,8 @@ namespace AzLog
 
             SetupListViewForView(m_azlvs);
             SetupContextMenu();
-            DirtyView(m_azlvs.Dirty);
+            DirtyView(true);
+            
         }
 
 
@@ -388,7 +391,8 @@ namespace AzLog
             // we have new items from iMin to iMac. Add them to the view
             m_lvLog.BeginUpdate();
             m_azlv.AppendView(iMin, iMac);
-            m_lvLog.VirtualListSize = m_azlv.Length;
+            // m_lvLog.VirtualListSize = m_azlv.Length;
+            m_lvLog.SetVirtualListSize(m_azlv.Length);
             m_lvLog.EndUpdate();
         }
 
@@ -401,10 +405,46 @@ namespace AzLog
         ----------------------------------------------------------------------------*/
         public void InvalWindowFull()
         {
+            m_azlv.BumpGeneration();
             m_lvLog.BeginUpdate();
-            m_lvLog.VirtualListSize = m_azlv.Length;
+//            m_lvLog.VirtualListSize = m_azlv.Length;
+            m_lvLog.SetVirtualListSize(m_azlv.Length);
             m_lvLog.EndUpdate();
         }
+
+        private int m_cDataPending = 0;
+
+        /* B E G I N  D A T A  A S Y N C */
+        /*----------------------------------------------------------------------------
+        	%%Function: BeginDataAsync
+        	%%Qualified: AzLog.AzLogWindow.BeginDataAsync
+        	%%Contact: rlittle
+        	
+            Notify this window that there is async data coming
+        ----------------------------------------------------------------------------*/
+        public void BeginDataAsync()
+        {
+            if (m_cDataPending++ > 0)
+                m_pgbMain.Show();
+        }
+
+        /* C O M P L E T E  D A T A  A S Y N C */
+        /*----------------------------------------------------------------------------
+        	%%Function: CompleteDataAsync
+        	%%Qualified: AzLog.AzLogWindow.CompleteDataAsync
+        	%%Contact: rlittle
+        	
+            Notify this window that we are done with pending async data
+        ----------------------------------------------------------------------------*/
+        public void CompleteDataAsync()
+        {
+            if (--m_cDataPending <= 0)
+                {
+                m_cDataPending = 0;
+                m_pgbMain.Hide();
+                }
+        }
+
         /* A P P E N D  U P D A T E  V I E W */
         /*----------------------------------------------------------------------------
         	%%Function: AppendUpdateView
@@ -511,7 +551,7 @@ namespace AzLog
                 }
             else
                 {
-                // we aren't in the collumn headers. now customize our context menu
+                // we aren't in the column headers. now customize our context menu
                 Point ptLocal = m_lvLog.PointToClient(Cursor.Position);
                 ListViewItem lvi = m_lvLog.GetItemAt(ptLocal.X, ptLocal.Y);
                 AzLogEntry azle = (AzLogEntry) lvi.Tag;
@@ -523,7 +563,11 @@ namespace AzLog
                 cmc.lc = azlvc.DataColumn;
                 m_ctxmListViewLog.Items[0].Tag = cmc;
                 m_ctxmListViewLog.Items[0].Text = String.Format("Filter to this {0}", ch.Text);
-                }
+                m_ctxmListViewLog.Items[1].Tag = cmc;
+                m_ctxmListViewLog.Items[1].Text = String.Format("Filter out this {0}", ch.Text);
+                m_ctxmListViewLog.Items[2].Tag = cmc;
+                m_ctxmListViewLog.Items[2].Text = String.Format("Color this {0}", ch.Text);
+            }
         }
 
         struct ContextMenuContext
@@ -599,7 +643,8 @@ namespace AzLog
 
                 SetupListViewForView(m_azlvs);
                 m_azlv.BumpGeneration();
-                m_lvLog.VirtualListSize = c;
+                m_lvLog.SetVirtualListSize(c);
+                // m_lvLog.VirtualListSize = c;
                 }
             DirtyView(true);
         }
@@ -624,7 +669,8 @@ namespace AzLog
 
                 SetupListViewForView(m_azlvs);
                 m_azlv.BumpGeneration();
-                m_lvLog.VirtualListSize = c;
+                m_lvLog.SetVirtualListSize(c);
+                //m_lvLog.VirtualListSize = c;
                 }
             DirtyView(true);
         }
@@ -743,7 +789,7 @@ namespace AzLog
             m_azlv.RebuildView();
             // 10/26/2015 9:00
 
-            eb.Text = dttmMac.ToString("MM/dd/yyyy HH:mm");
+            eb.Text = dttmMac.ToLocalTime().ToString("MM/dd/yyyy HH:mm");
 
             // at this point, all our changes were to "dttmMac" (dttmMin started out same as dttmMac...so we could just 
             // blissfully use dttmMac.  But for the fetch, it matters if we are growing or shrinking our range
@@ -790,9 +836,98 @@ namespace AzLog
             m_azlv.RebuildView();
         }
 
-#endregion
-    }
+        /*----------------------------------------------------------------------------
+        	%%Function: CreateColorContext
+        	%%Qualified: AzLog.AzLogWindow.CreateColorContext
+        	
+            we're going to get called for the color item, so the parent of this item
+            should have our tag
+        ----------------------------------------------------------------------------*/
+        private void CreateColorContext(object sender, EventArgs e)
+        {
+            ToolStripMenuItem subMenuItem = (ToolStripMenuItem) sender;
+            ToolStripMenuItem menuItem = colorThisToolStripMenuItem;
 
-  
+            ContextMenuContext cmc = (ContextMenuContext)(menuItem).Tag;
+
+            AzLogFilter filter = new AzLogFilter();
+            filter.Add(new AzLogFilter.AzLogFilterCondition(AzLogFilter.AzLogFilterValue.ValueType.String, AzLogFilter.AzLogFilterValue.DataSource.Column, cmc.lc, AzLogFilter.AzLogFilterCondition.CmpOp.Eq, cmc.azle.GetColumn(cmc.lc)));
+            m_azlv.AddColorFilter(filter, subMenuItem.BackColor, subMenuItem.ForeColor);
+            m_azlv.RebuildView();
+        }
+
+        #endregion
+
+        /* D O  E D I T  R E M O V E  F I L T E R S */
+        /*----------------------------------------------------------------------------
+        	%%Function: DoEditRemoveFilters
+        	%%Qualified: AzLog.AzLogWindow.DoEditRemoveFilters
+        	%%Contact: rlittle
+        	
+        ----------------------------------------------------------------------------*/
+        private void DoEditRemoveFilters(object sender, EventArgs e)
+        {
+            AzLogFilter azlfNew = AzEditFilters.EditFilters(m_azlv.Filter.Clone());
+
+            if (azlfNew != null)
+                m_azlv.SetFilter(azlfNew);
+        }
+
+        /* D O  F E T C H */
+        /*----------------------------------------------------------------------------
+        	%%Function: DoFetch
+        	%%Qualified: AzLog.AzLogWindow.DoFetch
+        	%%Contact: rlittle
+        	
+        ----------------------------------------------------------------------------*/
+        private void DoFetch(object sender, EventArgs e)
+        {
+            DateTime dttmMin, dttmMac;
+
+            AzLogModel.FillMinMacFromStartEnd(m_ebStart.Text, m_ebEnd.Text, out dttmMin, out dttmMac);
+
+            // update our filter so we will see this
+
+            // we intimately know which items to edit. if this ever turns out to be false, then we will have to find
+            // the right parts of the filter, or just rebuild it. but that will be slower (ack)
+            AzLogFilter.AzLogFilterOperation azlfo = m_azlv.Filter.Operations[0]; // start is first item, end is last
+
+
+            if (azlfo.Op != AzLogFilter.AzLogFilterOperation.OperationType.Value || azlfo.Condition.LHS.Source != AzLogFilter.AzLogFilterValue.DataSource.DttmRow)
+                {
+                throw new Exception("did not find correct value type in filter");
+                }
+
+            azlfo.Condition.RHS.OValue = dttmMin; // update our filter to include the new date range, otherwise the model will get new data and we won't show it
+
+            azlfo = m_azlv.Filter.Operations[1]; // start is first item, end is last
+
+
+            if (azlfo.Op != AzLogFilter.AzLogFilterOperation.OperationType.Value || azlfo.Condition.LHS.Source != AzLogFilter.AzLogFilterValue.DataSource.DttmRow)
+                {
+                throw new Exception("did not find correct value type in filter");
+                }
+
+            azlfo.Condition.RHS.OValue = dttmMac; // update our filter to include the new date range, otherwise the model will get new data and we won't show it
+            m_azlv.RebuildView();
+
+            m_azlm.FFetchPartitionsForDateRange(dttmMin, dttmMac);
+        }
+
+        private void CreateFilterOutContext(object sender, EventArgs e)
+        {
+            ContextMenuContext cmc = (ContextMenuContext)((ToolStripMenuItem)sender).Tag;
+
+            m_azlv.Filter.Add(new AzLogFilter.AzLogFilterCondition(AzLogFilter.AzLogFilterValue.ValueType.String, AzLogFilter.AzLogFilterValue.DataSource.Column, cmc.lc, AzLogFilter.AzLogFilterCondition.CmpOp.SNe, cmc.azle.GetColumn(cmc.lc)));
+            m_azlv.Filter.Add(AzLogFilter.AzLogFilterOperation.OperationType.And);
+            m_azlv.RebuildView();
+        }
+
+        private void DoFilterSave(object sender, EventArgs e)
+        {
+
+        }
+    }
 }
 
+ 

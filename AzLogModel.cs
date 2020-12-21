@@ -10,10 +10,16 @@ using NUnit.Framework.Constraints;
 
 namespace AzLog
 {
+    // The model holds all of the data for all the views. This model is an aggregate of all the
+    // different datasources that have been added/opened. 
+    //
+    // Some datasoures are queryable for more data (like Azure), and some are just static
+    // "imports" of data (like files).  The model doesn't care. If you ask if for more data
+    // it will query all the datasources that can be queried and assumes that the files are
+    // already fully loaded. If your file based logging splits into separate files based 
+    // on time, then you will have to manually open/import more files
     public class AzLogModel
     {
-        private AzTable m_azt = null;
-
         // this deals with partitioning our data and allowing us to have a virtual log
         private AzLogEntries m_azles;
 
@@ -23,11 +29,10 @@ namespace AzLog
 
         // this is the underlying count of log entries
         public int LogCount => m_azles.Length;
-        
-        private AzTableCollection m_aztc;
-        private List<string> m_plsTables;
 
-        public List<string> Tables => m_plsTables;
+        // TODO: Temporary during refactor!
+        public List<AzLogView> Listeners => m_plazlvListeners;
+        public AzLogEntries Log => m_azles;
 
         /* L O G  E N T R Y */
         /*----------------------------------------------------------------------------
@@ -54,6 +59,7 @@ namespace AzLog
         {
             m_azles = new AzLogEntries();
             m_plazlvListeners = new List<AzLogView>();
+            m_pliazldsSources = new List<IAzLogDatasource>();
         }
         #endregion
 
@@ -90,41 +96,121 @@ namespace AzLog
         }
         #endregion
 
-        #region Account / Table Support
-
-        /* O P E N  T A B L E */
-        /*----------------------------------------------------------------------------
-        	%%Function: OpenTable
-        	%%Qualified: AzLog.AzLogModel.OpenTable
-        	%%Contact: rlittle
-        	
-            clear all of the views since we are now opening a new table.
-        ----------------------------------------------------------------------------*/
-        public void OpenTable(string sTableName)
-        {
-            foreach (AzLogView azlv in m_plazlvListeners)
-                azlv.ClearLog();
-
-            m_azt = m_aztc.GetTable(sTableName);
-        }
-        
-        /* O P E N  A C C O U N T */
-        /*----------------------------------------------------------------------------
-        	%%Function: OpenAccount
-        	%%Qualified: AzLog.AzLogModel.OpenAccount
-        	%%Contact: rlittle
-        	
-            Open the given Azure account and populate the list of tables that we 
-            know about
-        ----------------------------------------------------------------------------*/
-        public void OpenAccount(string sAccountName, string sAccountKey)
-        {
-            m_aztc = new AzTableCollection(sAccountName, sAccountKey);
-            m_plsTables = m_aztc.PlsTableNames();
-        }
-        #endregion
-
+ 
         #region Data Retrieval
+
+        private List<IAzLogDatasource> m_pliazldsSources;
+         
+        /* A T T A C H  D A T A S O U R C E */
+        /*----------------------------------------------------------------------------
+        	%%Function: AttachDatasource
+        	%%Qualified: AzLog.AzLogModel.AttachDatasource
+        	%%Contact: rlittle
+        	
+        ----------------------------------------------------------------------------*/
+        public void AttachDatasource(IAzLogDatasource iazlds)
+        {
+            string sName = iazlds.GetName();
+
+            // make sure its not already there
+            foreach (IAzLogDatasource iazldsT in m_pliazldsSources)
+                if (String.Compare(iazldsT.GetName(), sName, true) == 0)
+                    throw new Exception("attaching the same datasource more than once");
+
+            m_pliazldsSources.Add(iazlds);
+            iazlds.SetDatasourceIndex(m_pliazldsSources.Count - 1);
+        }
+
+        /* U P D A T E  P A R T */
+        /*----------------------------------------------------------------------------
+        	%%Function: UpdatePart
+        	%%Qualified: AzLog.AzLogModel.UpdatePart
+        	%%Contact: rlittle
+        	
+        ----------------------------------------------------------------------------*/
+        public void UpdatePart(DateTime dttmMin, DateTime dttmMac, Int32 grfDatasource, AzLogPartState azlps)
+        {
+            m_azles.UpdatePart(dttmMin, dttmMac, grfDatasource, azlps);
+        }
+
+        /* A D D  S E G M E N T */
+        /*----------------------------------------------------------------------------
+        	%%Function: AddSegment
+        	%%Qualified: AzLog.AzLogModel.AddSegment
+        	%%Contact: rlittle
+        	
+        ----------------------------------------------------------------------------*/
+        public void AddSegment(TableQuerySegment<AzLogEntryEntity> azleSegment, out int iFirst, out int iLast)
+        {
+            m_azles.AddSegment(azleSegment, out iFirst, out iLast);
+            UpdateViewsWithRegion(iFirst, iLast);
+        }
+
+        /* U P D A T E  V I E W S  W I T H  R E G I O N */
+        /*----------------------------------------------------------------------------
+        	%%Function: UpdateViewsWithRegion
+        	%%Qualified: AzLog.AzLogModel.UpdateViewsWithRegion
+        	%%Contact: rlittle
+        	
+        ----------------------------------------------------------------------------*/
+        void UpdateViewsWithRegion(int iFirst, int iLast)
+        {
+            foreach (AzLogView azlv in Listeners)
+            {
+                lock (azlv.SyncLock)
+                {
+                    azlv.AppendUpdateRegion(iFirst, iLast);
+                }
+            }
+        }
+
+        /* A D D  S E G M E N T */
+        /*----------------------------------------------------------------------------
+        	%%Function: AddSegment
+        	%%Qualified: AzLog.AzLogModel.AddSegment
+        	%%Contact: rlittle
+        	
+        ----------------------------------------------------------------------------*/
+        public void AddSegment(AzLogEntry[] rgazle, int cazle, out int iFirst, out int iLast)
+        {
+            m_azles.AddSegment(rgazle, cazle, out iFirst, out iLast);
+            UpdateViewsWithRegion(iFirst, iLast);
+        }
+
+        /*----------------------------------------------------------------------------
+        	%%Function: FGetMinMacDateRange
+        	%%Qualified: AzLog.AzLogModel.FGetMinMacDateRange
+        	
+            try to automatically set the date range. This can only be done for a 
+            text file datasource.
+
+            enumerate all datasources and ask them for the auto range. if the source
+            cannot automatically fulfill, they will just return false (only text 
+            sources right now will return true).
+        ----------------------------------------------------------------------------*/
+        public bool FGetMinMacDateRange(out DateTime dttmMin, out DateTime dttmMac)
+        {
+            bool fResult = false;
+
+            dttmMin = DateTime.MaxValue;
+            dttmMac = DateTime.MinValue;
+
+            foreach (IAzLogDatasource iazlds in m_pliazldsSources)
+            {
+                if (iazlds.FGetMinMacDateTime(this, out DateTime dttmMinLocal, out DateTime dttmMaxLocal))
+                {
+                    if (dttmMin > dttmMinLocal)
+                        dttmMin = dttmMinLocal;
+                    if (dttmMac < dttmMaxLocal)
+                        dttmMac = dttmMaxLocal;
+
+                    fResult = true;
+                }
+            }
+
+            return fResult;
+        }
+
         /* F E T C H  P A R T I T I O N S  F O R  D A T E  R A N G E */
         /*----------------------------------------------------------------------------
         	%%Function: FFetchPartitionsForDateRange
@@ -135,58 +221,31 @@ namespace AzLog
         ----------------------------------------------------------------------------*/
         public bool FFetchPartitionsForDateRange(DateTime dttmMin, DateTime dttmMac)
         {
+            DateTime dttm = dttmMin;
 
-            while (dttmMin < dttmMac)
+            while (dttm < dttmMac)
                 {
-                if (m_azles.GetPartState(dttmMin) != AzLogPartState.Complete)
+                // if its complete or pending, don't query it again...
+                if (m_azles.GetPartState(dttm) != AzLogPartState.Complete && m_azles.GetPartState(dttm) != AzLogPartState.Pending)
                     {
-                    m_azles.UpdatePart(dttmMin, dttmMin.AddHours(1), AzLogPartState.Pending);
-                    FetchPartitionForDateAsync(dttmMin);
+                    for (int i = 0; i < m_pliazldsSources.Count; i++)
+                        {
+                        IAzLogDatasource iazlds = m_pliazldsSources[i];
+#if NOMORE // the marking of Pending happens in the FetchPartitionForDateAsync
+    // if this ever comes back, then we will have to get the correct IDataSource.
+                        m_azles.UpdatePart(dttmMin, dttmMin.AddHours(1), AzLogParts.GrfDatasourceForIDatasource(1), AzLogPartState.Pending);
+#endif
+                        iazlds.FetchPartitionForDateAsync(this, dttm);
+                        }
                     }
-                dttmMin = dttmMin.AddHours(1);
+                dttm = dttm.AddHours(1);
                 }
             return true;
         }
 
-        /* F E T C H  P A R T I T I O N  F O R  D A T E */
-        /*----------------------------------------------------------------------------
-        	%%Function: FetchPartitionForDateAsync
-        	%%Qualified: AzLog.AzLogModel.FetchPartitionForDateAsync
-        	%%Contact: rlittle
-        	
-            Fetch the partition for the given dttm (assumes that the hour is also
-            filled in)
-        ----------------------------------------------------------------------------*/
-        public async Task<bool> FetchPartitionForDateAsync(DateTime dttm)
+        public void FetchPartitionForDateAsync(DateTime dttmMin)
         {
-            TableQuery<AzLogEntryEntity> tq =
-                new TableQuery<AzLogEntryEntity>().Where(
-                        TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal,
-                                                           SPartitionFromDate(dttm, dttm.Hour)));
-
-            TableQuerySegment<AzLogEntryEntity> azleSegment = null;
-            m_azles.UpdatePart(dttm, dttm.AddHours(1.0), AzLogPartState.Pending);
-
-            while (azleSegment == null || azleSegment.ContinuationToken != null)
-                {
-                azleSegment = await m_azt.Table.ExecuteQuerySegmentedAsync(tq, azleSegment?.ContinuationToken);
-                foreach (AzLogView azlv in m_plazlvListeners)
-                    {
-                    lock (azlv.SyncLock)
-                        {
-                        int iFirst = m_azles.Length;
-
-                        m_azles.AddSegment(azleSegment);
-
-                        int iLast = m_azles.Length;
-
-                        azlv.AppendUpdateRegion(iFirst, iLast);
-                        }
-                    }
-
-                m_azles.UpdatePart(dttm, dttm.AddHours(1.0), AzLogPartState.Complete);
-                }
-            return true;
+            FFetchPartitionsForDateRange(dttmMin, dttmMin.AddHours(1));
         }
 
         /* S  P A R T I T I O N  F R O M  D A T E */
@@ -197,7 +256,7 @@ namespace AzLog
         	
             Create a valid partition name for the given dttm and hour
         ----------------------------------------------------------------------------*/
-        static string SPartitionFromDate(DateTime dttm, int nHour)
+        public static string SPartitionFromDate(DateTime dttm, int nHour)
         {
             return String.Format("{0:D4}{1:D2}{2:D2}{3:D2}", dttm.Year, dttm.Month, dttm.Day, nHour);
         }
@@ -227,6 +286,7 @@ namespace AzLog
 
             Assert.AreEqual(dttmExpected, DttmFromPartition(sPartition));
         }
+
         /* F I L L  M I N  M A C  F R O M  S T A R T  E N D */
         /*----------------------------------------------------------------------------
         	%%Function: FillMinMacFromStartEnd
@@ -248,14 +308,14 @@ namespace AzLog
                 }
 
             dttmStart = dttmStart.AddSeconds(-dttmStart.Second);
-            dttmMin = dttmStart.AddMinutes(-dttmStart.Minute);
+            dttmMin = dttmStart.AddMinutes(-dttmStart.Minute).ToUniversalTime();
 
             dttmEnd = dttmEnd.AddSeconds(-dttmEnd.Second);
-            dttmMac = dttmEnd.AddMinutes(-dttmEnd.Minute);
+            dttmMac = dttmEnd.AddMinutes(-dttmEnd.Minute).ToUniversalTime();
         }
-        #endregion
+#endregion
         
-        #region TestSupport
+#region TestSupport
         public void AddTestDataPartition(DateTime dttmPartition, Int64[] rgTickCount, string []rgs)
         {
             AzLogEntries azles = new AzLogEntries();
@@ -270,9 +330,9 @@ namespace AzLog
                 m_azles.AddLogEntry(azle);
                 }
 
-            azles.UpdatePart(dttmPartition, dttmPartition.AddHours(1), AzLogPartState.Complete);
+            azles.UpdatePart(dttmPartition, dttmPartition.AddHours(1), AzLogParts.GrfDatasourceForIDatasource(1), AzLogPartState.Complete);
         }
-        #endregion
+#endregion
 
     }
 
