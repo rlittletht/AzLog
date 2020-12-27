@@ -13,6 +13,7 @@ using Microsoft.Win32;
 using Microsoft.WindowsAzure.Storage.Table;
 using Microsoft.WindowsAzure.Storage.Table.Queryable;
 using NUnit.Framework;
+using TCore.PostfixText;
 using TCore.Settings;
 
 namespace AzLog
@@ -192,12 +193,13 @@ namespace AzLog
 
             AzLogFilter azlf = new AzLogFilter();
 
-            // create a basic filter based on the range they asked for
-            azlf.Add(new AzLogFilter.AzLogFilterCondition(AzLogFilter.AzLogFilterValue.ValueType.DateTime, AzLogFilter.AzLogFilterValue.DataSource.DttmRow, AzLogEntry.LogColumn.Nil, 
-                                                          AzLogFilter.AzLogFilterCondition.CmpOp.Gte, dttmMin));
-            azlf.Add(new AzLogFilter.AzLogFilterCondition(AzLogFilter.AzLogFilterValue.ValueType.DateTime, AzLogFilter.AzLogFilterValue.DataSource.DttmRow, AzLogEntry.LogColumn.Nil, 
-                                                          AzLogFilter.AzLogFilterCondition.CmpOp.Lt, dttmMac));
-            azlf.Add(AzLogFilter.AzLogFilterOperation.OperationType.And);
+            azlf.Start = dttmMin;
+            azlf.End = dttmMac;
+            
+            // create a basic filter for start and stop
+            azlf.Add(Expression.Create(Value.CreateForField("DATE_ROW"), Value.CreateForField("DATE_START"), new ComparisonOperator(ComparisonOperator.Op.Gte)));
+            azlf.Add(Expression.Create(Value.CreateForField("DATE_ROW"), Value.CreateForField("DATE_END"), new ComparisonOperator(ComparisonOperator.Op.Lt)));
+            azlf.Add(new PostfixOperator(PostfixOperator.Op.And));
 
             AzLogWindow azlw = AzLogWindow.CreateNewWindow(m_azlm, m_azlc.DefaultView, azlf, this);
 

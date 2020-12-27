@@ -5,6 +5,7 @@ using System.Windows.Forms;
 using Microsoft.WindowsAzure.Storage.Table;
 using NUnit.Framework;
 using NUnit.Framework.Constraints;
+using TCore.PostfixText;
 
 namespace AzLog
 {
@@ -92,14 +93,14 @@ namespace AzLog
             m_colorFilters.Add(new AzColorFilter(azlf, colorBack, colorFore));
         }
 
-        public bool FGetColorForItem(AzLogFilter.ILogFilterItem filterItem, out Color colorBack, out Color colorFore)
+        public bool FGetColorForItem(PostfixText.IValueClient client, out Color colorBack, out Color colorFore)
         {
             colorBack = Color.White;
             colorFore = Color.Black;
 
             foreach (AzColorFilter colorFilter in m_colorFilters)
             {
-                if (colorFilter.Matches(filterItem))
+                if (colorFilter.Matches(client))
                 {
                     colorBack = colorFilter.BackColor;
                     colorFore = colorFilter.ForeColor;

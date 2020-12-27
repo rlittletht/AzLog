@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Remoting.Metadata.W3cXsd2001;
 using System.Text;
@@ -13,6 +14,7 @@ using System.Windows.Forms;
 using Microsoft.Win32;
 using NUnit.Framework;
 using TCore.ListViewSupp;
+using TCore.PostfixText;
 
 namespace AzLog
 {
@@ -60,15 +62,8 @@ namespace AzLog
             azlw.m_azlv.SetFilter(azlf);
 
             // propagate the filter values we were given into the textboxes on our window
-            AzLogFilter.AzLogFilterCondition azlfc;
-
-            azlfc = azlf.Operations[0].Condition;
-            if (azlfc.LHS.Source == AzLogFilter.AzLogFilterValue.DataSource.DttmRow && azlfc.Comparison == AzLogFilter.AzLogFilterCondition.CmpOp.Gte)
-                azlw.m_ebStart.Text = azlfc.RHS.Dttm(null).ToLocalTime().ToString("MM/dd/yy HH:mm");
-
-            azlfc = azlf.Operations[1].Condition;
-            if (azlfc.LHS.Source == AzLogFilter.AzLogFilterValue.DataSource.DttmRow && azlfc.Comparison == AzLogFilter.AzLogFilterCondition.CmpOp.Lt)
-                azlw.m_ebEnd.Text = azlfc.RHS.Dttm(null).ToLocalTime().ToString("MM/dd/yy HH:mm");
+            azlw.m_ebStart.Text = azlw.m_azlv.Filter.Start.ToString("g");
+            azlw.m_ebEnd.Text = azlw.m_azlv.Filter.End.ToString("g");
 
             azlw.m_ilc = ilc;
             azlw.m_azlm = azlm;
@@ -769,26 +764,21 @@ namespace AzLog
             // figure out the timespan being requested
             DateTime dttmMin, dttmMac;
 
+            // first, fetch the textbox into BOTH min and mac (we are growing out from that point)
             AzLogModel.FillMinMacFromStartEnd(eb.Text, eb.Text, out dttmMin, out dttmMac);
-
-            // update our filter so we will see this
-
-            // we intimately know which items to edit. if this ever turns out to be false, then we will have to find
-            // the right parts of the filter, or just rebuild it. but that will be slower (ack)
-            AzLogFilter.AzLogFilterOperation azlfo = m_azlv.Filter.Operations[fStart ? 0 : 1]; // start is first item, end is last
-
-            if (azlfo.Op != AzLogFilter.AzLogFilterOperation.OperationType.Value ||
-                !azlfo.Condition.RHS.FEvaluate(AzLogFilter.AzLogFilterCondition.CmpOp.Eq, new AzLogFilter.AzLogFilterValue(dttmMac), null))
-                {
-                throw new Exception("did not find correct end date value in filter");
-                }
 
             // now add an hour to the end
             dttmMac = dttmMac.AddHours(nHours);
-            azlfo.Condition.RHS.OValue = dttmMac; // update our filter to include the new date range, otherwise the model will get new data and we won't show it
-            m_azlv.RebuildView();
-            // 10/26/2015 9:00
 
+            if (fStart)
+	            m_azlv.Filter.Start = m_azlv.Filter.Start.AddHours(nHours);
+            else
+	            m_azlv.Filter.End = m_azlv.Filter.End.AddHours(nHours);
+            
+            m_azlv.Filter.InvalFilterID();
+            m_azlv.RebuildView();
+            
+            // 10/26/2015 9:00
             eb.Text = dttmMac.ToLocalTime().ToString("MM/dd/yyyy HH:mm");
 
             // at this point, all our changes were to "dttmMac" (dttmMin started out same as dttmMac...so we could just 
@@ -831,8 +821,13 @@ namespace AzLog
         {
             ContextMenuContext cmc = (ContextMenuContext)((ToolStripMenuItem) sender).Tag;
 
-            m_azlv.Filter.Add(new AzLogFilter.AzLogFilterCondition(AzLogFilter.AzLogFilterValue.ValueType.String, AzLogFilter.AzLogFilterValue.DataSource.Column, cmc.lc, AzLogFilter.AzLogFilterCondition.CmpOp.Eq, cmc.azle.GetColumn(cmc.lc)));
-            m_azlv.Filter.Add(AzLogFilter.AzLogFilterOperation.OperationType.And);
+            m_azlv.Filter.Add(
+	            Expression.Create(
+		            AzLogFilter.CreateValueForColumn(cmc.lc),
+		            Value.Create(cmc.azle.GetColumn(cmc.lc)),
+		            new ComparisonOperator(ComparisonOperator.Op.Eq)));
+
+            m_azlv.Filter.Add(new PostfixOperator(PostfixOperator.Op.And));
             m_azlv.RebuildView();
         }
 
@@ -851,7 +846,13 @@ namespace AzLog
             ContextMenuContext cmc = (ContextMenuContext)(menuItem).Tag;
 
             AzLogFilter filter = new AzLogFilter();
-            filter.Add(new AzLogFilter.AzLogFilterCondition(AzLogFilter.AzLogFilterValue.ValueType.String, AzLogFilter.AzLogFilterValue.DataSource.Column, cmc.lc, AzLogFilter.AzLogFilterCondition.CmpOp.Eq, cmc.azle.GetColumn(cmc.lc)));
+
+            filter.Add(
+	            Expression.Create(
+		            AzLogFilter.CreateValueForColumn(cmc.lc),
+		            Value.Create(cmc.azle.GetColumn(cmc.lc)),
+		            new ComparisonOperator(ComparisonOperator.Op.Eq)));
+            
             m_azlv.AddColorFilter(filter, subMenuItem.BackColor, subMenuItem.ForeColor);
             m_azlv.RebuildView();
         }
@@ -888,27 +889,10 @@ namespace AzLog
 
             // update our filter so we will see this
 
-            // we intimately know which items to edit. if this ever turns out to be false, then we will have to find
-            // the right parts of the filter, or just rebuild it. but that will be slower (ack)
-            AzLogFilter.AzLogFilterOperation azlfo = m_azlv.Filter.Operations[0]; // start is first item, end is last
-
-
-            if (azlfo.Op != AzLogFilter.AzLogFilterOperation.OperationType.Value || azlfo.Condition.LHS.Source != AzLogFilter.AzLogFilterValue.DataSource.DttmRow)
-                {
-                throw new Exception("did not find correct value type in filter");
-                }
-
-            azlfo.Condition.RHS.OValue = dttmMin; // update our filter to include the new date range, otherwise the model will get new data and we won't show it
-
-            azlfo = m_azlv.Filter.Operations[1]; // start is first item, end is last
-
-
-            if (azlfo.Op != AzLogFilter.AzLogFilterOperation.OperationType.Value || azlfo.Condition.LHS.Source != AzLogFilter.AzLogFilterValue.DataSource.DttmRow)
-                {
-                throw new Exception("did not find correct value type in filter");
-                }
-
-            azlfo.Condition.RHS.OValue = dttmMac; // update our filter to include the new date range, otherwise the model will get new data and we won't show it
+            m_azlv.Filter.Start = dttmMin;
+            m_azlv.Filter.End = dttmMac;
+            m_azlv.Filter.InvalFilterID();
+            
             m_azlv.RebuildView();
 
             m_azlm.FFetchPartitionsForDateRange(dttmMin, dttmMac);
@@ -918,8 +902,13 @@ namespace AzLog
         {
             ContextMenuContext cmc = (ContextMenuContext)((ToolStripMenuItem)sender).Tag;
 
-            m_azlv.Filter.Add(new AzLogFilter.AzLogFilterCondition(AzLogFilter.AzLogFilterValue.ValueType.String, AzLogFilter.AzLogFilterValue.DataSource.Column, cmc.lc, AzLogFilter.AzLogFilterCondition.CmpOp.SNe, cmc.azle.GetColumn(cmc.lc)));
-            m_azlv.Filter.Add(AzLogFilter.AzLogFilterOperation.OperationType.And);
+            m_azlv.Filter.Add(
+	            Expression.Create(
+		            AzLogFilter.CreateValueForColumn(cmc.lc),
+		            Value.Create(cmc.azle.GetColumn(cmc.lc)),
+		            new ComparisonOperator(ComparisonOperator.Op.Ne)));
+
+            m_azlv.Filter.Add(new PostfixOperator(PostfixOperator.Op.And));
             m_azlv.RebuildView();
         }
 

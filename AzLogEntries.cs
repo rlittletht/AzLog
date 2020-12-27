@@ -8,12 +8,13 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.WindowsAzure.Storage.Table;
+using TCore.PostfixText;
 
 namespace AzLog
 {
     // we're going to store a lot of these, so let's make them smaller, more convenient that AzLogEntryEntitys
     // (also we don't want to be bound strcitly to the azure log format)
-    public class AzLogEntry : AzLogFilter.ILogFilterItem
+    public class AzLogEntry : PostfixText.IValueClient
     {
         private string m_sPartition;
         private Guid m_guidRowKey;
@@ -172,19 +173,78 @@ namespace AzLog
         public string Message8 => m_rgsMessageParts.Length <= 8 ? null : m_rgsMessageParts[8];
         public string Message9 => m_rgsMessageParts.Length <= 9 ? null : m_rgsMessageParts[9];
 
-        public object OGetValue(AzLogFilter.AzLogFilterValue.ValueType vt, AzLogFilter.AzLogFilterValue.DataSource ds, LogColumn lc)
+        public Value.ValueType GetFieldValueType(string field)
         {
-            if (ds == AzLogFilter.AzLogFilterValue.DataSource.DttmRow)
-                {
-                // get the datetime from the partition
-                return AzLogModel.DttmFromPartition(Partition);
-                }
-            if (ds == AzLogFilter.AzLogFilterValue.DataSource.Column)
-                return GetColumn(lc);
+	        if (field == "DATE_ROW")
+		        return Value.ValueType.DateTime;
 
-            throw new Exception("bad datasource in OGetValue under AzLogEntry");
+	        AzLogEntry.LogColumn lc = AzLogEntry.GetColumnIndexByName(field);
+
+	        switch (lc)
+	        {
+		        case LogColumn.UlsTimestamp:
+			        return Value.ValueType.DateTime;
+		        case LogColumn.EventTickCount:
+		        case LogColumn.EventID:
+		        case LogColumn.InstanceID:
+		        case LogColumn.Pid:
+		        case LogColumn.Tid:
+			        return Value.ValueType.Number;
+		        case LogColumn.Partition:
+		        case LogColumn.RowKey:
+		        case LogColumn.AppName:
+		        case LogColumn.Level:
+		        case LogColumn.UlsCategory:
+		        case LogColumn.UlsArea:
+		        case LogColumn.UlsCorrelation:
+		        case LogColumn.UlsEventID:
+		        case LogColumn.Message:
+		        case LogColumn.Message0:
+		        case LogColumn.Message1:
+		        case LogColumn.Message2:
+		        case LogColumn.Message3:
+		        case LogColumn.Message4:
+		        case LogColumn.Message5:
+		        case LogColumn.Message6:
+		        case LogColumn.Message7:
+		        case LogColumn.Message8:
+		        case LogColumn.Message9:
+			        return Value.ValueType.String;
+	        }
+
+	        return Value.ValueType.Field;
         }
 
+	    public string GetStringFromField(string field)
+        {
+	        if (field == "DATE_ROW")
+		        return AzLogModel.DttmFromPartition(Partition).ToString("G");
+
+	        AzLogEntry.LogColumn lc = AzLogEntry.GetColumnIndexByName(field);
+
+	        return GetColumn(lc);
+        }
+
+        public int? GetNumberFromField(string field)
+        {
+	        if (field == "DATE_START" || field == "DATE_END" || field == "DATE_ROW")
+		        throw new Exception("no number version of builtin date columns");
+
+	        AzLogEntry.LogColumn lc = AzLogEntry.GetColumnIndexByName(field);
+
+	        return Int32.Parse(GetColumn(lc));
+        }
+
+        public DateTime? GetDateTimeFromField(string field)
+        {
+	        if (field == "DATE_ROW")
+		        return AzLogModel.DttmFromPartition(Partition);
+
+	        AzLogEntry.LogColumn lc = AzLogEntry.GetColumnIndexByName(field);
+
+	        return DateTime.Parse(GetColumn(lc));
+        }
+        
         private static Dictionary<string, LogColumn> s_mpColumnNames =
             new Dictionary<string, LogColumn>
             {

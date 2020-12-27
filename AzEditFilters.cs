@@ -25,10 +25,13 @@ namespace AzLog
         ----------------------------------------------------------------------------*/
         void PopulateListbox()
         {
-            foreach (AzLogFilter.AzLogFilterOperation azlfo in m_azlf.Operations)
-                {
-                m_lbFilters.Items.Add(azlfo.SDescribe());
-                }
+	        m_lbFilters.Items.Add(m_azlf.Describe());
+#if OLD
+	        foreach (AzLogFilter.AzLogFilterOperation azlfo in m_azlf.Operations)
+	        {
+		        m_lbFilters.Items.Add(azlfo.SDescribe());
+	        }
+#endif
 
         }
 
@@ -76,7 +79,7 @@ namespace AzLog
 
             for (int i = rgn.Length - 1; i >= 0; i--)
                 {
-                m_azlf.Remove(rgn[i]);
+                // m_azlf.Remove(rgn[i]);
                 }
             m_lbFilters.Items.Clear();
             PopulateListbox();

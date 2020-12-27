@@ -9,9 +9,10 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>AzLog</RootNamespace>
     <AssemblyName>AzLog</AssemblyName>
-    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -161,6 +162,7 @@
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
+      <DesignTime>True</DesignTime>
     </Compile>
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
@@ -180,6 +182,10 @@
     <ProjectReference Include="..\liblet\cs\TCore.ListViewSupp\TCore.ListViewSupp.csproj">
       <Project>{25b9ae6c-1ab4-4ede-b9f4-85629b84f2d3}</Project>
       <Name>TCore.ListViewSupp</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\liblet\cs\TCore.Postfixer\PostfixText\TCore.PostfixText.csproj">
+      <Project>{620bc8cc-0bda-4955-a1a9-27719342205e}</Project>
+      <Name>TCore.PostfixText</Name>
     </ProjectReference>
     <ProjectReference Include="..\liblet\cs\TCore.Settings\TCore.Settings.csproj">
       <Project>{cf92fd1e-ce88-492e-a7c6-c4d29d908a22}</Project>

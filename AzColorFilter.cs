@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using NUnit.Framework;
+using TCore.PostfixText;
 
 namespace AzLog
 {
@@ -31,9 +32,9 @@ namespace AzLog
             ForeColor = colorFore;
         }
 
-        public bool Matches(AzLogFilter.ILogFilterItem item)
+        public bool Matches(PostfixText.IValueClient client)
         {
-            return Filter.FEvaluate(item);
+            return Filter.FEvaluate(client);
         }
     }
 }
