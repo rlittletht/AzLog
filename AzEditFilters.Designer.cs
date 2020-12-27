@@ -29,11 +29,17 @@
         private void InitializeComponent()
         {
 			System.Windows.Forms.Label label1;
+			System.Windows.Forms.Label label2;
 			this.m_pbDelete = new System.Windows.Forms.Button();
 			this.m_pbOK = new System.Windows.Forms.Button();
 			this.m_pbCancel = new System.Windows.Forms.Button();
 			this.m_ebFilter = new System.Windows.Forms.TextBox();
+			this.m_lvColorFilters = new System.Windows.Forms.ListView();
+			this.Filter = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+			this.BackColor = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+			this.ForeColor = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
 			label1 = new System.Windows.Forms.Label();
+			label2 = new System.Windows.Forms.Label();
 			this.SuspendLayout();
 			// 
 			// label1
@@ -48,7 +54,7 @@
 			// m_pbDelete
 			// 
 			this.m_pbDelete.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-			this.m_pbDelete.Location = new System.Drawing.Point(18, 323);
+			this.m_pbDelete.Location = new System.Drawing.Point(18, 518);
 			this.m_pbDelete.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
 			this.m_pbDelete.Name = "m_pbDelete";
 			this.m_pbDelete.Size = new System.Drawing.Size(112, 35);
@@ -60,7 +66,7 @@
 			// 
 			this.m_pbOK.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
 			this.m_pbOK.DialogResult = System.Windows.Forms.DialogResult.OK;
-			this.m_pbOK.Location = new System.Drawing.Point(567, 323);
+			this.m_pbOK.Location = new System.Drawing.Point(567, 518);
 			this.m_pbOK.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
 			this.m_pbOK.Name = "m_pbOK";
 			this.m_pbOK.Size = new System.Drawing.Size(112, 35);
@@ -72,7 +78,7 @@
 			// 
 			this.m_pbCancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
 			this.m_pbCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-			this.m_pbCancel.Location = new System.Drawing.Point(688, 323);
+			this.m_pbCancel.Location = new System.Drawing.Point(688, 518);
 			this.m_pbCancel.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
 			this.m_pbCancel.Name = "m_pbCancel";
 			this.m_pbCancel.Size = new System.Drawing.Size(112, 35);
@@ -89,11 +95,50 @@
 			this.m_ebFilter.Size = new System.Drawing.Size(782, 278);
 			this.m_ebFilter.TabIndex = 5;
 			// 
+			// label2
+			// 
+			label2.AutoSize = true;
+			label2.Location = new System.Drawing.Point(14, 340);
+			label2.Name = "label2";
+			label2.Size = new System.Drawing.Size(93, 20);
+			label2.TabIndex = 7;
+			label2.Text = "Color Filters";
+			// 
+			// m_lvColorFilters
+			// 
+			this.m_lvColorFilters.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
+            this.Filter,
+            this.BackColor,
+            this.ForeColor});
+			this.m_lvColorFilters.HideSelection = false;
+			this.m_lvColorFilters.Location = new System.Drawing.Point(18, 364);
+			this.m_lvColorFilters.Name = "m_lvColorFilters";
+			this.m_lvColorFilters.Size = new System.Drawing.Size(782, 146);
+			this.m_lvColorFilters.TabIndex = 8;
+			this.m_lvColorFilters.UseCompatibleStateImageBehavior = false;
+			this.m_lvColorFilters.View = System.Windows.Forms.View.Details;
+			// 
+			// Filter
+			// 
+			this.Filter.Text = "Filter";
+			this.Filter.Width = 637;
+			// 
+			// BackColor
+			// 
+			this.BackColor.Text = "Back";
+			this.BackColor.Width = 72;
+			// 
+			// ForeColor
+			// 
+			this.ForeColor.Text = "Fore";
+			// 
 			// AzEditFilters
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-			this.ClientSize = new System.Drawing.Size(820, 371);
+			this.ClientSize = new System.Drawing.Size(820, 566);
+			this.Controls.Add(this.m_lvColorFilters);
+			this.Controls.Add(label2);
 			this.Controls.Add(this.m_ebFilter);
 			this.Controls.Add(label1);
 			this.Controls.Add(this.m_pbCancel);
@@ -112,5 +157,9 @@
         private System.Windows.Forms.Button m_pbOK;
         private System.Windows.Forms.Button m_pbCancel;
 		private System.Windows.Forms.TextBox m_ebFilter;
+		private System.Windows.Forms.ListView m_lvColorFilters;
+		private System.Windows.Forms.ColumnHeader Filter;
+		private System.Windows.Forms.ColumnHeader BackColor;
+		private System.Windows.Forms.ColumnHeader ForeColor;
 	}
 }

@@ -21,7 +21,8 @@ namespace AzLog
 
         public int Length => m_pliale.Count;
         public AzLogFilter Filter => m_azlf;
-
+        public List<AzColorFilter> ColorFilters => m_colorFilters;
+        
         private AzLogWindow m_azlw;
 
         // when we change views on the azlw, we have to bump this number so that we know that any cached ListViewItems are now invalid 
