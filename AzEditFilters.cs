@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using TCore.PostfixText;
 
 namespace AzLog
 {
@@ -23,9 +24,9 @@ namespace AzLog
         	%%Contact: rlittle
         	
         ----------------------------------------------------------------------------*/
-        void PopulateListbox()
+        void PopulateFilters()
         {
-	        m_lbFilters.Items.Add(m_azlf.Describe());
+	        m_ebFilter.Lines = m_azlf.Describe();
 #if OLD
 	        foreach (AzLogFilter.AzLogFilterOperation azlfo in m_azlf.Operations)
 	        {
@@ -47,7 +48,7 @@ namespace AzLog
             m_azlf = azlf;
 
             InitializeComponent();
-            PopulateListbox();
+            PopulateFilters();
         }
 
         /* F  E D I T  F I L T E R S */
@@ -59,30 +60,17 @@ namespace AzLog
         ----------------------------------------------------------------------------*/
         public static AzLogFilter EditFilters(AzLogFilter azlf)
         {
-            AzEditFilters azef = new AzEditFilters(azlf.Clone());
-            
-            return azef.ShowDialog() == System.Windows.Forms.DialogResult.OK ? azef.Filters : null;
-        }
+            AzEditFilters azef = new AzEditFilters(azlf);
 
-        /* D O  D E L E T E  I T E M */
-        /*----------------------------------------------------------------------------
-        	%%Function: DoDeleteItem
-        	%%Qualified: AzLog.AzEditFilters.DoDeleteItem
-        	%%Contact: rlittle
-        	
-        ----------------------------------------------------------------------------*/
-        private void DoDeleteItem(object sender, EventArgs e)
-        {
-            int[] rgn = new int[m_lbFilters.SelectedIndices.Count];
+            if (azef.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+	            // parse the filters
+	            AzLogFilter azlfNew = AzLogFilter.CreateFromLines(azlf, azef.m_ebFilter.Lines);
 
-            m_lbFilters.SelectedIndices.CopyTo(rgn, 0);
+	            return azlfNew;
+            }
 
-            for (int i = rgn.Length - 1; i >= 0; i--)
-                {
-                // m_azlf.Remove(rgn[i]);
-                }
-            m_lbFilters.Items.Clear();
-            PopulateListbox();
+            return null;
         }
     }
 }

@@ -868,7 +868,7 @@ namespace AzLog
         ----------------------------------------------------------------------------*/
         private void DoEditRemoveFilters(object sender, EventArgs e)
         {
-            AzLogFilter azlfNew = AzEditFilters.EditFilters(m_azlv.Filter.Clone());
+            AzLogFilter azlfNew = AzEditFilters.EditFilters(m_azlv.Filter);
 
             if (azlfNew != null)
                 m_azlv.SetFilter(azlfNew);

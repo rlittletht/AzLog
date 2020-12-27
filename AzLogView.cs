@@ -84,7 +84,7 @@ namespace AzLog
         public void SetFilter(AzLogFilter azlf)
         {
             m_azlf = azlf;
-            if (m_pliale != null && m_pliale.Count > 0)
+            if (m_pliale != null)
                 RebuildView();
         }
 

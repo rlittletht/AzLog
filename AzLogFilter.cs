@@ -41,9 +41,9 @@ namespace AzLog
         public DateTime Start { get; set; }
         public DateTime End { get; set; }
         
-        public string Describe()
+        public string[] Describe()
         {
-	        return m_pfFilter.ToString();
+	        return m_pfFilter.ToStrings();
         }
         // NOTE: don't save any filter id with the data part if the only thing in the filter is date ranges -- every data part that comes back is unfiltered at that point
 
@@ -75,9 +75,24 @@ namespace AzLog
             AzLogFilter azlfNew = new AzLogFilter();
 
             azlfNew.m_pfFilter = m_pfFilter.Clone();
-            
+            azlfNew.Start = Start;
+            azlfNew.End = End;
             return azlfNew;
         }
+
+        public static AzLogFilter CreateFromLines(AzLogFilter azlfBased, IEnumerable<string> rgs)
+        {
+	        AzLogFilter azlf = new AzLogFilter();
+	        
+	        azlf.m_pfFilter = PostfixText.CreateFromParserClient(new StringArrayParserClient(rgs));
+	        
+	        azlf.Start = azlfBased.Start;
+	        azlf.End = azlfBased.End;
+	        
+	        return azlf;
+        }
+        
+        
         #endregion
 
         #region Model Manipulation
