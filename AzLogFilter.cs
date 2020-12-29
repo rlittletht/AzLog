@@ -91,14 +91,32 @@ namespace AzLog
 	        AzLogFilter azlf = new AzLogFilter();
 	        
 	        azlf.m_pfFilter = PostfixText.CreateFromParserClient(new StringArrayParserClient(rgs));
-	        
-	        azlf.Start = azlfBased.Start;
-	        azlf.End = azlfBased.End;
-	        
+
+	        if (azlfBased != null)
+	        {
+		        azlf.Start = azlfBased.Start;
+		        azlf.End = azlfBased.End;
+	        }
+
+            return azlf;
+        }
+
+        public static AzLogFilter CreateFromLine(AzLogFilter azlfBased, string line)
+        {
+	        AzLogFilter azlf = new AzLogFilter();
+
+	        azlf.m_pfFilter = PostfixText.CreateFromParserClient(new StringParserClient(line));
+
+	        if (azlfBased != null)
+	        {
+		        azlf.Start = azlfBased.Start;
+		        azlf.End = azlfBased.End;
+	        }
+
 	        return azlf;
         }
-        
-        
+
+
         #endregion
 
         #region Model Manipulation

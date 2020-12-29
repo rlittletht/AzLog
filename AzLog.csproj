@@ -99,6 +99,7 @@
     </Compile>
     <Compile Include="AzColorFilter.cs" />
     <Compile Include="AzLogFilterSetings.cs" />
+    <Compile Include="ColorFilterColors.cs" />
     <Compile Include="Datasources\AzContainerCollection.cs" />
     <Compile Include="AzEditFilters.cs">
       <SubType>Form</SubType>

@@ -4,6 +4,7 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.Globalization;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -26,9 +27,28 @@ namespace AzLog
         public AzLogViewSettings ViewSettings => m_azlvs;
         private ILogClient m_ilc; // allows setting of default view
         private AzLogViewSettings m_azlvs;
-
+        private ColorFilterColors m_colors;
+        
         #region Construct/Destruct
 
+        /*----------------------------------------------------------------------------
+        	%%Function: BuildColorFilterMaps
+        	%%Qualified: AzLog.AzLogWindow.BuildColorFilterMaps
+        	
+        ----------------------------------------------------------------------------*/
+        void BuildColorFilterMaps()
+        {
+	        m_colors = new ColorFilterColors();
+	        
+	        foreach (ToolStripMenuItem item in colorThisToolStripMenuItem.DropDownItems)
+	        {
+		        m_colors.AddColor(item.ForeColor, item.Text, item.ForeColor.ToString().Substring(6));
+		        m_colors.AddColor(item.BackColor, item.Text, item.BackColor.ToString().Substring(6));
+
+		        m_colors.AddPair(item.Text, item.ForeColor, item.BackColor);
+	        }
+        }
+        
         /* A Z  L O G  W I N D O W */
         /*----------------------------------------------------------------------------
         	%%Function: AzLogWindow
@@ -39,6 +59,7 @@ namespace AzLog
         public AzLogWindow()
         {
             InitializeComponent();
+            BuildColorFilterMaps();
             PopulateViewList();
         }
 
@@ -868,10 +889,18 @@ namespace AzLog
         ----------------------------------------------------------------------------*/
         private void DoEditRemoveFilters(object sender, EventArgs e)
         {
-            AzLogFilter azlfNew = AzEditFilters.EditFilters(m_azlv.Filter, m_azlv.ColorFilters);
+	        AzLogFilter filter = m_azlv.Filter;
+	        List<AzColorFilter> colorFilters = m_azlv.ColorFilters;
 
-            if (azlfNew != null)
-                m_azlv.SetFilter(azlfNew);
+	        if (AzEditFilters.FEditFilters(ref filter, ref colorFilters, m_colors))
+	        {
+                // filters changed
+                m_azlv.SetFilter(filter);
+                // set color filters too
+                m_azlv.SetColorFilters(colorFilters);
+
+                m_azlv.RebuildView();
+	        }
         }
 
         /* D O  F E T C H */

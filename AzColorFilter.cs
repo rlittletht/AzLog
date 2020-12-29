@@ -18,6 +18,8 @@ namespace AzLog
         public Color BackColor { get; set; }
         public Color ForeColor { get; set; }
 
+        public bool Marked { get; set; }
+        
         public AzColorFilter()
         {
             Filter = new AzLogFilter();

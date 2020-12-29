@@ -51,6 +51,15 @@
 			label1.TabIndex = 4;
 			label1.Text = "Item Filter:";
 			// 
+			// label2
+			// 
+			label2.AutoSize = true;
+			label2.Location = new System.Drawing.Point(14, 341);
+			label2.Name = "label2";
+			label2.Size = new System.Drawing.Size(93, 20);
+			label2.TabIndex = 7;
+			label2.Text = "Color Filters";
+			// 
 			// m_pbDelete
 			// 
 			this.m_pbDelete.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
@@ -95,23 +104,19 @@
 			this.m_ebFilter.Size = new System.Drawing.Size(782, 278);
 			this.m_ebFilter.TabIndex = 5;
 			// 
-			// label2
-			// 
-			label2.AutoSize = true;
-			label2.Location = new System.Drawing.Point(14, 340);
-			label2.Name = "label2";
-			label2.Size = new System.Drawing.Size(93, 20);
-			label2.TabIndex = 7;
-			label2.Text = "Color Filters";
-			// 
 			// m_lvColorFilters
 			// 
+			this.m_lvColorFilters.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
 			this.m_lvColorFilters.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
             this.Filter,
             this.BackColor,
             this.ForeColor});
 			this.m_lvColorFilters.HideSelection = false;
+			this.m_lvColorFilters.LabelEdit = true;
 			this.m_lvColorFilters.Location = new System.Drawing.Point(18, 364);
+			this.m_lvColorFilters.MultiSelect = false;
 			this.m_lvColorFilters.Name = "m_lvColorFilters";
 			this.m_lvColorFilters.Size = new System.Drawing.Size(782, 146);
 			this.m_lvColorFilters.TabIndex = 8;
@@ -121,16 +126,17 @@
 			// Filter
 			// 
 			this.Filter.Text = "Filter";
-			this.Filter.Width = 637;
+			this.Filter.Width = 574;
 			// 
 			// BackColor
 			// 
 			this.BackColor.Text = "Back";
-			this.BackColor.Width = 72;
+			this.BackColor.Width = 108;
 			// 
 			// ForeColor
 			// 
 			this.ForeColor.Text = "Fore";
+			this.ForeColor.Width = 92;
 			// 
 			// AzEditFilters
 			// 

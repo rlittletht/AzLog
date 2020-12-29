@@ -85,8 +85,11 @@ namespace AzLog
         public void SetFilter(AzLogFilter azlf)
         {
             m_azlf = azlf;
-            if (m_pliale != null)
-                RebuildView();
+        }
+
+        public void SetColorFilters(List<AzColorFilter> colorFilters)
+        {
+	        m_colorFilters = colorFilters;
         }
 
         public void AddColorFilter(AzLogFilter azlf, Color colorBack, Color colorFore)

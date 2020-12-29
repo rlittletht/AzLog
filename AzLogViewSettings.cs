@@ -70,12 +70,12 @@ namespace AzLog
 
         /* S E T  N A M E */
         /*----------------------------------------------------------------------------
-            	%%Function: SetName
-            	%%Qualified: AzLog.AzLogViewSettings.AzLogViewColumn.SetName
-            	%%Contact: rlittle
-            	
-                Changing the name really is more than just setting the name string...or at
-                least it could be, so make this an imperative function
+            %%Function: SetName
+            %%Qualified: AzLog.AzLogViewSettings.AzLogViewColumn.SetName
+            %%Contact: rlittle
+            
+            Changing the name really is more than just setting the name string...or at
+            least it could be, so make this an imperative function
         ----------------------------------------------------------------------------*/
         public void SetName(string sName)
         {
