@@ -10,6 +10,7 @@ using Microsoft.WindowsAzure.Storage.Blob;
 using NUnit.Framework;
 using NUnit.Framework.Constraints;
 using TCore.Settings;
+using TCore.XmlSettings;
 
 //
 // AzureBlobs are a lot like text file logs, but we have a container that contains the logs (and
@@ -127,13 +128,6 @@ namespace AzLog
             m_sName = sName;
         }
 
-        private Settings.SettingsElt[] _rgsteeDatasource =
-            {
-            new Settings.SettingsElt("AccountName", Settings.Type.Str, "", ""),
-            new Settings.SettingsElt("Container", Settings.Type.Str, "", ""),
-            new Settings.SettingsElt("Type", Settings.Type.Str, "", ""),
-            };
-
         public static Settings.SettingsElt[] AccountSettingsDef()
         {
             return new Settings.SettingsElt[]
@@ -145,29 +139,44 @@ namespace AzLog
 
         }
 
+        static XmlDescription<AzLogAzureBlob> CreateXmlDescription()
+        {
+            return XmlDescriptionBuilder<AzLogAzureBlob>
+	            .Build("http://www.thetasoft.com/schemas/AzLog/datasource/2020", "Datasource")
+	            .AddAttribute("type", null, null)
+	            .AddChildElement("AzureBlobDatasource")
+	            .AddChildElement("AccountName", GetAccountName, SetAccountName)
+	            .AddElement("ContainerName", GetContainerName, SetContainerName);
+        }
+        
         /* S A V E */
         /*----------------------------------------------------------------------------
         	%%Function: Save
         	%%Qualified: AzLog.AzLogAzureBlob.Save
         	%%Contact: rlittle
         	
-            Save this datasource to the registry
+            Save this datasource
         ----------------------------------------------------------------------------*/
-        public void Save(string sRegRoot)
+        public void Save(Collection collection)
         {
+	        XmlDescription<AzLogAzureBlob> descriptor = CreateXmlDescription();
+
             if (string.IsNullOrEmpty(m_sName))
                 throw new Exception("Cannot save empty datasource name");
 
-            string sKey = String.Format("{0}\\Datasources\\{1}", sRegRoot, m_sName);
+            m_sContainerName = m_azc.Name;
+            m_sAccountName = m_azcc.AccountName;
 
-            // save everything we need to be able to recreate ourselves
-            Settings ste = new Settings(_rgsteeDatasource, sKey, "ds");
-
-            ste.SetSValue("AccountName", m_azcc.AccountName);
-            ste.SetSValue("Container", m_azc.Name);
-            ste.SetSValue("Type", AzLogDatasourceSupport.TypeToString(DatasourceType.AzureBlob));
-            ste.Save();
+            using (WriteFile<AzLogAzureBlob> writeFile = collection.CreateSettingsWriteFile<AzLogAzureBlob>(m_sName))
+	            writeFile.SerializeSettings(descriptor, this);
         }
+
+        public static string GetDatasourceType(AzLogAzureTable model) => AzLogDatasourceSupport.TypeToString(DatasourceType.AzureBlob);
+
+        public static string GetAccountName(AzLogAzureBlob model) => model.m_sAccountName;
+        public static void SetAccountName(AzLogAzureBlob model, string accountName) => model.m_sAccountName = accountName;
+        public static string GetContainerName(AzLogAzureBlob model) => model.m_sContainerName;
+        public static void SetContainerName(AzLogAzureBlob model, string containerName) => model.m_sContainerName = containerName;
 
         /* F  L O A D */
         /*----------------------------------------------------------------------------
@@ -178,19 +187,16 @@ namespace AzLog
             Load the information about this datasource, but don't actually open it
             (doesn't ping the net or validate information)
         ----------------------------------------------------------------------------*/
-        public bool FLoad(AzLogModel azlm, string sRegRoot, string sName)
+        public bool FLoad(AzLogModel azlm, Collection.FileDescription file)
         {
-            string sKey = String.Format("{0}\\Datasources\\{1}", sRegRoot, sName);
+	        XmlDescription<AzLogAzureBlob> descriptor = CreateXmlDescription();
 
-            // save everything we need to be able to recreate ourselves
-            Settings ste = new Settings(_rgsteeDatasource, sKey, "ds");
+	        ReadFile<AzLogAzureBlob> readFile = Collection.CreateSettingsReadFile<AzLogAzureBlob>(file);
 
-            ste.Load();
-            m_sAccountName = ste.SValue("AccountName");
-            m_sContainerName = ste.SValue("Container");
-            m_sName = sName;
+	        readFile.DeSerialize(descriptor, this);
 
-            return true;
+	        m_sName = file.Name;
+	        return true;
         }
 
         /* F  O P E N */
@@ -273,11 +279,11 @@ namespace AzLog
         	
             Loads this azure datasource
         ----------------------------------------------------------------------------*/
-        public static AzLogAzureBlob LoadAzureDatasource(AzLogModel azlm, string sRegRoot, string sName)
+        public static AzLogAzureBlob LoadAzureDatasource(AzLogModel azlm, Collection.FileDescription file)
         {
             AzLogAzureBlob azla = new AzLogAzureBlob();
 
-            if (azla.FLoad(azlm, sRegRoot, sName))
+            if (azla.FLoad(azlm, file))
                 return azla;
 
             return null;
@@ -324,9 +330,9 @@ namespace AzLog
                 }
             return pluri;
         }
-        
-        /* F E T C H  P A R T I T I O N  F O R  D A T E */
-        /*----------------------------------------------------------------------------
+
+		/* F E T C H  P A R T I T I O N  F O R  D A T E */
+		/*----------------------------------------------------------------------------
         	%%Function: FetchPartitionForDateAsync
         	%%Qualified: AzLog.AzLogModel.FetchPartitionForDateAsync
         	%%Contact: rlittle
@@ -334,8 +340,10 @@ namespace AzLog
             Fetch the partition for the given dttm (assumes that the hour is also
             filled in)
         ----------------------------------------------------------------------------*/
-        public async Task<bool> FetchPartitionForDateAsync(AzLogModel azlm, DateTime dttm)
-        {
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+		public async Task<bool> FetchPartitionForDateAsync(AzLogModel azlm, DateTime dttm)
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
+		{
             List<Uri> pluri = GetBlobList(dttm);
 
             azlm.UpdatePart(dttm, dttm.AddHours(1.0), AzLogParts.GrfDatasourceForIDatasource(m_iDatasource), AzLogPartState.Pending);

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using AzLog;
 using Microsoft.Win32;
 using TCore.Settings;
+using TCore.XmlSettings;
 
 namespace AzLog
 {
@@ -91,9 +92,9 @@ namespace AzLog
         	%%Contact: rlittle
         	
         ----------------------------------------------------------------------------*/
-        public bool FAddDatasource(string sDatasource, string sRegRoot)
+        public bool FAddDatasource(string fullPath)
         {
-            IAzLogDatasource iazlds = AzLogDatasourceSupport.LoadDatasource(null, sRegRoot, sDatasource);
+            IAzLogDatasource iazlds = AzLogDatasourceSupport.LoadDatasource(null, new Collection.FileDescription(fullPath));
             if (iazlds != null)
                 return FAddDatasource(iazlds);
 
@@ -124,17 +125,21 @@ namespace AzLog
 
         public void Load(string sRegRoot)
         {
+
             string sKeyName = String.Format("{0}\\Collections\\{1}", sRegRoot, m_sName);
             m_ste = new Settings(_rgsteeCollection, sKeyName, "main");
             m_ste.Load();
 
             m_sDefaultView = m_ste.SValue("DefaultView");
+
+            Collection collection = Collection.CreateCollection("Datasources", ".ds.xml", "AzLog\\Datasources");
+
             string[] rgs = m_ste.RgsValue("Datasources");
 
             foreach (string s in rgs)
-                {
-                FAddDatasource(s, sRegRoot);
-                }
+            {
+	            FAddDatasource(collection.GetFullPathName(s));
+            }
 
         }
 

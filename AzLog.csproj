@@ -134,6 +134,7 @@
       <DependentUpon>AzLogWindow.cs</DependentUpon>
     </Compile>
     <Compile Include="Datasources\AzTableCollection.cs" />
+    <Compile Include="FiltersIO.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TextLogConverter.cs" />
@@ -199,6 +200,10 @@
     <ProjectReference Include="..\liblet\cs\TCore.Util\TCore.Util.csproj">
       <Project>{59868345-bc40-4771-a4d7-7c6a763663f0}</Project>
       <Name>TCore.Util</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\liblet\cs\TCore.XmlSettings\TCore.XmlSettings\TCore.XmlSettings.csproj">
+      <Project>{2ba5b544-67d9-4ce7-8f88-7922078cbfdf}</Project>
+      <Name>TCore.XmlSettings</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

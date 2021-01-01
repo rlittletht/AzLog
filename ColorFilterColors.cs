@@ -110,7 +110,7 @@ namespace AzLog
 				
 				return true;
 			}
-			catch (Exception exc)
+			catch
 			{
 				return false;
 			}

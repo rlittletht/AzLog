@@ -218,7 +218,6 @@ namespace AzLog
                 // does this part start *before* we do? if so, we need to split
                 AzLogPart azlpPre = null;
                 AzLogPart azlpReplace = null;
-                AzLogPart azlpReplace2 = null;
                 AzLogPart azlpPost = null;
                 bool fReplace = false;
 

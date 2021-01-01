@@ -9,6 +9,7 @@ using Microsoft.WindowsAzure.Storage.Table;
 using NUnit.Framework;
 using NUnit.Framework.Constraints;
 using TCore.Settings;
+using TCore.XmlSettings;
 
 namespace AzLog
 {
@@ -109,13 +110,6 @@ namespace AzLog
             m_sName = sName;
         }
 
-        private Settings.SettingsElt[] _rgsteeDatasource =
-            {
-                new Settings.SettingsElt("AccountName", Settings.Type.Str, "", ""),
-                new Settings.SettingsElt("TableName", Settings.Type.Str, "", ""),
-                new Settings.SettingsElt("Type", Settings.Type.Str, "", ""),
-            };
-
         public static Settings.SettingsElt[] AccountSettingsDef()
         {
             return new Settings.SettingsElt[]
@@ -127,30 +121,46 @@ namespace AzLog
 
         }
 
+        static XmlDescription<AzLogAzureTable> CreateXmlDescriptor()
+        {
+	        return XmlDescriptionBuilder<AzLogAzureTable>
+		        .Build("http://www.thetasoft.com/schemas/AzLog/datasource/2020", "Datasource")
+		        .DiscardAttributesWithNoSetter()
+		        .DiscardUnknownAttributes()
+		        .AddAttribute("type", GetDatasourceType, null)
+		        .AddChildElement("AzureTableDatasource")
+		        .AddChildElement("AccountName", GetAccountName, SetAccountName)
+		        .AddElement("TableName", GetTableName, SetTableName);
+        }
+
         /* S A V E */
         /*----------------------------------------------------------------------------
         	%%Function: Save
         	%%Qualified: AzLog.AzLogAzureTable.Save
         	%%Contact: rlittle
         	
-            Save this datasource to the registry
+            Save this datasource
         ----------------------------------------------------------------------------*/
-        public void Save(string sRegRoot)
+        public void Save(Collection collection)
         {
+	        XmlDescription<AzLogAzureTable> descriptor = CreateXmlDescriptor();
+
             if (string.IsNullOrEmpty(m_sName))
                 throw new Exception("Cannot save empty datasource name");
 
-            string sKey = String.Format("{0}\\Datasources\\{1}", sRegRoot, m_sName);
-
-            // save everything we need to be able to recreate ourselves
-            Settings ste = new Settings(_rgsteeDatasource, sKey, "ds");
-
-            ste.SetSValue("AccountName", m_aztc.AccountName);
-            ste.SetSValue("TableName", m_azt.Table.Name);
-            ste.SetSValue("Type", AzLogDatasourceSupport.TypeToString(DatasourceType.AzureTable));
-            ste.Save();
+            m_sTableName = m_azt.Table.Name;
+            m_sAccountName = m_aztc.AccountName;
+            
+            using (WriteFile<AzLogAzureTable> writeFile = collection.CreateSettingsWriteFile<AzLogAzureTable>(m_sName))
+	            writeFile.SerializeSettings(descriptor, this);
         }
 
+        public static string GetDatasourceType(AzLogAzureTable model) => AzLogDatasourceSupport.TypeToString(DatasourceType.AzureTable);
+        public static string GetAccountName(AzLogAzureTable model) => model.m_sAccountName;
+        public static void SetAccountName(AzLogAzureTable model, string accountName) => model.m_sAccountName = accountName;
+        public static string GetTableName(AzLogAzureTable model) => model.m_sTableName;
+        public static void SetTableName(AzLogAzureTable model, string tableName) => model.m_sTableName = tableName;
+        
         /* F  L O A D */
         /*----------------------------------------------------------------------------
         	%%Function: FLoad
@@ -160,19 +170,17 @@ namespace AzLog
             Load the information about this datasource, but don't actually open it
             (doesn't ping the net or validate information)
         ----------------------------------------------------------------------------*/
-        public bool FLoad(AzLogModel azlm, string sRegRoot, string sName)
+        public bool FLoad(AzLogModel azlm, Collection.FileDescription file)
         {
-            string sKey = String.Format("{0}\\Datasources\\{1}", sRegRoot, sName);
+	        XmlDescription<AzLogAzureTable> descriptor = CreateXmlDescriptor();
 
-            // save everything we need to be able to recreate ourselves
-            Settings ste = new Settings(_rgsteeDatasource, sKey, "ds");
+            ReadFile<AzLogAzureTable> readFile = Collection.CreateSettingsReadFile<AzLogAzureTable>(file);
 
-            ste.Load();
-            m_sAccountName = ste.SValue("AccountName");
-            m_sTableName = ste.SValue("TableName");
-            m_sName = sName;
+	        readFile.DeSerialize(descriptor, this);
 
-            return true;
+	        m_sName = file.Name;
+	        
+	        return true;
         }
 
         /* F  O P E N */
@@ -238,11 +246,11 @@ namespace AzLog
         	
             Loads this azure datasource
         ----------------------------------------------------------------------------*/
-        public static AzLogAzureTable LoadAzureDatasource(AzLogModel azlm, string sRegRoot, string sName)
+        public static AzLogAzureTable LoadAzureDatasource(AzLogModel azlm, Collection.FileDescription file)
         {
             AzLogAzureTable azla = new AzLogAzureTable();
 
-            if (azla.FLoad(azlm, sRegRoot, sName))
+            if (azla.FLoad(azlm, file))
                 return azla;
 
             return null;

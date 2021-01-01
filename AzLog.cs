@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
@@ -15,6 +16,7 @@ using Microsoft.WindowsAzure.Storage.Table.Queryable;
 using NUnit.Framework;
 using TCore.PostfixText;
 using TCore.Settings;
+using TCore.XmlSettings;
 
 namespace AzLog
 {
@@ -28,6 +30,7 @@ namespace AzLog
 
         private Settings.SettingsElt[] _rgsteeApp;
 
+        private Collection m_collectionDatasources;
         private AzLogCollection m_azlc;
         private string m_sDefaultView;
         private string m_sDefaultCollection;
@@ -104,21 +107,15 @@ namespace AzLog
         ----------------------------------------------------------------------------*/
         public void PopulateDatasources()
         {
-            RegistryKey rk = Registry.CurrentUser.OpenSubKey(String.Format("{0}\\Datasources", s_sRegRoot));
-            if (rk != null)
-                {
-                string[] rgs = rk.GetSubKeyNames();
+	        m_collectionDatasources = AzLogDatasourceSupport.CreateCollection();
+            foreach (Collection.FileDescription fileDescription in m_collectionDatasources.SettingsFiles())
+	        {
+		        IAzLogDatasource iazlds = AzLogDatasourceSupport.LoadDatasource(null, fileDescription);
+				if (iazlds != null)
+					m_lbAvailableDatasources.Items.Add(iazlds);
+			}
 
-                foreach (string s in rgs)
-                    {
-                    // make sure the datasource is valid before we add it -- do this by just loading its
-                    // info from the registry (load doesn't connect to the datasource...)
-                    IAzLogDatasource iazlds = AzLogDatasourceSupport.LoadDatasource(null, s_sRegRoot, s);
-                    if (iazlds != null)
-                        m_lbAvailableDatasources.Items.Add(iazlds);
-                    }
-                rk.Close();
-                }
+	        return;
         }
         #endregion
 
@@ -275,7 +272,7 @@ namespace AzLog
 
             if (iazlds != null)
                 {
-                iazlds.Save("Software\\Thetasoft\\AzLog");
+                iazlds.Save(m_collectionDatasources);
                 m_lbAvailableDatasources.Items.Add(iazlds);
                 }
         }

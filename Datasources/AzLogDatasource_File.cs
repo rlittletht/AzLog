@@ -7,6 +7,7 @@ using Microsoft.WindowsAzure.Storage.Table;
 using NUnit.Framework;
 using NUnit.Framework.Constraints;
 using TCore.Settings;
+using TCore.XmlSettings;
 
 namespace AzLog
 {
@@ -107,13 +108,17 @@ namespace AzLog
             m_sName = sName;
         }
 
-        private Settings.SettingsElt[] _rgsteeDatasource =
-            {
-                new Settings.SettingsElt("FileName", Settings.Type.Str, "", ""),
-                new Settings.SettingsElt("LogTextFormat", Settings.Type.Str, "", ""),
-                new Settings.SettingsElt("Type", Settings.Type.Str, "", ""),
-            };
-
+        static XmlDescription<AzLogFile> CreateXmlDescription()
+        {
+	        return XmlDescriptionBuilder<AzLogFile>
+		        .Build("http://www.thetasoft.com/schemas/AzLog/datasource/2020", "Datasource")
+		        .DiscardAttributesWithNoSetter()
+		        .DiscardUnknownAttributes()
+		        .AddAttribute("type", null, null)
+		        .AddChildElement("TextDatasource")
+		        .AddChildElement("FileName", AzLogFile.GetFilename, AzLogFile.SetFilename)
+		        .AddElement("LogTextFormat", null, AzLogFile.SetLogTextFormat);
+        }        
         /* S A V E */
         /*----------------------------------------------------------------------------
         	%%Function: Save
@@ -122,42 +127,40 @@ namespace AzLog
         	
             Save this datasource to the registry
         ----------------------------------------------------------------------------*/
-        public void Save(string sRegRoot)
+        public void Save(Collection collection)
         {
+	        XmlDescription<AzLogFile> descriptor = CreateXmlDescription();
+
             if (string.IsNullOrEmpty(m_sName))
                 throw new Exception("Cannot save empty datasource name");
 
-            string sKey = String.Format("{0}\\Datasources\\{1}", sRegRoot, m_sName);
-
-            // save everything we need to be able to recreate ourselves
-            Settings ste = new Settings(_rgsteeDatasource, sKey, "ds");
-
-            ste.SetSValue("FileName", m_sFilename);
-            ste.SetSValue("Type", AzLogDatasourceSupport.TypeToString(DatasourceType.TextFile));
-            ste.Save();
+            using (WriteFile<AzLogFile> writeFile = collection.CreateSettingsWriteFile<AzLogFile>(m_sName))
+	            writeFile.SerializeSettings(descriptor, this);
         }
 
-        /* F  L O A D */
+        public static string GetDatasourceType(AzLogAzureTable model) => AzLogDatasourceSupport.TypeToString(DatasourceType.TextFile);
+
+        public static void SetFilename(AzLogFile azlf, string filename) => azlf.m_sFilename = filename;
+        public static string GetFilename(AzLogFile azlf) => azlf.m_sFilename;
+
+        public static void SetLogTextFormat(AzLogFile azlf, string format) => azlf.m_tlc = TextLogConverter.CreateFromConfig(format);
+        
         /*----------------------------------------------------------------------------
-        	%%Function: FLoad
-        	%%Qualified: AzLog.AzLogAzureTable.FLoad
-        	%%Contact: rlittle
-        	
+			%%Function:FLoad
+			%%Qualified:AzLog.AzLogFile.FLoad
+
             Load the information about this datasource, but don't actually open it
             (doesn't ping the net or validate information)
         ----------------------------------------------------------------------------*/
-        public bool FLoad(AzLogModel azlm, string sRegRoot, string sName)
+        public bool FLoad(AzLogModel azlm, Collection.FileDescription file)
         {
-            string sKey = String.Format("{0}\\Datasources\\{1}", sRegRoot, sName);
+	        XmlDescription<AzLogFile> descriptor = CreateXmlDescription();
 
-            // save everything we need to be able to recreate ourselves
-            Settings ste = new Settings(_rgsteeDatasource, sKey, "ds");
+	        ReadFile<AzLogFile> readFile = Collection.CreateSettingsReadFile<AzLogFile>(file);
+	        
+	        readFile.DeSerialize(descriptor, this);
 
-            ste.Load();
-            m_sFilename = ste.SValue("FileName");
-            m_sName = sName;
-
-            m_tlc = TextLogConverter.CreateFromConfig(ste.SValue("LogTextFormat"));
+	        m_sName = file.Name;
 
             return true;
         }
@@ -197,11 +200,11 @@ namespace AzLog
         	
             Loads this azure datasource
         ----------------------------------------------------------------------------*/
-        public static AzLogFile LoadFileDatasource(AzLogModel azlm, string sRegRoot, string sName)
+        public static AzLogFile LoadFileDatasource(AzLogModel azlm, Collection.FileDescription file)
         {
             AzLogFile azlf = new AzLogFile();
 
-            if (azlf.FLoad(azlm, sRegRoot, sName))
+            if (azlf.FLoad(azlm, file))
                 return azlf;
 
             return null;
@@ -248,8 +251,10 @@ namespace AzLog
 
             return true;
         }
-        public async Task LoadCompleteModel(AzLogModel azlm)
-        {
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+		public async Task LoadCompleteModel(AzLogModel azlm)
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
+		{
             AzLogEntry[] rgazle = new AzLogEntry[s_cChunkSize]; // do 1k log entry chunks
 
             using (StreamReader sr = File.OpenText(m_sFilename))

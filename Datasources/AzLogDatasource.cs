@@ -8,6 +8,7 @@ using Microsoft.WindowsAzure.Storage.Table;
 using NUnit.Framework;
 using NUnit.Framework.Constraints;
 using TCore.Settings;
+using TCore.XmlSettings;
 
 namespace AzLog
 {
@@ -30,9 +31,9 @@ namespace AzLog
         void SetSourceType(DatasourceType dt);
         void OpenContainer(AzLogModel azlm, string sName);
 
-        void Save(string sRegRoot);
+        void Save(Collection collection);
         bool FOpen(AzLogModel azlm, string sRegRoot);
-        bool FLoad(AzLogModel azlm, string sRegRoot, string sName);
+        bool FLoad(AzLogModel azlm, Collection.FileDescription file);
         Task<bool> FetchPartitionForDateAsync(AzLogModel azlm, DateTime dttm);
         bool FGetMinMacDateTime(AzLogModel azlm, out DateTime dttmMin, out DateTime dttmMax);
         void Close();
@@ -40,6 +41,11 @@ namespace AzLog
 
     public class AzLogDatasourceSupport
     {
+	    public static Collection CreateCollection()
+	    {
+            return Collection.CreateCollection("Datasource", ".ds.xml", "AzLog\\Datasources");
+        }
+	    
         public static DatasourceType TypeFromString(string s)
         {
             if (s == "AzureTableStorage")
@@ -67,44 +73,53 @@ namespace AzLog
                 }
         }
 
-        /* L O A D  D A T A S O U R C E */
-        /*----------------------------------------------------------------------------
-        	%%Function: LoadDatasource
-        	%%Qualified: AzLog.AzLogDatasourceSupport.LoadDatasource
-        	%%Contact: rlittle
-        	
-            Load the named datasource. This handles figuring out the datasource
-            type and loading the correct type. Regurns an interface to the datasource
-        ----------------------------------------------------------------------------*/
-        public static IAzLogDatasource LoadDatasource(AzLogModel azlm, string sRegRoot, string sName)
+        class DatasourceSniffer
+		{
+			public DatasourceType Type { get; set; }
+
+			static public void SetType(DatasourceSniffer sniffer, string sType)
+			{
+                sniffer.Type = TypeFromString(sType);
+			}
+			
+			public DatasourceSniffer()
+			{
+				Type = DatasourceType.Unknown;
+			}
+		}
+
+        public const string s_namespace = "http://www.thetasoft.com/schemas/AzLog/datasource/2020";
+        
+        public static IAzLogDatasource LoadDatasource(AzLogModel azlm, Collection.FileDescription file)
         {
-            // first, figure out what type of datasource this is
-            Settings.SettingsElt[] _rgsteeDatasource =
-                {
-                    new Settings.SettingsElt("Type", Settings.Type.Str, "", ""),
-                };
+	        // general xml description -- just enough to get the type
+	        XmlDescription<DatasourceSniffer> snifferDescription = XmlDescriptionBuilder<DatasourceSniffer>
+		        .Build(s_namespace, "Datasource")
+		        .AddAttribute("type", null, DatasourceSniffer.SetType)
+		        .TerminateAfterReadingAttributes();
 
-            string sKey = String.Format("{0}\\Datasources\\{1}", sRegRoot, sName);
+	        DatasourceSniffer sniffer = new DatasourceSniffer();
 
-            // save everything we need to be able to recreate ourselves
-            Settings ste = new Settings(_rgsteeDatasource, sKey, "ds");
+            using (ReadFile<DatasourceSniffer> readFile = Collection.CreateSettingsReadFile<DatasourceSniffer>(file))
+	        {
+		        readFile.DeSerialize(snifferDescription, sniffer);
+	        }
 
-            ste.Load();
-            string sType = ste.SValue("Type");
-            DatasourceType dt;
+            if (sniffer.Type == DatasourceType.Unknown)
+	            throw new Exception("Unknown datasource type in load");
 
-            dt = TypeFromString(sType);
-            switch (dt)
-                {
-                case DatasourceType.TextFile:
-                    return AzLogFile.LoadFileDatasource(null, sRegRoot, sName);
-                case DatasourceType.AzureTable:
-                    return AzLogAzureTable.LoadAzureDatasource(null, sRegRoot, sName);
-                case DatasourceType.AzureBlob:
-                    return AzLogAzureBlob.LoadAzureDatasource(null, sRegRoot, sName);
-                default:
-                    throw new Exception("unknown datasourcetype");
-                }
+            // now delegate to the appropriate load
+            switch (sniffer.Type)
+            {
+	            case DatasourceType.TextFile:
+		            return AzLogFile.LoadFileDatasource(null, file);
+	            case DatasourceType.AzureTable:
+		            return AzLogAzureTable.LoadAzureDatasource(null, file);
+	            case DatasourceType.AzureBlob:
+		            return AzLogAzureBlob.LoadAzureDatasource(null, file);
+	            default:
+		            throw new Exception("unknown datasourcetype");
+            }
         }
     }
 }

@@ -35,9 +35,9 @@
 			this.m_pbCancel = new System.Windows.Forms.Button();
 			this.m_ebFilter = new System.Windows.Forms.TextBox();
 			this.m_lvColorFilters = new System.Windows.Forms.ListView();
-			this.Filter = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-			this.BackColor = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-			this.ForeColor = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+			this.m_hdrFilter = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+			this.m_hdrBackColor = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+			this.m_hdrForeColor = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
 			label1 = new System.Windows.Forms.Label();
 			label2 = new System.Windows.Forms.Label();
 			this.SuspendLayout();
@@ -110,9 +110,9 @@
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
 			this.m_lvColorFilters.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
-            this.Filter,
-            this.BackColor,
-            this.ForeColor});
+            this.m_hdrFilter,
+            this.m_hdrBackColor,
+            this.m_hdrForeColor});
 			this.m_lvColorFilters.HideSelection = false;
 			this.m_lvColorFilters.LabelEdit = true;
 			this.m_lvColorFilters.Location = new System.Drawing.Point(18, 364);
@@ -125,18 +125,18 @@
 			// 
 			// Filter
 			// 
-			this.Filter.Text = "Filter";
-			this.Filter.Width = 574;
+			this.m_hdrFilter.Text = "Filter";
+			this.m_hdrFilter.Width = 574;
 			// 
 			// BackColor
 			// 
-			this.BackColor.Text = "Back";
-			this.BackColor.Width = 108;
+			this.m_hdrBackColor.Text = "Back";
+			this.m_hdrBackColor.Width = 108;
 			// 
 			// ForeColor
 			// 
-			this.ForeColor.Text = "Fore";
-			this.ForeColor.Width = 92;
+			this.m_hdrForeColor.Text = "Fore";
+			this.m_hdrForeColor.Width = 92;
 			// 
 			// AzEditFilters
 			// 
@@ -164,8 +164,8 @@
         private System.Windows.Forms.Button m_pbCancel;
 		private System.Windows.Forms.TextBox m_ebFilter;
 		private System.Windows.Forms.ListView m_lvColorFilters;
-		private System.Windows.Forms.ColumnHeader Filter;
-		private System.Windows.Forms.ColumnHeader BackColor;
-		private System.Windows.Forms.ColumnHeader ForeColor;
+		private System.Windows.Forms.ColumnHeader m_hdrFilter;
+		private System.Windows.Forms.ColumnHeader m_hdrBackColor;
+		private System.Windows.Forms.ColumnHeader m_hdrForeColor;
 	}
 }
