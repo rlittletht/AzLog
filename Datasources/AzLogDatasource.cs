@@ -77,7 +77,7 @@ namespace AzLog
 		{
 			public DatasourceType Type { get; set; }
 
-			static public void SetType(DatasourceSniffer sniffer, string sType)
+			static public void SetType(DatasourceSniffer sniffer, string sType, RepeatContext<DatasourceSniffer>.RepeatItemContext repeatItem)
 			{
                 sniffer.Type = TypeFromString(sType);
 			}

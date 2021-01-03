@@ -171,12 +171,12 @@ namespace AzLog
 	            writeFile.SerializeSettings(descriptor, this);
         }
 
-        public static string GetDatasourceType(AzLogAzureTable model) => AzLogDatasourceSupport.TypeToString(DatasourceType.AzureBlob);
+        public static string GetDatasourceType(AzLogAzureBlob model, RepeatContext<AzLogAzureBlob>.RepeatItemContext repeatItem) => AzLogDatasourceSupport.TypeToString(DatasourceType.AzureBlob);
 
-        public static string GetAccountName(AzLogAzureBlob model) => model.m_sAccountName;
-        public static void SetAccountName(AzLogAzureBlob model, string accountName) => model.m_sAccountName = accountName;
-        public static string GetContainerName(AzLogAzureBlob model) => model.m_sContainerName;
-        public static void SetContainerName(AzLogAzureBlob model, string containerName) => model.m_sContainerName = containerName;
+        public static string GetAccountName(AzLogAzureBlob model, RepeatContext<AzLogAzureBlob>.RepeatItemContext repeatItem) => model.m_sAccountName;
+        public static void SetAccountName(AzLogAzureBlob model, string accountName, RepeatContext<AzLogAzureBlob>.RepeatItemContext repeatItem) => model.m_sAccountName = accountName;
+        public static string GetContainerName(AzLogAzureBlob model, RepeatContext<AzLogAzureBlob>.RepeatItemContext repeatItem) => model.m_sContainerName;
+        public static void SetContainerName(AzLogAzureBlob model, string containerName, RepeatContext<AzLogAzureBlob>.RepeatItemContext repeatItem) => model.m_sContainerName = containerName;
 
         /* F  L O A D */
         /*----------------------------------------------------------------------------

@@ -138,12 +138,12 @@ namespace AzLog
 	            writeFile.SerializeSettings(descriptor, this);
         }
 
-        public static string GetDatasourceType(AzLogAzureTable model) => AzLogDatasourceSupport.TypeToString(DatasourceType.TextFile);
+        public static string GetDatasourceType(AzLogFile model) => AzLogDatasourceSupport.TypeToString(DatasourceType.TextFile);
 
-        public static void SetFilename(AzLogFile azlf, string filename) => azlf.m_sFilename = filename;
-        public static string GetFilename(AzLogFile azlf) => azlf.m_sFilename;
+        public static void SetFilename(AzLogFile azlf, string filename, RepeatContext<AzLogFile>.RepeatItemContext repeatItem) => azlf.m_sFilename = filename;
+        public static string GetFilename(AzLogFile azlf, RepeatContext<AzLogFile>.RepeatItemContext repeatItem) => azlf.m_sFilename;
 
-        public static void SetLogTextFormat(AzLogFile azlf, string format) => azlf.m_tlc = TextLogConverter.CreateFromConfig(format);
+        public static void SetLogTextFormat(AzLogFile azlf, string format, RepeatContext<AzLogFile>.RepeatItemContext repeatItem) => azlf.m_tlc = TextLogConverter.CreateFromConfig(format);
         
         /*----------------------------------------------------------------------------
 			%%Function:FLoad

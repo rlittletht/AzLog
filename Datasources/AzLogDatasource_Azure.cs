@@ -155,11 +155,11 @@ namespace AzLog
 	            writeFile.SerializeSettings(descriptor, this);
         }
 
-        public static string GetDatasourceType(AzLogAzureTable model) => AzLogDatasourceSupport.TypeToString(DatasourceType.AzureTable);
-        public static string GetAccountName(AzLogAzureTable model) => model.m_sAccountName;
-        public static void SetAccountName(AzLogAzureTable model, string accountName) => model.m_sAccountName = accountName;
-        public static string GetTableName(AzLogAzureTable model) => model.m_sTableName;
-        public static void SetTableName(AzLogAzureTable model, string tableName) => model.m_sTableName = tableName;
+        public static string GetDatasourceType(AzLogAzureTable model, RepeatContext<AzLogAzureTable>.RepeatItemContext repeatItem) => AzLogDatasourceSupport.TypeToString(DatasourceType.AzureTable);
+        public static string GetAccountName(AzLogAzureTable model, RepeatContext<AzLogAzureTable>.RepeatItemContext repeatItem) => model.m_sAccountName;
+        public static void SetAccountName(AzLogAzureTable model, string accountName, RepeatContext<AzLogAzureTable>.RepeatItemContext repeatItem) => model.m_sAccountName = accountName;
+        public static string GetTableName(AzLogAzureTable model, RepeatContext<AzLogAzureTable>.RepeatItemContext repeatItem) => model.m_sTableName;
+        public static void SetTableName(AzLogAzureTable model, string tableName, RepeatContext<AzLogAzureTable>.RepeatItemContext repeatItem) => model.m_sTableName = tableName;
         
         /* F  L O A D */
         /*----------------------------------------------------------------------------
