@@ -39,7 +39,7 @@ namespace AzLog
         private Settings m_ste;
 
         private static string s_sRegRoot = "Software\\Thetasoft\\AzLog";
-        private static string s_sRegRootCollections = "Software\\Thetasoft\\AzLog";
+//        private static string s_sRegRootCollections = "Software\\Thetasoft\\AzLog";
 
         #region Initialization
 
@@ -82,20 +82,15 @@ namespace AzLog
         ----------------------------------------------------------------------------*/
         public void PopulateCollections()
         {
-            RegistryKey rk = Registry.CurrentUser.OpenSubKey(String.Format("{0}\\Collections", s_sRegRoot));
+	        Collection collection = AzLogCollection.CreateCollection();
 
-            if (rk != null)
-                {
-                string[] rgs = rk.GetSubKeyNames();
+	        foreach (Collection.FileDescription file in collection.SettingsFiles())
+	        {
 
-                foreach (string s in rgs)
-                    {
-                    m_cbxCollections.Items.Add(s);
-                    if (String.Compare(s, m_sDefaultCollection, true) == 0)
-                        m_cbxCollections.SelectedIndex = m_cbxCollections.Items.Count - 1;
-                    }
-                rk.Close();
-                }
+		        m_cbxCollections.Items.Add(file.Name);
+		        if (String.Compare(file.Name, m_sDefaultCollection, true) == 0)
+			        m_cbxCollections.SelectedIndex = m_cbxCollections.Items.Count - 1;
+	        }
         }
 
         /* P O P U L A T E  D A T A S O U R C E S */
@@ -256,7 +251,7 @@ namespace AzLog
         {
             // each collection is just a list of datasources and any other data we want to remember
             if (m_azlc != null)
-                m_azlc.Save(s_sRegRoot);
+                m_azlc.Save();
         }
 
         /* D O  A D D  D A T A S O U R C E */
@@ -288,7 +283,16 @@ namespace AzLog
         {
             string sCollection = (string) m_cbxCollections.SelectedItem;
 
-            m_azlc = AzLogCollection.LoadCollection(s_sRegRoot, sCollection);
+            try
+            {
+	            m_azlc = AzLogCollection.LoadCollection(s_sRegRoot, sCollection);
+            }
+            catch (Exception exc)
+            {
+	            MessageBox.Show($"Could not load collection {sCollection}: {exc.Message}");
+	            return;
+            }
+
             SyncUIToCollection();
             SetDefaultCollection(sCollection);
         }

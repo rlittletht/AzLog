@@ -11,8 +11,15 @@ namespace AzLog
     {
         private string m_sName;
         private List<IAzLogDatasource> m_pliazld;
+        IEnumerator<IAzLogDatasource> m_iteratorDatasourceForWrite;
+        
         private string m_sDefaultView;
 
+        public static Collection CreateCollection()
+        {
+	        return Collection.CreateCollection("Collections", ".cx.xml", "AzLog\\Collections");
+        }
+        
         /* L O A D  C O L L E C T I O N */
         /*----------------------------------------------------------------------------
         	%%Function: LoadCollection
@@ -23,7 +30,7 @@ namespace AzLog
         public static AzLogCollection LoadCollection(string sRegRoot, string sName)
         {
             AzLogCollection azlc = new AzLogCollection(sName);
-            azlc.Load(sRegRoot);
+            azlc.Load();
 
             return azlc;
         }
@@ -43,14 +50,6 @@ namespace AzLog
 
         public List<IAzLogDatasource> Sources => m_pliazld;
 
-        private Settings.SettingsElt[] _rgsteeCollection =
-            {
-                new Settings.SettingsElt("DefaultView", Settings.Type.Str, "", ""),
-                new Settings.SettingsElt("Datasources", Settings.Type.StrArray, new string[] {}, new string[] {}),
-            };
-
-        private Settings m_ste;
-
         /* S E T  D E F A U L T  V I E W */
         /*----------------------------------------------------------------------------
         	%%Function: SetDefaultView
@@ -61,13 +60,6 @@ namespace AzLog
         public void SetDefaultView(string sView)
         {
             m_sDefaultView = sView;
-
-            // default view is autosaved unless we have never saved this collection
-            if (m_ste != null)
-                {
-                m_ste.SetSValue("DefaultView", sView);
-                m_ste.Save();
-                }
         }
 
         public string DefaultView => m_sDefaultView;
@@ -123,46 +115,85 @@ namespace AzLog
                 }
         }
 
-        public void Load(string sRegRoot)
+
+        static XmlDescription<AzLogCollection> CreateXmlDescriptor()
         {
-
-            string sKeyName = String.Format("{0}\\Collections\\{1}", sRegRoot, m_sName);
-            m_ste = new Settings(_rgsteeCollection, sKeyName, "main");
-            m_ste.Load();
-
-            m_sDefaultView = m_ste.SValue("DefaultView");
-
-            Collection collection = Collection.CreateCollection("Datasources", ".ds.xml", "AzLog\\Datasources");
-
-            string[] rgs = m_ste.RgsValue("Datasources");
-
-            foreach (string s in rgs)
-            {
-	            FAddDatasource(collection.GetFullPathName(s));
-            }
-
+	        return XmlDescriptionBuilder<AzLogCollection>
+		        .Build("http://www.thetasoft.com/schemas/AzLog/collections/2020", "Collection")
+		        .DiscardAttributesWithNoSetter()
+		        .DiscardUnknownAttributes()
+		        .AddChildElement("Datasources")
+		        .AddChildElement("Datasource", GetDatasourceName, SetDatasourceName)
+		        .SetRepeating(AzLogCollection.CreateRepeatingDatasource, AzLogCollection.AreRemainingDatasources, AzLogCollection.CommitRepeatDatasource)
+		        .Pop()
+		        .AddElement("DefaultView", GetDefaultView, SetDefaultView);
         }
 
-        public void Save(string sRegRoot)
+        static string GetDefaultView(AzLogCollection model, RepeatContext<AzLogCollection>.RepeatItemContext repeatItem) => model.m_sDefaultView;
+        static void SetDefaultView(AzLogCollection model, string value, RepeatContext<AzLogCollection>.RepeatItemContext repeatItem) => model.m_sDefaultView = value;
+
+        static string GetDatasourceName(AzLogCollection model, RepeatContext<AzLogCollection>.RepeatItemContext repeatItem) => ((IAzLogDatasource)repeatItem.RepeatKey).GetName();
+        static void SetDatasourceName(AzLogCollection model, string value, RepeatContext<AzLogCollection>.RepeatItemContext repeatItem) => ((string[]) repeatItem.RepeatKey)[0] = value;
+
+        static RepeatContext<AzLogCollection>.RepeatItemContext CreateRepeatingDatasource(
+	        AzLogCollection model,
+	        Element<AzLogCollection> element,
+	        RepeatContext<AzLogCollection>.RepeatItemContext parent)
         {
-            string sKeyName = String.Format("{0}\\Collections\\{1}", sRegRoot, m_sName);
+	        if (model.m_pliazld != null && model.m_iteratorDatasourceForWrite != null)
+	        {
+		        // also propagate the name
+		        return new RepeatContext<AzLogCollection>.RepeatItemContext(
+			        element,
+			        parent,
+			        model.m_iteratorDatasourceForWrite.Current);
+	        }
 
-            if (m_ste == null)
-                {
-                m_ste = new Settings(_rgsteeCollection, sKeyName, "main");
-                m_ste.Load();
+	        return new RepeatContext<AzLogCollection>.RepeatItemContext(element, parent, new string[1]);
+        }
 
-                m_ste.SetSValue("DefaultView", m_sDefaultView);
-                }
+        public static bool AreRemainingDatasources(AzLogCollection model, RepeatContext<AzLogCollection>.RepeatItemContext itemContext)
+        {
+	        if (model.m_pliazld == null)
+		        return false;
 
-            string[] rgs = new string[m_pliazld.Count];
+	        if (model.m_iteratorDatasourceForWrite == null)
+		        model.m_iteratorDatasourceForWrite = model.m_pliazld.GetEnumerator();
 
-            int i = 0;
-            foreach (IAzLogDatasource iazlds in m_pliazld)
-                rgs[i++] = iazlds.GetName();
+	        return model.m_iteratorDatasourceForWrite.MoveNext();
+        }
 
-            m_ste.SetRgsValue("Datasources", rgs);
-            m_ste.Save();
+        // for now, we only have a single string, so that's what we'll collect in the item context...
+        public static void CommitRepeatDatasource(AzLogCollection settings, RepeatContext<AzLogCollection>.RepeatItemContext itemContext)
+        {
+	        string[] strRef = ((string[]) itemContext.RepeatKey);
+
+	        if (settings.m_pliazld == null)
+		        settings.m_pliazld = new List<IAzLogDatasource>();
+
+	        Collection collectionDatasources = AzLogDatasourceSupport.CreateCollection();
+
+            settings.FAddDatasource(collectionDatasources.GetFullPathName(strRef[0]));
+        }
+
+        public void Load()
+        {
+	        Collection collectionCollections = AzLogCollection.CreateCollection();
+
+	        XmlDescription<AzLogCollection> descriptor = CreateXmlDescriptor();
+
+	        using (ReadFile<AzLogCollection> readFile = ReadFile<AzLogCollection>.CreateSettingsFile(collectionCollections.GetFullPathName(m_sName)))
+		        readFile.DeSerialize(descriptor, this);
+        }
+
+        public void Save()
+        {
+	        Collection collectionCollections = AzLogCollection.CreateCollection();
+
+	        XmlDescription<AzLogCollection> descriptor = CreateXmlDescriptor();
+
+	        using (WriteFile<AzLogCollection> writeFile = collectionCollections.CreateSettingsWriteFile<global::AzLog.AzLogCollection>(m_sName))
+                writeFile.SerializeSettings(descriptor, this);
         }
 
     }
