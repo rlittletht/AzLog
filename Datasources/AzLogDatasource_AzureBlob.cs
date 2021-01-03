@@ -143,6 +143,8 @@ namespace AzLog
         {
             return XmlDescriptionBuilder<AzLogAzureBlob>
 	            .Build("http://www.thetasoft.com/schemas/AzLog/datasource/2020", "Datasource")
+	            .DiscardAttributesWithNoSetter()
+	            .DiscardUnknownAttributes()
 	            .AddAttribute("type", null, null)
 	            .AddChildElement("AzureBlobDatasource")
 	            .AddChildElement("AccountName", GetAccountName, SetAccountName)
