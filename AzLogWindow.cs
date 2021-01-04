@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Configuration;
 using System.Data;
 using System.Drawing;
 using System.Globalization;
@@ -16,6 +17,7 @@ using Microsoft.Win32;
 using NUnit.Framework;
 using TCore.ListViewSupp;
 using TCore.PostfixText;
+using TCore.XmlSettings;
 
 namespace AzLog
 {
@@ -28,7 +30,14 @@ namespace AzLog
         private ILogClient m_ilc; // allows setting of default view
         private AzLogViewSettings m_azlvs;
         private ColorFilterColors m_colors;
+
+        public ColorFilterColors _ColorFilterColors
+        {
+	        get => m_colors;
+	        set => m_colors = value;
+        }
         
+
         #region Construct/Destruct
 
         /*----------------------------------------------------------------------------
@@ -42,7 +51,7 @@ namespace AzLog
 	        
 	        foreach (ToolStripMenuItem item in colorThisToolStripMenuItem.DropDownItems)
 	        {
-		        m_colors.AddColor(item.ForeColor, item.Text, item.ForeColor.ToString().Substring(6));
+//		        m_colors.AddColor(item.ForeColor, item.Text, item.ForeColor.ToString().Substring(6));
 		        m_colors.AddColor(item.BackColor, item.Text, item.BackColor.ToString().Substring(6));
 
 		        m_colors.AddPair(item.Text, item.ForeColor, item.BackColor);
@@ -61,6 +70,7 @@ namespace AzLog
             InitializeComponent();
             BuildColorFilterMaps();
             PopulateViewList();
+            PopulateFilterList();
         }
 
 
@@ -254,21 +264,35 @@ namespace AzLog
         ----------------------------------------------------------------------------*/
         public void PopulateViewList()
         {
-            RegistryKey rk = Registry.CurrentUser.OpenSubKey("Software\\Thetasoft\\AzLog\\Views");
-            if (rk != null)
-                {
-                string[] rgs = rk.GetSubKeyNames();
+	        Collection collectionViews = AzLogViewSettings.CreateCollection();
 
-                foreach (string s in rgs)
-                    {
-                    AzLogViewSettings azlvs = new AzLogViewSettings(s);
-                    m_cbView.Items.Add(azlvs);
-                    }
-                rk.Close();
-                }
-            m_cbView.Items.Add(new AzLogViewSettings("<New...>"));
+	        foreach (Collection.FileDescription file in collectionViews.SettingsFiles())
+	        {
+		        AzLogViewSettings azlvs = new AzLogViewSettings(file.Name);
+		        m_cbView.Items.Add(azlvs);
+	        }
+
+	        m_cbView.Items.Add(new AzLogViewSettings("<New...>"));
         }
 
+        /*----------------------------------------------------------------------------
+			%%Function:PopulateFilterList
+			%%Qualified:AzLog.AzLogWindow.PopulateFilterList
+
+        ----------------------------------------------------------------------------*/
+        public void PopulateFilterList()
+        {
+	        Collection collectionFilters = AzLogFilterSettings.CreateCollection();
+
+	        foreach (Collection.FileDescription file in collectionFilters.SettingsFiles())
+	        {
+		        m_cbFilters.Items.Add(file.Name);
+	        }
+
+	        m_cbFilters.Items.Add("<New...>");
+        }
+
+        
         /* S E T  V I E W */
         /*----------------------------------------------------------------------------
         	%%Function: SetView
@@ -836,7 +860,7 @@ namespace AzLog
 
             (we can't evaluate the context here because the mousemove that happened 
             to select the context menu item will screw up the context of *where* they
-            were when they right clicked for the context menu.
+            were when they right clicked for the context menu.)
         ----------------------------------------------------------------------------*/
         private void CreateFilterToContext(object sender, EventArgs e)
         {
@@ -878,6 +902,130 @@ namespace AzLog
             m_azlv.RebuildView();
         }
 
+        /*----------------------------------------------------------------------------
+			%%Function:CreateFilterOutContext
+			%%Qualified:AzLog.AzLogWindow.CreateFilterOutContext
+        ----------------------------------------------------------------------------*/
+        private void CreateFilterOutContext(object sender, EventArgs e)
+        {
+            ContextMenuContext cmc = (ContextMenuContext)((ToolStripMenuItem)sender).Tag;
+
+            m_azlv.Filter.Add(
+                Expression.Create(
+                    AzLogFilter.CreateValueForColumn(cmc.lc),
+                    Value.Create(cmc.azle.GetColumn(cmc.lc)),
+                    new ComparisonOperator(ComparisonOperator.Op.Ne)));
+
+            m_azlv.Filter.Add(new PostfixOperator(PostfixOperator.Op.And));
+            m_azlv.RebuildView();
+        }
+
+        /*----------------------------------------------------------------------------
+			%%Function:DoFilterSave
+			%%Qualified:AzLog.AzLogWindow.DoFilterSave
+        ----------------------------------------------------------------------------*/
+        private void DoFilterSave(object sender, EventArgs e)
+        {
+            m_logFilterSettings.UpdateFromWindow(this);
+            m_logFilterSettings.Save();
+        }
+
+        /*----------------------------------------------------------------------------
+			%%Function:CreateNewFilter
+			%%Qualified:AzLog.AzLogWindow.CreateNewFilter
+        ----------------------------------------------------------------------------*/
+        private void CreateNewFilter()
+        {
+            string sName;
+            if (TCore.UI.InputBox.ShowInputBox("New filter collection name", "Filter name", "", out sName))
+            {
+                // create a new view based on the current view
+                m_cbFilters.Items.Insert(m_cbFilters.Items.Count - 1, sName);
+                m_cbFilters.SelectedIndex = m_cbFilters.Items.Count - 2;
+                m_logFilterSettings = new AzLogFilterSettings(sName, this, _ColorFilterColors);
+            }
+        }
+
+        /*----------------------------------------------------------------------------
+			%%Function:DirtyFilter
+			%%Qualified:AzLog.AzLogWindow.DirtyFilter
+        ----------------------------------------------------------------------------*/
+        private void DirtyFilter(bool fDirty)
+        {
+            m_pbFilterSave.Enabled = fDirty;
+        }
+
+        private AzLogFilterSettings m_logFilterSettings; // this is what we loaded or last saved, with a current name
+
+        /*----------------------------------------------------------------------------
+			%%Function:UpdateWindowViewsFromLogFilterSettings
+			%%Qualified:AzLog.AzLogWindow.UpdateWindowViewsFromLogFilterSettings
+        ----------------------------------------------------------------------------*/
+        void UpdateWindowViewsFromLogFilterSettings(AzLogFilterSettings settings)
+        {
+            // create based on our current filter to propagate start and end date parameters
+            m_azlv.SetFilter(AzLogFilter.CreateFromLine(m_azlv.Filter, settings.LogContentFilter));
+
+            List<AzColorFilter> colorFiltersNew = new List<AzColorFilter>();
+
+            if (settings.ColorFilters != null)
+            {
+                foreach (AzColorFilterSettings colorSetting in settings.ColorFilters)
+                {
+                    AzColorFilter colorFilter = new AzColorFilter(
+                        AzLogFilter.CreateFromLine(null, colorSetting.MatchCondition),
+                        colorSetting.BackColor,
+                        colorSetting.ForeColor);
+
+                    colorFiltersNew.Add(colorFilter);
+                }
+            }
+
+            m_azlv.SetColorFilters(colorFiltersNew);
+        }
+
+        /*----------------------------------------------------------------------------
+			%%Function:LoadFilter
+			%%Qualified:AzLog.AzLogWindow.LoadFilter
+        ----------------------------------------------------------------------------*/
+        void LoadFilter(string sName)
+        {
+            AzLogFilterSettings newSettings = null;
+
+            try
+            {
+                newSettings = AzLogFilterSettings.CreateFromFile(sName, _ColorFilterColors);
+            }
+            catch (Exception exc)
+            {
+                MessageBox.Show($"Could not load filter {sName}: {exc.Message}");
+                return;
+            }
+
+            m_logFilterSettings = newSettings;
+
+            UpdateWindowViewsFromLogFilterSettings(m_logFilterSettings);
+            m_azlv.RebuildView();
+        }
+
+        /*----------------------------------------------------------------------------
+			%%Function:ChangeFilterSelected
+			%%Qualified:AzLog.AzLogWindow.ChangeFilterSelected
+        ----------------------------------------------------------------------------*/
+        private void ChangeFilterSelected(object sender, EventArgs e)
+        {
+            string filterName = (string)m_cbFilters.SelectedItem;
+
+            if (filterName == "<New...>")
+            {
+                CreateNewFilter();
+                DirtyFilter(true);
+            }
+            else
+            {
+                LoadFilter(filterName);
+            }
+        }
         #endregion
 
         /* D O  E D I T  R E M O V E  F I L T E R S */
@@ -925,25 +1073,6 @@ namespace AzLog
             m_azlv.RebuildView();
 
             m_azlm.FFetchPartitionsForDateRange(dttmMin, dttmMac);
-        }
-
-        private void CreateFilterOutContext(object sender, EventArgs e)
-        {
-            ContextMenuContext cmc = (ContextMenuContext)((ToolStripMenuItem)sender).Tag;
-
-            m_azlv.Filter.Add(
-	            Expression.Create(
-		            AzLogFilter.CreateValueForColumn(cmc.lc),
-		            Value.Create(cmc.azle.GetColumn(cmc.lc)),
-		            new ComparisonOperator(ComparisonOperator.Op.Ne)));
-
-            m_azlv.Filter.Add(new PostfixOperator(PostfixOperator.Op.And));
-            m_azlv.RebuildView();
-        }
-
-        private void DoFilterSave(object sender, EventArgs e)
-        {
-
         }
     }
 }

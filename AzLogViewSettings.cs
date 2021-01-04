@@ -237,7 +237,7 @@ namespace AzLog
         static XmlDescription<AzLogViewSettings> CreateXmlDescriptor()
         {
 	        return XmlDescriptionBuilder<AzLogViewSettings>
-		        .Build("http://www.thetasoft.com/schemas/AzLog/collections/2020", "View")
+		        .Build("http://www.thetasoft.com/schemas/AzLog/views/2020", "View")
 		        .DiscardAttributesWithNoSetter()
 		        .DiscardUnknownAttributes()
 		        .AddChildElement("Columns")

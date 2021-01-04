@@ -98,6 +98,7 @@
       <DependentUpon>AzAddDatasource_TextFile.cs</DependentUpon>
     </Compile>
     <Compile Include="AzColorFilter.cs" />
+    <Compile Include="AzColorFilterSettings.cs" />
     <Compile Include="AzLogFilterSetings.cs" />
     <Compile Include="ColorFilterColors.cs" />
     <Compile Include="Datasources\AzContainerCollection.cs" />
@@ -134,7 +135,6 @@
       <DependentUpon>AzLogWindow.cs</DependentUpon>
     </Compile>
     <Compile Include="Datasources\AzTableCollection.cs" />
-    <Compile Include="FiltersIO.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TextLogConverter.cs" />
