@@ -115,6 +115,24 @@ namespace AzLog
             return m_plazlvc[i];
         }
 
+        public AzLogViewColumn ViewColumn(int i)
+        {
+	        return m_plazlvc[m_pliazlvc[i]];
+        }
+
+        /*----------------------------------------------------------------------------
+			%%Function:MakeTabOrderIdentity
+			%%Qualified:AzLog.AzLogViewSettings.MakeTabOrderIdentity
+
+			When we rebuild the view from settings, the actual a
+        ----------------------------------------------------------------------------*/
+        public void MakeTabOrderIdentity()
+        {
+	        m_pliazlvc.Clear();
+	        for (int i = 0; i < m_plazlvc.Count; i++)
+		        m_pliazlvc.Add(i);
+        }
+        
         public int ColumnCount()
         {
             return m_plazlvc.Count;
@@ -217,7 +235,7 @@ namespace AzLog
             m_plazlvc = new List<AzLogViewColumn>();
             m_pliazlvc = new List<int>();
             m_sName = sName;
-            if (sName == "<New...>")
+            if (sName.StartsWith("<"))
 	            SetDefault();
             else
 	            Load();
@@ -548,7 +566,7 @@ namespace AzLog
                 for (int i = 0; i < m_pliazlvc.Count; i++)
                     {
                     if (m_pliazlvc[i] == iazlvc)
-                        m_pliazlvc.RemoveAt(i);
+                        m_pliazlvc.RemoveAt(i--); // we want to reprocess this item again
                     else if (m_pliazlvc[i] > iazlvc)
                         m_pliazlvc[i]--;
                     }

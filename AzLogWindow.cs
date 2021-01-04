@@ -86,7 +86,7 @@ namespace AzLog
             AzLogWindow azlw = new AzLogWindow();
 
             if (String.IsNullOrEmpty(sViewName))
-                sViewName = "Default";
+                sViewName = "<Default>";
 
             azlw.SetView(sViewName);
             azlw.m_azlv = new AzLogView(azlw);
@@ -594,6 +594,13 @@ namespace AzLog
                 // we aren't in the column headers. now customize our context menu
                 Point ptLocal = m_lvLog.PointToClient(Cursor.Position);
                 ListViewItem lvi = m_lvLog.GetItemAt(ptLocal.X, ptLocal.Y);
+                if (lvi == null)
+                {
+	                MessageBox.Show(
+		                "can't derive context menu from point. if you are trying to add a new column to the end of the list, make sure you are right clicking over a valid column header");
+	                return;
+                }
+                
                 AzLogEntry azle = (AzLogEntry) lvi.Tag;
 
                 ch = TCore.ListViewSupp.HeaderSupp.ColumnFromPoint(m_lvLog, ptLocal.X);
@@ -695,8 +702,20 @@ namespace AzLog
         	%%Qualified: AzLog.AzLogWindow.RemoveHeader
         	%%Contact: rlittle
         	
-            Remove the named header from the list of columns displayed
-
+            Remove the named header from the list of columns displayed. This also
+			flattens the tab order changes into the actual view (since rebuilding
+			the list view means the listviews internal notion of how the user has
+			reordered the columns will be reset)
+        
+			normally, when the user reorders columns, we still populate the LVI
+			information the same as before, but the UI knows the columns have been
+			reordered (this is hidden from us). BUT, if we were to rebuild the
+			columns based on our notion of the tab order then the UI reording is
+			reset, but the columns and our LVI building will be out of sync.
+        
+			turns out, Clone() already knows all of this, so we will clone back
+			into ourselves in order to flatten.
+        
             This deals with invalidating the current view.
         ----------------------------------------------------------------------------*/
         private void RemoveHeader(string sColumnName)
@@ -704,7 +723,8 @@ namespace AzLog
             lock (SyncLock)
                 {
                 m_azlvs.ShowHideColumn(sColumnName, false);
-
+                m_azlvs = m_azlvs.Clone();
+                
                 int c = m_lvLog.VirtualListSize;
 
                 SetupListViewForView(m_azlvs);

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
 using System.Linq;
@@ -58,6 +59,7 @@ namespace AzLog
         {
             InitializeComponent();
             InitSettings();
+
             m_ste = new Settings(_rgsteeApp, "Software\\Thetasoft\\AzLog", "App");
             m_ste.Load();
             m_sDefaultView = m_ste.SValue("DefaultView");
@@ -102,7 +104,7 @@ namespace AzLog
         ----------------------------------------------------------------------------*/
         public void PopulateDatasources()
         {
-	        m_collectionDatasources = AzLogDatasourceSupport.CreateCollection();
+            m_collectionDatasources = AzLogDatasourceSupport.CreateCollection();
             foreach (Collection.FileDescription fileDescription in m_collectionDatasources.SettingsFiles())
 	        {
 		        IAzLogDatasource iazlds = AzLogDatasourceSupport.LoadDatasource(null, fileDescription);
