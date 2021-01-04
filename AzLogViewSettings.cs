@@ -47,8 +47,6 @@ namespace AzLog
                 set => m_azlvc = value;
             }
 
-            public int TabOrderFromFile { get; set; }
-            
             public string Title
             {
                 get { return m_sTitle; }
@@ -232,7 +230,7 @@ namespace AzLog
             m_pliazlvc = new List<int>();
         }
 
-        #region File I/O
+        #region Settings I/O
 
         static XmlDescription<AzLogViewSettings> CreateXmlDescriptor()
         {
@@ -242,20 +240,17 @@ namespace AzLog
 		        .DiscardUnknownAttributes()
 		        .AddChildElement("Columns")
 		        .AddChildElement("Column")
-		        .SetRepeating(AzLogViewSettings.CreateRepeatingColumn, AzLogViewSettings.AreRemainingColumns, AzLogViewSettings.CommitRepeatColumns)
-		        .AddAttribute("name", AzLogViewSettings.GetColumnName, AzLogViewSettings.SetColumnName)
-		        .AddChildElement("DataLogColumn", AzLogViewSettings.GetDataLogColumn, AzLogViewSettings.SetDataLogColumn)
-		        .AddElement("TabOrder", AzLogViewSettings.GetTabOrder, AzLogViewSettings.SetTabOrder)
-		        .AddElement("Title", AzLogViewSettings.GetTitle, AzLogViewSettings.SetTitle)
-		        .AddElement("Visible", AzLogViewSettings.GetVisible, AzLogViewSettings.SetVisible)
-		        .AddElement("Width", AzLogViewSettings.GetWidth, AzLogViewSettings.SetWidth);
+		        .SetRepeating(CreateRepeatingColumn, AreRemainingColumns, CommitRepeatColumns)
+		        .AddAttribute("name", GetColumnName, SetColumnName)
+		        .AddChildElement("DataLogColumn", GetDataLogColumn, SetDataLogColumn)
+		        .AddElement("Title", GetTitle, SetTitle)
+		        .AddElement("Visible", GetVisible, SetVisible)
+		        .AddElement("Width", GetWidth, SetWidth);
         }
 
         static string GetColumnName(AzLogViewSettings model, RepeatContext<AzLogViewSettings>.RepeatItemContext repeatItem) => ((AzLogViewColumn)repeatItem.RepeatKey).Name;
         static void SetColumnName(AzLogViewSettings model, string value, RepeatContext<AzLogViewSettings>.RepeatItemContext repeatItem) => ((AzLogViewColumn)repeatItem.RepeatKey).Name = value;
 
-        static string GetTabOrder(AzLogViewSettings model, RepeatContext<AzLogViewSettings>.RepeatItemContext repeatItem) => ((AzLogViewColumn)repeatItem.RepeatKey).TabOrderFromFile.ToString();
-        static void SetTabOrder(AzLogViewSettings model, string value, RepeatContext<AzLogViewSettings>.RepeatItemContext repeatItem) => ((AzLogViewColumn)repeatItem.RepeatKey).TabOrderFromFile = Int32.Parse(value);
         static string GetDataLogColumn(AzLogViewSettings model, RepeatContext<AzLogViewSettings>.RepeatItemContext repeatItem) => AzLogEntry.GetColumnBuiltinNameByIndex(((AzLogViewColumn)repeatItem.RepeatKey).DataColumn);
         static void SetDataLogColumn(AzLogViewSettings model, string value, RepeatContext<AzLogViewSettings>.RepeatItemContext repeatItem) => ((AzLogViewColumn)repeatItem.RepeatKey).DataColumn = AzLogEntry.GetColumnIndexByName(value);
         static string GetTitle(AzLogViewSettings model, RepeatContext<AzLogViewSettings>.RepeatItemContext repeatItem) => ((AzLogViewColumn)repeatItem.RepeatKey).Title;
@@ -269,6 +264,10 @@ namespace AzLog
         // persist the view order (without having to worry about tab order)
         private IEnumerator<int> m_iteratorColumnForWrite;
         
+        /*----------------------------------------------------------------------------
+			%%Function:CreateRepeatingColumn
+			%%Qualified:AzLog.AzLogViewSettings.CreateRepeatingColumn
+        ----------------------------------------------------------------------------*/
         static RepeatContext<AzLogViewSettings>.RepeatItemContext CreateRepeatingColumn(
 	        AzLogViewSettings model,
 	        Element<AzLogViewSettings> element,
@@ -285,6 +284,10 @@ namespace AzLog
 	        return new RepeatContext<AzLogViewSettings>.RepeatItemContext(element, parent, new AzLogViewColumn());
         }
 
+        /*----------------------------------------------------------------------------
+			%%Function:AreRemainingColumns
+			%%Qualified:AzLog.AzLogViewSettings.AreRemainingColumns
+        ----------------------------------------------------------------------------*/
         static bool AreRemainingColumns(AzLogViewSettings model, RepeatContext<AzLogViewSettings>.RepeatItemContext itemContext)
         {
 	        if (model.m_plazlvc == null)
@@ -296,7 +299,10 @@ namespace AzLog
 	        return model.m_iteratorColumnForWrite.MoveNext();
         }
 
-        // for now, we only have a single string, so that's what we'll collect in the item context...
+        /*----------------------------------------------------------------------------
+			%%Function:CommitRepeatColumns
+			%%Qualified:AzLog.AzLogViewSettings.CommitRepeatColumns
+        ----------------------------------------------------------------------------*/
         static void CommitRepeatColumns(AzLogViewSettings settings, RepeatContext<AzLogViewSettings>.RepeatItemContext itemContext)
         {
 	        AzLogViewColumn viewColumn = ((AzLogViewColumn)itemContext.RepeatKey);
@@ -305,33 +311,6 @@ namespace AzLog
 		        settings.m_plazlvc = new List<AzLogViewColumn>();
 
 	        settings.m_plazlvc.Add(viewColumn);
-        }
-
-        private Settings.SettingsElt[] _rgsteeColumn =
-            {
-                new Settings.SettingsElt("TabOrder", Settings.Type.Int, 0, ""),
-                new Settings.SettingsElt("Width", Settings.Type.Int, 64, ""),
-                new Settings.SettingsElt("DataLogColumn", Settings.Type.Int, 9, ""),
-                new Settings.SettingsElt("Visible", Settings.Type.Bool, true, ""),
-                new Settings.SettingsElt("Title", Settings.Type.Str, "", "")
-            };
-
-        /* K E Y  S E T T I N G S */
-        /*----------------------------------------------------------------------------
-        	%%Function: KeySettings
-        	%%Qualified: AzLog.AzLogViewSettings.KeySettings
-        	%%Contact: rlittle
-        	
-        ----------------------------------------------------------------------------*/
-        private string KeySettings()
-        {
-            return String.Format("Software\\Thetasoft\\AzLog\\Views\\{0}", m_sName);
-
-        }
-
-        private string KeySettingsParent()
-        {
-            return "Software\\Thetasoft\\AzLog\\Views";
         }
 
         /* L O A D */
@@ -374,13 +353,11 @@ namespace AzLog
         	%%Function: Save
         	%%Qualified: AzLog.AzLogViewSettings.Save
         	%%Contact: rlittle
-        	
-            Save is a little tricky. We load the settings into a new listview, which
-            means that the taborder is the same as the column order. on save, though,
-            the listview could have been reordered by the user, which means that the
-            the tab order isn't necessarily the same as our column ordering.
 
-            the client will tell use the tab ordering via an rgsColumns
+			note that the enumerator for columns enumerates based on the view order
+			(m_pliazlvc) not the collection. this means we write them out in view
+			order, which allows us to have an identity tab order when we load from
+			file.
 
             TODO: All this wacky "watch the user moving the columns" is unnecessary.
             Just use the DisplayIndex int he column header (see GetOrderedHeaders in

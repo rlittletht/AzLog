@@ -115,6 +115,7 @@ namespace AzLog
                 }
         }
 
+        #region Settings I/O
 
         static XmlDescription<AzLogCollection> CreateXmlDescriptor()
         {
@@ -124,7 +125,7 @@ namespace AzLog
 		        .DiscardUnknownAttributes()
 		        .AddChildElement("Datasources")
 		        .AddChildElement("Datasource", GetDatasourceName, SetDatasourceName)
-		        .SetRepeating(AzLogCollection.CreateRepeatingDatasource, AzLogCollection.AreRemainingDatasources, AzLogCollection.CommitRepeatDatasource)
+		        .SetRepeating(CreateRepeatingDatasource, AreRemainingDatasources, CommitRepeatDatasource)
 		        .Pop()
 		        .AddElement("DefaultView", GetDefaultView, SetDefaultView);
         }
@@ -135,6 +136,11 @@ namespace AzLog
         static string GetDatasourceName(AzLogCollection model, RepeatContext<AzLogCollection>.RepeatItemContext repeatItem) => ((IAzLogDatasource)repeatItem.RepeatKey).GetName();
         static void SetDatasourceName(AzLogCollection model, string value, RepeatContext<AzLogCollection>.RepeatItemContext repeatItem) => ((string[]) repeatItem.RepeatKey)[0] = value;
 
+        // Repeating element support
+        /*----------------------------------------------------------------------------
+			%%Function:CreateRepeatingDatasource
+			%%Qualified:AzLog.AzLogCollection.CreateRepeatingDatasource
+        ----------------------------------------------------------------------------*/
         static RepeatContext<AzLogCollection>.RepeatItemContext CreateRepeatingDatasource(
 	        AzLogCollection model,
 	        Element<AzLogCollection> element,
@@ -152,6 +158,10 @@ namespace AzLog
 	        return new RepeatContext<AzLogCollection>.RepeatItemContext(element, parent, new string[1]);
         }
 
+        /*----------------------------------------------------------------------------
+			%%Function:AreRemainingDatasources
+			%%Qualified:AzLog.AzLogCollection.AreRemainingDatasources
+        ----------------------------------------------------------------------------*/
         public static bool AreRemainingDatasources(AzLogCollection model, RepeatContext<AzLogCollection>.RepeatItemContext itemContext)
         {
 	        if (model.m_pliazld == null)
@@ -163,22 +173,31 @@ namespace AzLog
 	        return model.m_iteratorDatasourceForWrite.MoveNext();
         }
 
-        // for now, we only have a single string, so that's what we'll collect in the item context...
-        public static void CommitRepeatDatasource(AzLogCollection settings, RepeatContext<AzLogCollection>.RepeatItemContext itemContext)
+        /*----------------------------------------------------------------------------
+			%%Function:CommitRepeatDatasource
+			%%Qualified:AzLog.AzLogCollection.CommitRepeatDatasource
+        
+			for now, we only have a single string, so that's what we'll collect in the item context...
+        ----------------------------------------------------------------------------*/
+        public static void CommitRepeatDatasource(AzLogCollection model, RepeatContext<AzLogCollection>.RepeatItemContext itemContext)
         {
 	        string[] strRef = ((string[]) itemContext.RepeatKey);
 
-	        if (settings.m_pliazld == null)
-		        settings.m_pliazld = new List<IAzLogDatasource>();
+	        if (model.m_pliazld == null)
+		        model.m_pliazld = new List<IAzLogDatasource>();
 
 	        Collection collectionDatasources = AzLogDatasourceSupport.CreateCollection();
 
-            settings.FAddDatasource(collectionDatasources.GetFullPathName(strRef[0]));
+	        model.FAddDatasource(collectionDatasources.GetFullPathName(strRef[0]));
         }
 
+        /*----------------------------------------------------------------------------
+			%%Function:Load
+			%%Qualified:AzLog.AzLogCollection.Load
+        ----------------------------------------------------------------------------*/
         public void Load()
         {
-	        Collection collectionCollections = AzLogCollection.CreateCollection();
+	        Collection collectionCollections = CreateCollection();
 
 	        XmlDescription<AzLogCollection> descriptor = CreateXmlDescriptor();
 
@@ -186,16 +205,22 @@ namespace AzLog
 		        readFile.DeSerialize(descriptor, this);
         }
 
+        /*----------------------------------------------------------------------------
+			%%Function:Save
+			%%Qualified:AzLog.AzLogCollection.Save
+        ----------------------------------------------------------------------------*/
         public void Save()
         {
-	        Collection collectionCollections = AzLogCollection.CreateCollection();
+	        Collection collectionCollections = CreateCollection();
 
 	        XmlDescription<AzLogCollection> descriptor = CreateXmlDescriptor();
 	        
 	        m_iteratorDatasourceForWrite = null;
-	        using (WriteFile<AzLogCollection> writeFile = collectionCollections.CreateSettingsWriteFile<global::AzLog.AzLogCollection>(m_sName))
-                writeFile.SerializeSettings(descriptor, this);
+	        using (WriteFile<AzLogCollection> writeFile = collectionCollections.CreateSettingsWriteFile<AzLogCollection>(m_sName))
+		        writeFile.SerializeSettings(descriptor, this);
         }
+
+        #endregion
 
     }
 }

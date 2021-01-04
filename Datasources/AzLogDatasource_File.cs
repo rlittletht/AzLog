@@ -118,7 +118,8 @@ namespace AzLog
 		        .AddChildElement("TextDatasource")
 		        .AddChildElement("FileName", AzLogFile.GetFilename, AzLogFile.SetFilename)
 		        .AddElement("LogTextFormat", null, AzLogFile.SetLogTextFormat);
-        }        
+        }
+        
         /* S A V E */
         /*----------------------------------------------------------------------------
         	%%Function: Save
