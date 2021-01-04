@@ -4,9 +4,13 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 using Microsoft.Win32;
 using NUnit.Framework;
 using TCore.Settings;
+using TCore.XmlSettings;
+using static System.Boolean;
+using static System.Int32;
 
 namespace AzLog
 {
@@ -18,6 +22,11 @@ namespace AzLog
         public string Name => m_sName;
         private bool m_fDirty;
 
+        public static Collection CreateCollection()
+        {
+	        return Collection.CreateCollection("Views", ".vx.xml", "AzLog\\Views");
+        }
+
         public class AzLogViewColumn
         {
             private string m_sName;
@@ -26,9 +35,20 @@ namespace AzLog
             private bool m_fVisible;
             private AzLogEntry.LogColumn m_azlvc;
 
-            public string Name => m_sName;
-            public AzLogEntry.LogColumn DataColumn => m_azlvc;
+            public string Name
+            {
+	            get => m_sName;
+	            set => m_sName = value;
+            }
 
+            public AzLogEntry.LogColumn DataColumn
+            {
+                get => m_azlvc;
+                set => m_azlvc = value;
+            }
+
+            public int TabOrderFromFile { get; set; }
+            
             public string Title
             {
                 get { return m_sTitle; }
@@ -60,6 +80,8 @@ namespace AzLog
                 m_sTitle = sTitle;
             }
 
+            public AzLogViewColumn() { }
+            
             public AzLogViewColumn Clone()
             {
                 AzLogViewColumn azlvc = new AzLogViewColumn(m_sName, m_sTitle, m_nWidth, m_azlvc, m_fVisible);
@@ -121,9 +143,9 @@ namespace AzLog
             
             m_pliazlvc.RemoveAt(iSource);
 
-            if (iDest > iSource)
-                iDest--;
-
+            // don't try to adjust iDest even if its later -- we are being
+            // told of its final location, which is already adjusted.
+            
             m_pliazlvc.Insert(iDest, iazlvc);
             m_fDirty = true;
         }
@@ -131,12 +153,12 @@ namespace AzLog
         [TestCase("sMessage", 9, 9, 9, "Identity at the end")]
         [TestCase("PartitionKey", 0, 0, 0, "Identity at the beginning")]
         [TestCase("Level", 4, 4, 4, "Identity in the middle")]
-        [TestCase("PartitionKey", 0, 4, 3, "Move later at the beginning")]
-        [TestCase("Level", 4, 6, 5, "Move later in the middle")]
+        [TestCase("PartitionKey", 0, 4, 4, "Move later at the beginning")]
+        [TestCase("Level", 4, 5, 5, "Move later in the middle")]
         [TestCase("sMessage", 9, 1, 1, "Move earlier at the end")]
         [TestCase("Level", 4, 1, 1, "Move earlier in the middle")]
         [Test]
-        public void TestMove(string sColumn, int iazlvcExpected, int iazlvcDest, int iazlvcResult, string sTestDescription)
+        public void TestMove(string sColumn, int iazlvcInitialState, int iazlvcDest, int iazlvcResult, string sTestDescription)
         {
             m_plazlvc.Clear();
             m_pliazlvc.Clear();
@@ -145,7 +167,7 @@ namespace AzLog
 
             int iazlvc = IazlvcTabOrderFromIazlvc(IazlvcFind(sColumn));
 
-            Assert.AreEqual(iazlvcExpected, iazlvc, "{0} (source match)", sTestDescription);
+            Assert.AreEqual(iazlvcInitialState, iazlvc, "{0} (source match)", sTestDescription);
 
             MoveColumn(iazlvc, iazlvcDest);
             int iazlvcNew = IazlvcTabOrderFromIazlvc(IazlvcFind(sColumn));
@@ -197,7 +219,10 @@ namespace AzLog
             m_plazlvc = new List<AzLogViewColumn>();
             m_pliazlvc = new List<int>();
             m_sName = sName;
-            Load();
+            if (sName == "<New...>")
+	            SetDefault();
+            else
+	            Load();
             m_fDirty = false;
         }
 
@@ -208,6 +233,80 @@ namespace AzLog
         }
 
         #region File I/O
+
+        static XmlDescription<AzLogViewSettings> CreateXmlDescriptor()
+        {
+	        return XmlDescriptionBuilder<AzLogViewSettings>
+		        .Build("http://www.thetasoft.com/schemas/AzLog/collections/2020", "View")
+		        .DiscardAttributesWithNoSetter()
+		        .DiscardUnknownAttributes()
+		        .AddChildElement("Columns")
+		        .AddChildElement("Column")
+		        .SetRepeating(AzLogViewSettings.CreateRepeatingColumn, AzLogViewSettings.AreRemainingColumns, AzLogViewSettings.CommitRepeatColumns)
+		        .AddAttribute("name", AzLogViewSettings.GetColumnName, AzLogViewSettings.SetColumnName)
+		        .AddChildElement("DataLogColumn", AzLogViewSettings.GetDataLogColumn, AzLogViewSettings.SetDataLogColumn)
+		        .AddElement("TabOrder", AzLogViewSettings.GetTabOrder, AzLogViewSettings.SetTabOrder)
+		        .AddElement("Title", AzLogViewSettings.GetTitle, AzLogViewSettings.SetTitle)
+		        .AddElement("Visible", AzLogViewSettings.GetVisible, AzLogViewSettings.SetVisible)
+		        .AddElement("Width", AzLogViewSettings.GetWidth, AzLogViewSettings.SetWidth);
+        }
+
+        static string GetColumnName(AzLogViewSettings model, RepeatContext<AzLogViewSettings>.RepeatItemContext repeatItem) => ((AzLogViewColumn)repeatItem.RepeatKey).Name;
+        static void SetColumnName(AzLogViewSettings model, string value, RepeatContext<AzLogViewSettings>.RepeatItemContext repeatItem) => ((AzLogViewColumn)repeatItem.RepeatKey).Name = value;
+
+        static string GetTabOrder(AzLogViewSettings model, RepeatContext<AzLogViewSettings>.RepeatItemContext repeatItem) => ((AzLogViewColumn)repeatItem.RepeatKey).TabOrderFromFile.ToString();
+        static void SetTabOrder(AzLogViewSettings model, string value, RepeatContext<AzLogViewSettings>.RepeatItemContext repeatItem) => ((AzLogViewColumn)repeatItem.RepeatKey).TabOrderFromFile = Int32.Parse(value);
+        static string GetDataLogColumn(AzLogViewSettings model, RepeatContext<AzLogViewSettings>.RepeatItemContext repeatItem) => AzLogEntry.GetColumnBuiltinNameByIndex(((AzLogViewColumn)repeatItem.RepeatKey).DataColumn);
+        static void SetDataLogColumn(AzLogViewSettings model, string value, RepeatContext<AzLogViewSettings>.RepeatItemContext repeatItem) => ((AzLogViewColumn)repeatItem.RepeatKey).DataColumn = AzLogEntry.GetColumnIndexByName(value);
+        static string GetTitle(AzLogViewSettings model, RepeatContext<AzLogViewSettings>.RepeatItemContext repeatItem) => ((AzLogViewColumn)repeatItem.RepeatKey).Title;
+        static void SetTitle(AzLogViewSettings model, string value, RepeatContext<AzLogViewSettings>.RepeatItemContext repeatItem) => ((AzLogViewColumn)repeatItem.RepeatKey).Title = value;
+        static string GetVisible(AzLogViewSettings model, RepeatContext<AzLogViewSettings>.RepeatItemContext repeatItem) => ((AzLogViewColumn)repeatItem.RepeatKey).Visible.ToString();
+        static void SetVisible(AzLogViewSettings model, string value, RepeatContext<AzLogViewSettings>.RepeatItemContext repeatItem) => ((AzLogViewColumn)repeatItem.RepeatKey).Visible = Boolean.Parse(value);
+        static string GetWidth(AzLogViewSettings model, RepeatContext<AzLogViewSettings>.RepeatItemContext repeatItem) => ((AzLogViewColumn)repeatItem.RepeatKey).Width.ToString();
+        static void SetWidth(AzLogViewSettings model, string value, RepeatContext<AzLogViewSettings>.RepeatItemContext repeatItem) => ((AzLogViewColumn)repeatItem.RepeatKey).Width = Int32.Parse(value);
+
+        // we want to iterate by display order, not by the order in the file. This way we
+        // persist the view order (without having to worry about tab order)
+        private IEnumerator<int> m_iteratorColumnForWrite;
+        
+        static RepeatContext<AzLogViewSettings>.RepeatItemContext CreateRepeatingColumn(
+	        AzLogViewSettings model,
+	        Element<AzLogViewSettings> element,
+	        RepeatContext<AzLogViewSettings>.RepeatItemContext parent)
+        {
+	        if (model.m_plazlvc != null && model.m_iteratorColumnForWrite != null)
+	        {
+		        return new RepeatContext<AzLogViewSettings>.RepeatItemContext(
+			        element,
+			        parent,
+			        model.m_plazlvc[model.m_iteratorColumnForWrite.Current]);
+	        }
+
+	        return new RepeatContext<AzLogViewSettings>.RepeatItemContext(element, parent, new AzLogViewColumn());
+        }
+
+        static bool AreRemainingColumns(AzLogViewSettings model, RepeatContext<AzLogViewSettings>.RepeatItemContext itemContext)
+        {
+	        if (model.m_plazlvc == null)
+		        return false;
+
+	        if (model.m_iteratorColumnForWrite == null)
+		        model.m_iteratorColumnForWrite = model.m_pliazlvc.GetEnumerator();
+
+	        return model.m_iteratorColumnForWrite.MoveNext();
+        }
+
+        // for now, we only have a single string, so that's what we'll collect in the item context...
+        static void CommitRepeatColumns(AzLogViewSettings settings, RepeatContext<AzLogViewSettings>.RepeatItemContext itemContext)
+        {
+	        AzLogViewColumn viewColumn = ((AzLogViewColumn)itemContext.RepeatKey);
+
+	        if (settings.m_plazlvc == null)
+		        settings.m_plazlvc = new List<AzLogViewColumn>();
+
+	        settings.m_plazlvc.Add(viewColumn);
+        }
+
         private Settings.SettingsElt[] _rgsteeColumn =
             {
                 new Settings.SettingsElt("TabOrder", Settings.Type.Int, 0, ""),
@@ -244,51 +343,30 @@ namespace AzLog
         ----------------------------------------------------------------------------*/
         public void Load()
         {
-            RegistryKey rk = Registry.CurrentUser.OpenSubKey(KeySettings());
+	        Collection collection = AzLogViewSettings.CreateCollection();
 
-            if (rk == null)
-                {
-                SetDefault();
-                return;
-                }
-            string[] rgs = rk.GetSubKeyNames();
-            Settings ste;
-            SortedList<int, Settings> mpnste = new SortedList<int, Settings>();
+	        XmlDescription<AzLogViewSettings> descriptor = CreateXmlDescriptor();
 
-            foreach (string sColumn in rgs)
-                {
-                string sKey = String.Format("{0}\\{1}", KeySettings(), sColumn);
-                ste = new Settings(_rgsteeColumn, sKey, sColumn);
-                ste.Load();
-                int nTabOrder = ste.NValue("TabOrder");
-                if (mpnste.ContainsKey(nTabOrder))
-                {
-                    // duplicate tab order. just find the next unused item
-                    int nNewTabOrder = 0;
-                    while (mpnste.ContainsKey(nNewTabOrder))
-                        nNewTabOrder++;
-                    nTabOrder = nNewTabOrder;
-                }
-                mpnste.Add(nTabOrder, ste);
-                }
-
-            foreach (int nKey in mpnste.Keys)
-                {
-                ste = mpnste[nKey];
-
-                int nWidth = ste.NValue("Width");
-                AzLogEntry.LogColumn azlc = (AzLogEntry.LogColumn) ste.NValue("DataLogColumn");
-                bool fVisible = ste.FValue("Visible");
-                string sTitle = ste.SValue("Title");
-
-                if (sTitle == "")
-                    sTitle = (string) ste.Tag;
-
-                AddLogViewColumn((string) ste.Tag, sTitle, nWidth, azlc, fVisible);
-                }
-
-            rk.Close();
-            m_fDirty = false;
+	        try
+	        {
+		        using (ReadFile<AzLogViewSettings> readFile =
+			        ReadFile<AzLogViewSettings>.CreateSettingsFile(collection.GetFullPathName(m_sName)))
+		        {
+			        readFile.DeSerialize(descriptor, this);
+		        }
+	        }
+	        catch (Exception exc)
+	        {
+		        MessageBox.Show($"Could not load view: {m_sName}: {exc.Message}");
+		        SetDefault();
+		        return;
+	        }
+	        
+            // setup default tab order
+            for (int i = 0; i < m_plazlvc.Count; i++)
+            {
+	            m_pliazlvc.Add(i);
+            }
         }
 
         /* S A V E */
@@ -310,35 +388,16 @@ namespace AzLog
         ----------------------------------------------------------------------------*/
         public void Save()
         {
-            RegistryKey rk = Settings.RkEnsure(KeySettingsParent());
+	        Collection collection = AzLogViewSettings.CreateCollection();
+	        
+            m_iteratorColumnForWrite = null;
+            XmlDescription<AzLogViewSettings> descriptor = CreateXmlDescriptor();
             
-            // build a tab order reverse mapping
-            int[] mpTabOrder = new int[m_pliazlvc.Count];
-
-            for (int i = 0; i < m_pliazlvc.Count; i++)
-                mpTabOrder[m_pliazlvc[i]] = i;
-
-            rk.DeleteSubKeyTree(m_sName, false);
-            rk.Close();
-
-            rk = Settings.RkEnsure(KeySettings());
+            using (WriteFile<AzLogViewSettings> writeFile = collection.CreateSettingsWriteFile<AzLogViewSettings>(m_sName))
+            {
+	            writeFile.SerializeSettings(descriptor, this);
+            }
             
-            for (int i = 0; i < ColumnCount(); i++)
-                {
-                AzLogViewColumn azlvc = Column(i);
-
-                string sKey = String.Format("{0}\\{1}", KeySettings(), azlvc.Name);
-                Settings ste = new Settings(_rgsteeColumn, sKey, azlvc.Name);
-
-                ste.SetNValue("TabOrder", mpTabOrder[i]);
-                ste.SetNValue("Width", azlvc.Width);
-                ste.SetNValue("DataLogColumn", ((int) azlvc.DataColumn));
-                ste.SetFValue("Visible", azlvc.Visible);
-                ste.SetSValue("Title", azlvc.Title);
-
-                ste.Save();
-                }
-            rk.Close();
             m_fDirty = false;
         }
         #endregion

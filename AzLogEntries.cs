@@ -244,7 +244,36 @@ namespace AzLog
 
 	        return DateTime.Parse(GetColumn(lc));
         }
-        
+
+        private static string[] s_rgColumnNames = new string[]
+        {
+	        "Partition",
+            "RowKey",
+	        "EventTickCount",
+	        "AppName",
+	        "Level",
+	        "EventID",
+	        "InstanceID",
+	        "Pid",
+	        "Tid",
+	        "UlsTimestamp",
+	        "UlsArea",
+	        "UlsCategory",
+	        "UlsCorrelation",
+	        "UlsEventID",
+	        "Message",
+	        "Message0",
+	        "Message1",
+	        "Message2",
+	        "Message3",
+	        "Message4",
+	        "Message5",
+	        "Message6",
+	        "Message7",
+	        "Message8",
+	        "Message9",
+        };
+
         private static Dictionary<string, LogColumn> s_mpColumnNames =
             new Dictionary<string, LogColumn>
             {
@@ -281,6 +310,10 @@ namespace AzLog
             return s_mpColumnNames[sColumn];
         }
 
+        public static string GetColumnBuiltinNameByIndex(LogColumn lc)
+        {
+	        return s_rgColumnNames[(int) lc];
+        }        
         public string GetColumn(LogColumn lc)
         {
             switch (lc)

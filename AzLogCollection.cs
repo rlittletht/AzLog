@@ -19,7 +19,7 @@ namespace AzLog
         {
 	        return Collection.CreateCollection("Collections", ".cx.xml", "AzLog\\Collections");
         }
-        
+
         /* L O A D  C O L L E C T I O N */
         /*----------------------------------------------------------------------------
         	%%Function: LoadCollection
@@ -191,7 +191,8 @@ namespace AzLog
 	        Collection collectionCollections = AzLogCollection.CreateCollection();
 
 	        XmlDescription<AzLogCollection> descriptor = CreateXmlDescriptor();
-
+	        
+	        m_iteratorDatasourceForWrite = null;
 	        using (WriteFile<AzLogCollection> writeFile = collectionCollections.CreateSettingsWriteFile<global::AzLog.AzLogCollection>(m_sName))
                 writeFile.SerializeSettings(descriptor, this);
         }
