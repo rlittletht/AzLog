@@ -60,7 +60,8 @@ namespace AzLog
             Message6 = 21,
             Message7 = 22,
             Message8 = 23,
-            Message9 = 24
+            Message9 = 24,
+            Last = Message9
         };
 
         private ListViewItem m_lvi; // this is valid if the requested generation matches the generation we have cached...
@@ -561,6 +562,22 @@ namespace AzLog
                                      azlee.Tid, azlee.Message);
         }
         #endregion
+
+        public bool FMatchSearch(string search, AzLogViewSettings azlvs)
+        {
+	        for (int i = 0; i < azlvs.ColumnCount(); i++)
+	        {
+		        string s = GetColumn(azlvs.Column(i).DataColumn);
+
+		        if (s != null)
+		        {
+			        if (s.IndexOf(search, StringComparison.InvariantCultureIgnoreCase) >= 0)
+				        return true;
+		        }
+            }
+
+	        return false;
+        }
     }
 
     // We need an uber collection that supports virtualized set of AzLogEntries. Preferably partitioned. 

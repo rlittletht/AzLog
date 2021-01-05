@@ -193,6 +193,10 @@
       <Project>{cf92fd1e-ce88-492e-a7c6-c4d29d908a22}</Project>
       <Name>TCore.Settings</Name>
     </ProjectReference>
+    <ProjectReference Include="..\liblet\cs\TCore.StreamEx\TCore.StreamEx.csproj">
+      <Project>{a6c31d9e-ca95-4baa-9b42-7f080df59067}</Project>
+      <Name>TCore.StreamEx</Name>
+    </ProjectReference>
     <ProjectReference Include="..\liblet\cs\TCore.UI\TCore.UI.csproj">
       <Project>{9213a90f-a23f-4bc5-827c-164ecb6c6cc2}</Project>
       <Name>TCore.UI</Name>

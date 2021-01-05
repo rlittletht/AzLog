@@ -8,6 +8,7 @@ using NUnit.Framework;
 using NUnit.Framework.Constraints;
 using TCore.Settings;
 using TCore.XmlSettings;
+using TCore.StreamEx;
 
 namespace AzLog
 {
@@ -258,15 +259,17 @@ namespace AzLog
 		{
             AzLogEntry[] rgazle = new AzLogEntry[s_cChunkSize]; // do 1k log entry chunks
 
-            using (StreamReader sr = File.OpenText(m_sFilename))
+            using (BufferedStreamEx srx = new BufferedStreamEx(m_sFilename, true))
+//            using (StreamReader sr = File.OpenText(m_sFilename))
             {
                 int iLine = 0;
                 int cChunk = 0;
                 int iFirst, iLast;
-
-                while (!sr.EndOfStream)
+                string s;
+                
+                while ((s = srx.ReadLine()) != null)
                 {
-                    string s = sr.ReadLine();
+//                    string s = sr.ReadLine();
                     AzLogEntry azle = null;
                     try
                     {

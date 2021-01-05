@@ -95,8 +95,7 @@ namespace AzLog
                     }
         }
         #endregion
-
- 
+        
         #region Data Retrieval
 
         private List<IAzLogDatasource> m_pliazldsSources;

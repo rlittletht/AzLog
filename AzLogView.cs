@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using Microsoft.WindowsAzure.Storage.Table;
 using NUnit.Framework;
@@ -177,6 +178,159 @@ namespace AzLog
             return m_azlm.LogEntry(m_pliale[i]);
         }
 
+        public enum SearchKind
+        {
+            Forward,
+            Backward,
+            Nearest
+        }
+
+        public delegate bool FMatchDelegate(int entry, string search);
+        
+        /*----------------------------------------------------------------------------
+			%%Function:FindEntryInView
+			%%Qualified:AzLog.AzLogView.FindEntryInView
+
+			nearest means we search forward and backward alternately looking for the
+			item
+        ----------------------------------------------------------------------------*/
+        public static int FindEntryInViewCore(string s, int iStart, int iMax, SearchKind kind, int cMaxItemsToSearch, FMatchDelegate matchDelegate)
+        {
+	        if (iMax == 0)
+		        return -1;
+	        
+	        int iLastReverse = kind == SearchKind.Forward ? iStart + 1 : 0;
+	        int iLastForward = kind == SearchKind.Backward ? iStart - 1 : iMax - 1;
+	        
+	        if (cMaxItemsToSearch != -1)
+	        {
+		        iLastReverse = Math.Max(iLastReverse, iStart - cMaxItemsToSearch);
+		        iLastForward = Math.Min(iLastForward, iStart + cMaxItemsToSearch);
+	        }
+
+	        int iForward = kind == SearchKind.Forward ? iStart : iStart + 1;
+	        int iReverse = iStart;
+
+	        while (iForward <= iLastForward || iReverse >= iLastReverse)
+	        {
+		        if (iReverse >= iLastReverse)
+		        {
+                    if (matchDelegate(iReverse, s))
+	                    return iReverse;
+                    
+                    iReverse--;
+		        }
+
+		        if (iForward <= iLastForward)
+		        {
+			        if (matchDelegate(iForward, s))
+				        return iForward;
+
+			        iForward++;
+		        }
+	        }
+
+	        return -1;
+        }
+
+        /*----------------------------------------------------------------------------
+			%%Function:FindEntryInView
+			%%Qualified:AzLog.AzLogView.FindEntryInView
+        ----------------------------------------------------------------------------*/
+        public int FindEntryInView(string s, int iStart, SearchKind kind = SearchKind.Forward, int cMaxItemsToSearch = -1)
+        {
+            return FindEntryInViewCore(
+	            s, 
+	            iStart, 
+	            m_pliale.Count, 
+	            kind, 
+	            cMaxItemsToSearch,
+	            (entry, search) => m_azlm.LogEntry(m_pliale[entry]).FMatchSearch(search, m_azlw.ViewSettings));
+        
+        }
+
+        /*----------------------------------------------------------------------------
+			%%Function:FindNearestEventTickcountInView
+			%%Qualified:AzLog.AzLogView.FindNearestEventTickcountInView
+        ----------------------------------------------------------------------------*/
+        public int FindNearestEventTickcountInView(string sEventTickCount, int hint)
+        {
+	        return FindEntryInViewCore(
+		        sEventTickCount,
+		        hint,
+		        m_pliale.Count,
+		        SearchKind.Nearest,
+		        100,
+		        (entry, search) => String.Compare(m_azlm.LogEntry(m_pliale[entry]).GetColumn(AzLogEntry.LogColumn.EventTickCount), search) == 0);
+        }
+
+        class SelectionRestoreContext
+        {
+	        private List<string> m_plBackwardSave; // this will include the actual selected item
+	        private List<string> m_plForwardSave;
+	        
+	        public delegate string FetchKeyDelegate(int i);
+
+	        public static SelectionRestoreContext CreateRestoreContextFromListView(int iPreserve, int iMax, FetchKeyDelegate fetchKey)
+	        {
+		        SelectionRestoreContext restore = new SelectionRestoreContext();
+
+		        restore.m_plBackwardSave = new List<string>();
+		        restore.m_plForwardSave = new List<string>();
+
+		        int i;
+		        
+		        for (i = iPreserve; i > Math.Max(0, i - 10); i--)
+			        restore.m_plBackwardSave.Add(fetchKey(i));
+
+		        i = iPreserve + 1;
+		        
+		        iMax = Math.Min(iMax, i + 10);
+		        while (i < iMax)
+		        {
+			        restore.m_plForwardSave.Add(fetchKey(i++));
+		        }
+
+		        return restore;
+	        }
+
+	        public delegate int RestoreSearchDelegate(string sKey);
+	        
+	        public int FindNearestForRestore(RestoreSearchDelegate searchDelegate)
+	        {
+                // we have no idea what items that used to be around us are valid --
+                // any of them could now be filtered out. We've got a max of 20 keys
+                // to try to match (10 back and 10 forward, if they were available).
+
+                while (m_plBackwardSave.Count > 0 || m_plForwardSave.Count > 0)
+                {
+	                int i;
+
+	                if (m_plBackwardSave.Count > 0)
+	                {
+		                i = searchDelegate(m_plBackwardSave[0]);
+
+		                if (i != -1)
+			                return i;
+
+		                m_plBackwardSave.RemoveAt(0);
+	                }
+
+	                if (m_plForwardSave.Count > 0)
+	                {
+		                i = searchDelegate(m_plForwardSave[0]);
+
+		                if (i != -1)
+			                return i;
+
+		                m_plForwardSave.RemoveAt(0);
+	                }
+                }
+
+                return -1;
+	        }
+        }
+        
         /* R E B U I L D  V I E W */
         /*----------------------------------------------------------------------------
         	%%Function: RebuildView
@@ -184,9 +338,20 @@ namespace AzLog
         	%%Contact: rlittle
         	
             This is a complete, nuclear rebuild. 
+        
+			Whenever we rebuild the view, we want to try to center back on the same
+			selected item as before. even if we can't find it, we'll find one around
+			it
         ----------------------------------------------------------------------------*/
-        public void RebuildView()
+        public int RebuildView(int iPreserveSelection)
         {
+	        SelectionRestoreContext restore = iPreserveSelection != -1
+		        ? SelectionRestoreContext.CreateRestoreContextFromListView(
+			        iPreserveSelection,
+			        m_pliale.Count,
+			        (_i) => m_azlm.LogEntry(m_pliale[_i]).GetColumn(AzLogEntry.LogColumn.EventTickCount))
+		        : null;
+	        
             m_pliale = new List<int>();
 
             for (int i = 0; i < m_azlm.LogCount; i++)
@@ -197,8 +362,25 @@ namespace AzLog
             if (m_azlw != null)
                 m_azlw.InvalWindowFull();
 
+            if (restore != null)
+            {
+	            int hint = Math.Min(iPreserveSelection, m_pliale.Count);
+
+                return restore.FindNearestForRestore((_search) => FindNearestEventTickcountInView(_search, hint));
+            }
+            
+            return -1;
         }
 
+        /*----------------------------------------------------------------------------
+			%%Function:RebuildView
+			%%Qualified:AzLog.AzLogView.RebuildView
+        ----------------------------------------------------------------------------*/
+        public int RebuildView()
+        {
+	        return RebuildView(-1);
+        }
+        
         private int m_cAsyncBegun = 0;
 
         public void BeginAsyncData()
@@ -377,6 +559,36 @@ namespace AzLog
 
             for (int i = 0; i < pls.Count; i++)
                 Assert.AreEqual(pls[i], AzleItem(i).EventTickCount);
+        }
+
+        [TestCase(new[]{"1", "2", "3"}, "1", 0, SearchKind.Forward, -1, 0)]
+        [TestCase(new[] { "1", "2", "3" }, "2", 0, SearchKind.Forward, -1, 1)]
+        [TestCase(new[] { "1", "2", "3" }, "3", 0, SearchKind.Forward, -1, 2)]
+        [TestCase(new[] { "1", "2", "3" }, "1", 1, SearchKind.Forward, -1, -1)]
+        [TestCase(new string[] { }, "1", 0, SearchKind.Forward, -1, -1)]
+        [TestCase(new[] { "1", "2", "3" }, "1", 2, SearchKind.Backward, -1, 0)]
+        [TestCase(new[] { "1", "2", "3" }, "2", 2, SearchKind.Backward, -1, 1)]
+        [TestCase(new[] { "1", "2", "3" }, "3", 2, SearchKind.Backward, -1, 2)]
+        [TestCase(new[] { "1", "2", "3" }, "3", 1, SearchKind.Backward, -1, -1)]
+        
+        [TestCase(new[] { "1", "2", "3" }, "3", 1, SearchKind.Nearest, -1, 2)]
+        [TestCase(new[] { "1", "2", "3" }, "3", 0, SearchKind.Nearest, -1, 2)]
+        [TestCase(new[] { "1", "2", "3" }, "3", 0, SearchKind.Nearest, 1, -1)]
+        [TestCase(new[] { "1", "2", "3" }, "1", 1, SearchKind.Nearest, -1, 0)]
+        [TestCase(new[] { "1", "2", "3" }, "1", 2, SearchKind.Nearest, -1, 0)]
+        [TestCase(new[] { "1", "2", "3" }, "1", 2, SearchKind.Nearest, 1, -1)]
+        [Test]
+        public static void TestFind(string[] domain, string search, int iStart, SearchKind kind, int cEntries, int iExpected)
+        {
+	        int iActual = FindEntryInViewCore(
+		        search,
+		        iStart,
+		        domain.Length,
+		        kind,
+		        cEntries,
+		        (_i, _s) => String.Compare(domain[_i], _s) == 0);
+
+	        Assert.AreEqual(iExpected, iActual);
         }
         #endregion
     }

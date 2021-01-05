@@ -17,6 +17,7 @@ using Microsoft.Win32;
 using NUnit.Framework;
 using TCore.ListViewSupp;
 using TCore.PostfixText;
+using TCore.UI;
 using TCore.XmlSettings;
 
 namespace AzLog
@@ -321,6 +322,7 @@ namespace AzLog
 
             SetupListViewForView(m_azlvs);
             SetupContextMenu();
+            SetupDetailDropdown();
             DirtyView(true);
             
         }
@@ -504,8 +506,51 @@ namespace AzLog
 
         #endregion
 
-        #region Column Headers / Context Menus
+        #region Column Headers / Context Menus / Detail Control
 
+        class DetailColumn
+        {
+            public AzLogEntry.LogColumn DataColumn { get; set; }
+
+            public override string ToString()
+            {
+	            return AzLogEntry.GetColumnBuiltinNameByIndex(DataColumn);
+            }
+
+            public DetailColumn(AzLogEntry.LogColumn logColumn)
+            {
+	            DataColumn = logColumn;
+            }
+        }
+        
+        /*----------------------------------------------------------------------------
+			%%Function:SetupDetailDropdown
+			%%Qualified:AzLog.AzLogWindow.SetupDetailDropdown
+        ----------------------------------------------------------------------------*/
+        void SetupDetailDropdown()
+        {
+	        AzLogEntry.LogColumn lc;
+
+	        if (m_cbxDetail.SelectedItem != null)
+		        lc = ((DetailColumn) m_cbxDetail.SelectedItem).DataColumn;
+	        else
+		        lc = AzLogEntry.LogColumn.Message;
+
+	        m_cbxDetail.Items.Clear();
+	        int iSelected = -1;
+	        for (int i = 0; i < m_azlvs.ColumnCount(); i++)
+	        {
+		        DetailColumn detailColumn = new DetailColumn(m_azlvs.Column(i).DataColumn);
+
+		        m_cbxDetail.Items.Add(detailColumn);
+		        if (detailColumn.DataColumn == lc)
+			        iSelected = m_cbxDetail.Items.Count - 1;
+	        }
+
+	        if (iSelected != -1)
+				m_cbxDetail.SelectedIndex = iSelected;
+        }
+        
         private HeaderSupp m_hs; // this is the guts of dealing with right clicking on the header region
 
         /* S E T U P  C O N T E X T  M E N U */
@@ -841,8 +886,8 @@ namespace AzLog
 	            m_azlv.Filter.End = m_azlv.Filter.End.AddHours(nHours);
             
             m_azlv.Filter.InvalFilterID();
-            m_azlv.RebuildView();
-            
+            RebuildAndAttemptRestoreSelection();
+
             // 10/26/2015 9:00
             eb.Text = dttmMac.ToLocalTime().ToString("MM/dd/yyyy HH:mm");
 
@@ -893,7 +938,7 @@ namespace AzLog
 		            new ComparisonOperator(ComparisonOperator.Op.Eq)));
 
             m_azlv.Filter.Add(new PostfixOperator(PostfixOperator.Op.And));
-            m_azlv.RebuildView();
+            RebuildAndAttemptRestoreSelection();
         }
 
         /*----------------------------------------------------------------------------
@@ -919,9 +964,27 @@ namespace AzLog
 		            new ComparisonOperator(ComparisonOperator.Op.Eq)));
             
             m_azlv.AddColorFilter(filter, subMenuItem.BackColor, subMenuItem.ForeColor);
-            m_azlv.RebuildView();
+            RebuildAndAttemptRestoreSelection();
         }
 
+        /*----------------------------------------------------------------------------
+			%%Function:RebuildAndAttemptRestoreSelection
+			%%Qualified:AzLog.AzLogWindow.RebuildAndAttemptRestoreSelection
+        ----------------------------------------------------------------------------*/
+        void RebuildAndAttemptRestoreSelection()
+        {
+	        if (m_lvLog.SelectedIndices.Count == 0)
+	        {
+		        m_azlv.RebuildView();
+	        }
+	        else
+	        {
+		        int iNewSel = m_azlv.RebuildView(m_lvLog.SelectedIndices[0]);
+		        
+                if (iNewSel != -1)
+	                CenterViewOnItem(m_lvLog, iNewSel, true);
+	        }
+		}
         /*----------------------------------------------------------------------------
 			%%Function:CreateFilterOutContext
 			%%Qualified:AzLog.AzLogWindow.CreateFilterOutContext
@@ -937,7 +1000,7 @@ namespace AzLog
                     new ComparisonOperator(ComparisonOperator.Op.Ne)));
 
             m_azlv.Filter.Add(new PostfixOperator(PostfixOperator.Op.And));
-            m_azlv.RebuildView();
+            RebuildAndAttemptRestoreSelection();
         }
 
         /*----------------------------------------------------------------------------
@@ -1025,7 +1088,7 @@ namespace AzLog
             m_logFilterSettings = newSettings;
 
             UpdateWindowViewsFromLogFilterSettings(m_logFilterSettings);
-            m_azlv.RebuildView();
+            RebuildAndAttemptRestoreSelection();
         }
 
         /*----------------------------------------------------------------------------
@@ -1067,7 +1130,7 @@ namespace AzLog
                 // set color filters too
                 m_azlv.SetColorFilters(colorFilters);
 
-                m_azlv.RebuildView();
+                RebuildAndAttemptRestoreSelection();
 	        }
         }
 
@@ -1089,12 +1152,96 @@ namespace AzLog
             m_azlv.Filter.Start = dttmMin;
             m_azlv.Filter.End = dttmMac;
             m_azlv.Filter.InvalFilterID();
-            
-            m_azlv.RebuildView();
+
+            RebuildAndAttemptRestoreSelection();
 
             m_azlm.FFetchPartitionsForDateRange(dttmMin, dttmMac);
         }
-    }
+
+        void CenterViewOnItem(ListView lv, int item, bool fSelect = false)
+        {
+	        if (fSelect)
+	        {
+		        foreach (int i in m_lvLog.SelectedIndices)
+			        m_lvLog.Items[i].Selected = false;
+
+		        m_lvLog.Items[item].Selected = true;
+	        }
+
+	        m_lvLog.Items[item].EnsureVisible();
+
+        }
+
+        void DoFind()
+        {
+	        if (InputBox.ShowInputBox("Find", out string sFind))
+	        {
+		        int iSelected = m_lvLog.SelectedIndices.Count > 0 ? m_lvLog.SelectedIndices[0] + 1 : 0;
+		        int i = m_azlv.FindEntryInView(sFind, 0);
+
+		        if (i != -1)
+			        CenterViewOnItem(m_lvLog, i, true);
+		        else
+			        MessageBox.Show($"Could not find substring {sFind}");
+	        }
+        }
+        
+        private void OnKeyDown(object sender, KeyEventArgs e)
+		{
+			// if (e.KeyChar)
+			if (e.Alt == true && e.KeyCode == Keys.G)
+			{
+				CenterViewOnItem(m_lvLog, 100, true);
+				e.SuppressKeyPress = true;
+			}
+
+			if (e.Control == true && e.KeyCode == Keys.F)
+			{
+				DoFind();
+			}	
+		}
+
+        AzLogEntry.LogColumn GetDetailLogColumn()
+        {
+	        if (m_cbxDetail.SelectedItem == null)
+		        return AzLogEntry.LogColumn.Message;
+
+	        return ((DetailColumn) m_cbxDetail.SelectedItem).DataColumn;
+        }
+
+        /*----------------------------------------------------------------------------
+			%%Function:UpdateDetailControl
+			%%Qualified:AzLog.AzLogWindow.UpdateDetailControl
+
+        ----------------------------------------------------------------------------*/
+        void UpdateDetailControl()
+        {
+	        if (m_lvLog.SelectedIndices.Count == 0)
+		        return;
+
+	        // update the detail textbox
+	        int item = m_lvLog.SelectedIndices[0];
+
+	        string s = m_azlv.AzleItem(item).GetColumn(GetDetailLogColumn());
+	        string[] rgs = s.Split(new char[] { '\x0a' });
+
+	        m_ebMessageDetail.Lines = rgs;
+        }
+        
+        /*----------------------------------------------------------------------------
+			%%Function:DoLogItemSelectionChanged
+			%%Qualified:AzLog.AzLogWindow.DoLogItemSelectionChanged
+        ----------------------------------------------------------------------------*/
+        private void DoLogItemSelectionChanged(object sender, ListViewItemSelectionChangedEventArgs e)
+		{
+			UpdateDetailControl();
+		}
+
+		private void OnDetailSelectionChanged(object sender, EventArgs e)
+		{
+			UpdateDetailControl();
+		}
+	}
 }
 
  

@@ -67,6 +67,8 @@
 			this.m_cbFilters = new System.Windows.Forms.ComboBox();
 			this.m_pbFilterSave = new System.Windows.Forms.Button();
 			this.button2 = new System.Windows.Forms.Button();
+			this.m_ebMessageDetail = new System.Windows.Forms.TextBox();
+			this.m_cbxDetail = new System.Windows.Forms.ComboBox();
 			this.m_ctxmListViewLog.SuspendLayout();
 			this.SuspendLayout();
 			// 
@@ -128,16 +130,17 @@
 			this.m_lvLog.ContextMenuStrip = this.m_ctxmListViewLog;
 			this.m_lvLog.FullRowSelect = true;
 			this.m_lvLog.HideSelection = false;
-			this.m_lvLog.Location = new System.Drawing.Point(18, 75);
+			this.m_lvLog.Location = new System.Drawing.Point(18, 174);
 			this.m_lvLog.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
 			this.m_lvLog.Name = "m_lvLog";
-			this.m_lvLog.Size = new System.Drawing.Size(1401, 852);
+			this.m_lvLog.Size = new System.Drawing.Size(1401, 753);
 			this.m_lvLog.TabIndex = 16;
 			this.m_lvLog.UseCompatibleStateImageBehavior = false;
 			this.m_lvLog.View = System.Windows.Forms.View.Details;
 			this.m_lvLog.VirtualMode = true;
 			this.m_lvLog.ColumnReordered += new System.Windows.Forms.ColumnReorderedEventHandler(this.DoColumnReorder);
 			this.m_lvLog.ColumnWidthChanged += new System.Windows.Forms.ColumnWidthChangedEventHandler(this.NotifyColumnWidthChanged);
+			this.m_lvLog.ItemSelectionChanged += new System.Windows.Forms.ListViewItemSelectionChangedEventHandler(this.DoLogItemSelectionChanged);
 			this.m_lvLog.RetrieveVirtualItem += new System.Windows.Forms.RetrieveVirtualItemEventHandler(this.GetListViewItem);
 			// 
 			// m_ctxmListViewLog
@@ -467,11 +470,36 @@
 			this.button2.UseVisualStyleBackColor = true;
 			this.button2.Click += new System.EventHandler(this.DoEditRemoveFilters);
 			// 
+			// m_ebMessageDetail
+			// 
+			this.m_ebMessageDetail.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+			this.m_ebMessageDetail.Location = new System.Drawing.Point(18, 75);
+			this.m_ebMessageDetail.Multiline = true;
+			this.m_ebMessageDetail.Name = "m_ebMessageDetail";
+			this.m_ebMessageDetail.ReadOnly = true;
+			this.m_ebMessageDetail.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
+			this.m_ebMessageDetail.Size = new System.Drawing.Size(1398, 91);
+			this.m_ebMessageDetail.TabIndex = 36;
+			// 
+			// m_cbxDetail
+			// 
+			this.m_cbxDetail.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+			this.m_cbxDetail.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+			this.m_cbxDetail.FormattingEnabled = true;
+			this.m_cbxDetail.Location = new System.Drawing.Point(1216, 138);
+			this.m_cbxDetail.Name = "m_cbxDetail";
+			this.m_cbxDetail.Size = new System.Drawing.Size(174, 28);
+			this.m_cbxDetail.TabIndex = 37;
+			this.m_cbxDetail.SelectedIndexChanged += new System.EventHandler(this.OnDetailSelectionChanged);
+			// 
 			// AzLogWindow
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
 			this.ClientSize = new System.Drawing.Size(1439, 974);
+			this.Controls.Add(this.m_cbxDetail);
+			this.Controls.Add(this.m_ebMessageDetail);
 			this.Controls.Add(this.button2);
 			this.Controls.Add(this.m_pbFilterSave);
 			this.Controls.Add(this.label4);
@@ -494,10 +522,12 @@
 			this.Controls.Add(this.label2);
 			this.Controls.Add(this.m_ebEnd);
 			this.Controls.Add(this.m_pbFetch);
+			this.KeyPreview = true;
 			this.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
 			this.Name = "AzLogWindow";
 			this.Text = "AzLogWindow";
 			this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.HandleFormClosed);
+			this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.OnKeyDown);
 			this.m_ctxmListViewLog.ResumeLayout(false);
 			this.ResumeLayout(false);
 			this.PerformLayout();
@@ -544,5 +574,7 @@
         private System.Windows.Forms.ComboBox m_cbFilters;
         private System.Windows.Forms.Button m_pbFilterSave;
         private System.Windows.Forms.Button button2;
-    }
+		private System.Windows.Forms.TextBox m_ebMessageDetail;
+		private System.Windows.Forms.ComboBox m_cbxDetail;
+	}
 }
