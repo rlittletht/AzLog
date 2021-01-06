@@ -550,6 +550,51 @@ namespace AzLog
 	        if (iSelected != -1)
 				m_cbxDetail.SelectedIndex = iSelected;
         }
+
+
+        /*----------------------------------------------------------------------------
+			%%Function:GetDetailLogColumn
+			%%Qualified:AzLog.AzLogWindow.GetDetailLogColumn
+        ----------------------------------------------------------------------------*/
+        AzLogEntry.LogColumn GetDetailLogColumn()
+        {
+	        if (m_cbxDetail.SelectedItem == null)
+		        return AzLogEntry.LogColumn.Message;
+
+	        return ((DetailColumn)m_cbxDetail.SelectedItem).DataColumn;
+        }
+
+        /*----------------------------------------------------------------------------
+			%%Function:UpdateDetailControl
+			%%Qualified:AzLog.AzLogWindow.UpdateDetailControl
+        ----------------------------------------------------------------------------*/
+        void UpdateDetailControl()
+        {
+	        if (m_lvLog.SelectedIndices.Count == 0)
+		        return;
+
+	        // update the detail textbox
+	        int item = m_lvLog.SelectedIndices[0];
+
+	        string s = m_azlv.AzleItem(item).GetColumn(GetDetailLogColumn());
+	        string[] rgs = s.Split(new char[] { '\x0a' });
+
+	        m_ebMessageDetail.Lines = rgs;
+        }
+
+        /*----------------------------------------------------------------------------
+			%%Function:DoLogItemSelectionChanged
+			%%Qualified:AzLog.AzLogWindow.DoLogItemSelectionChanged
+        ----------------------------------------------------------------------------*/
+        private void DoLogItemSelectionChanged(object sender, ListViewItemSelectionChangedEventArgs e)
+        {
+	        UpdateDetailControl();
+        }
+
+        private void OnDetailSelectionChanged(object sender, EventArgs e)
+        {
+	        UpdateDetailControl();
+        }
         
         private HeaderSupp m_hs; // this is the guts of dealing with right clicking on the header region
 
@@ -1172,12 +1217,36 @@ namespace AzLog
 
         }
 
+        /*----------------------------------------------------------------------------
+			%%Function:DoFind
+			%%Qualified:AzLog.AzLogWindow.DoFind
+
+			Find (in all fields)
+        ----------------------------------------------------------------------------*/
         void DoFind()
         {
-	        if (InputBox.ShowInputBox("Find", out string sFind))
+	        if (InputBox.ShowInputBox("Find", new InputBox.RadioGroup("Direction", new [] {"Forward", "Backward"}), out string sFind, out string sRadio))
 	        {
-		        int iSelected = m_lvLog.SelectedIndices.Count > 0 ? m_lvLog.SelectedIndices[0] + 1 : 0;
-		        int i = m_azlv.FindEntryInView(sFind, 0);
+		        AzLogView.SearchKind kind = sRadio == "Forward" ? AzLogView.SearchKind.Forward : AzLogView.SearchKind.Backward;
+
+		        int iStart;
+		        if (m_lvLog.SelectedIndices.Count > 0)
+		        {
+			        iStart = m_lvLog.SelectedIndices[0];
+			        if (kind == AzLogView.SearchKind.Backward)
+				        iStart--;
+			        else
+				        iStart++;
+		        }
+		        else
+		        {
+			        if (kind == AzLogView.SearchKind.Backward)
+				        iStart = m_azlv.Length;
+			        else
+				        iStart = 0;
+		        }
+		        
+		        int i = m_azlv.FindEntryInView(sFind, iStart, kind);
 
 		        if (i != -1)
 			        CenterViewOnItem(m_lvLog, i, true);
@@ -1186,7 +1255,11 @@ namespace AzLog
 	        }
         }
         
-        private void OnKeyDown(object sender, KeyEventArgs e)
+        /*----------------------------------------------------------------------------
+			%%Function:HandleFormHotKeys
+			%%Qualified:AzLog.AzLogWindow.HandleFormHotKeys
+        ----------------------------------------------------------------------------*/
+        private void HandleFormHotKeys(object sender, KeyEventArgs e)
 		{
 			// if (e.KeyChar)
 			if (e.Alt == true && e.KeyCode == Keys.G)
@@ -1201,46 +1274,6 @@ namespace AzLog
 			}	
 		}
 
-        AzLogEntry.LogColumn GetDetailLogColumn()
-        {
-	        if (m_cbxDetail.SelectedItem == null)
-		        return AzLogEntry.LogColumn.Message;
-
-	        return ((DetailColumn) m_cbxDetail.SelectedItem).DataColumn;
-        }
-
-        /*----------------------------------------------------------------------------
-			%%Function:UpdateDetailControl
-			%%Qualified:AzLog.AzLogWindow.UpdateDetailControl
-
-        ----------------------------------------------------------------------------*/
-        void UpdateDetailControl()
-        {
-	        if (m_lvLog.SelectedIndices.Count == 0)
-		        return;
-
-	        // update the detail textbox
-	        int item = m_lvLog.SelectedIndices[0];
-
-	        string s = m_azlv.AzleItem(item).GetColumn(GetDetailLogColumn());
-	        string[] rgs = s.Split(new char[] { '\x0a' });
-
-	        m_ebMessageDetail.Lines = rgs;
-        }
-        
-        /*----------------------------------------------------------------------------
-			%%Function:DoLogItemSelectionChanged
-			%%Qualified:AzLog.AzLogWindow.DoLogItemSelectionChanged
-        ----------------------------------------------------------------------------*/
-        private void DoLogItemSelectionChanged(object sender, ListViewItemSelectionChangedEventArgs e)
-		{
-			UpdateDetailControl();
-		}
-
-		private void OnDetailSelectionChanged(object sender, EventArgs e)
-		{
-			UpdateDetailControl();
-		}
 	}
 }
 

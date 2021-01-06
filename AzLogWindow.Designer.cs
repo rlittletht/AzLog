@@ -527,7 +527,7 @@
 			this.Name = "AzLogWindow";
 			this.Text = "AzLogWindow";
 			this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.HandleFormClosed);
-			this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.OnKeyDown);
+			this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.HandleFormHotKeys);
 			this.m_ctxmListViewLog.ResumeLayout(false);
 			this.ResumeLayout(false);
 			this.PerformLayout();
