@@ -69,6 +69,11 @@
 			this.button2 = new System.Windows.Forms.Button();
 			this.m_ebMessageDetail = new System.Windows.Forms.TextBox();
 			this.m_cbxDetail = new System.Windows.Forms.ComboBox();
+			this.m_pbGoBack = new System.Windows.Forms.Button();
+			this.m_pbBookmark0 = new System.Windows.Forms.Button();
+			this.m_pbBookmark1 = new System.Windows.Forms.Button();
+			this.m_pbBookmark2 = new System.Windows.Forms.Button();
+			this.m_pbBookmark3 = new System.Windows.Forms.Button();
 			this.m_ctxmListViewLog.SuspendLayout();
 			this.SuspendLayout();
 			// 
@@ -493,11 +498,81 @@
 			this.m_cbxDetail.TabIndex = 37;
 			this.m_cbxDetail.SelectedIndexChanged += new System.EventHandler(this.OnDetailSelectionChanged);
 			// 
+			// m_pbGoBack
+			// 
+			this.m_pbGoBack.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+			this.m_pbGoBack.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+			this.m_pbGoBack.Location = new System.Drawing.Point(18, 936);
+			this.m_pbGoBack.Name = "m_pbGoBack";
+			this.m_pbGoBack.Size = new System.Drawing.Size(39, 36);
+			this.m_pbGoBack.TabIndex = 38;
+			this.m_pbGoBack.Tag = "-";
+			this.m_pbGoBack.Text = "-";
+			this.m_pbGoBack.UseVisualStyleBackColor = true;
+			this.m_pbGoBack.Click += new System.EventHandler(this.DoBookmarkButton);
+			// 
+			// m_pbBookmark0
+			// 
+			this.m_pbBookmark0.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+			this.m_pbBookmark0.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+			this.m_pbBookmark0.Location = new System.Drawing.Point(63, 936);
+			this.m_pbBookmark0.Name = "m_pbBookmark0";
+			this.m_pbBookmark0.Size = new System.Drawing.Size(39, 36);
+			this.m_pbBookmark0.TabIndex = 39;
+			this.m_pbBookmark0.Tag = "0";
+			this.m_pbBookmark0.Text = "0";
+			this.m_pbBookmark0.UseVisualStyleBackColor = true;
+			this.m_pbBookmark0.Click += new System.EventHandler(this.DoBookmarkButton);
+			// 
+			// m_pbBookmark1
+			// 
+			this.m_pbBookmark1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+			this.m_pbBookmark1.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+			this.m_pbBookmark1.Location = new System.Drawing.Point(108, 936);
+			this.m_pbBookmark1.Name = "m_pbBookmark1";
+			this.m_pbBookmark1.Size = new System.Drawing.Size(39, 36);
+			this.m_pbBookmark1.TabIndex = 40;
+			this.m_pbBookmark1.Tag = "1";
+			this.m_pbBookmark1.Text = "1";
+			this.m_pbBookmark1.UseVisualStyleBackColor = true;
+			this.m_pbBookmark1.Click += new System.EventHandler(this.DoBookmarkButton);
+			// 
+			// m_pbBookmark2
+			// 
+			this.m_pbBookmark2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+			this.m_pbBookmark2.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+			this.m_pbBookmark2.Location = new System.Drawing.Point(153, 935);
+			this.m_pbBookmark2.Name = "m_pbBookmark2";
+			this.m_pbBookmark2.Size = new System.Drawing.Size(39, 36);
+			this.m_pbBookmark2.TabIndex = 41;
+			this.m_pbBookmark2.Tag = "2";
+			this.m_pbBookmark2.Text = "2";
+			this.m_pbBookmark2.UseVisualStyleBackColor = true;
+			this.m_pbBookmark2.Click += new System.EventHandler(this.DoBookmarkButton);
+			// 
+			// m_pbBookmark3
+			// 
+			this.m_pbBookmark3.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+			this.m_pbBookmark3.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+			this.m_pbBookmark3.Location = new System.Drawing.Point(198, 935);
+			this.m_pbBookmark3.Name = "m_pbBookmark3";
+			this.m_pbBookmark3.Size = new System.Drawing.Size(39, 36);
+			this.m_pbBookmark3.TabIndex = 42;
+			this.m_pbBookmark3.Tag = "3";
+			this.m_pbBookmark3.Text = "3";
+			this.m_pbBookmark3.UseVisualStyleBackColor = true;
+			this.m_pbBookmark3.Click += new System.EventHandler(this.DoBookmarkButton);
+			// 
 			// AzLogWindow
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
 			this.ClientSize = new System.Drawing.Size(1439, 974);
+			this.Controls.Add(this.m_pbBookmark3);
+			this.Controls.Add(this.m_pbBookmark2);
+			this.Controls.Add(this.m_pbBookmark1);
+			this.Controls.Add(this.m_pbBookmark0);
+			this.Controls.Add(this.m_pbGoBack);
 			this.Controls.Add(this.m_cbxDetail);
 			this.Controls.Add(this.m_ebMessageDetail);
 			this.Controls.Add(this.button2);
@@ -576,5 +651,10 @@
         private System.Windows.Forms.Button button2;
 		private System.Windows.Forms.TextBox m_ebMessageDetail;
 		private System.Windows.Forms.ComboBox m_cbxDetail;
+		private System.Windows.Forms.Button m_pbGoBack;
+		private System.Windows.Forms.Button m_pbBookmark0;
+		private System.Windows.Forms.Button m_pbBookmark1;
+		private System.Windows.Forms.Button m_pbBookmark2;
+		private System.Windows.Forms.Button m_pbBookmark3;
 	}
 }

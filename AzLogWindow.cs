@@ -1203,6 +1203,10 @@ namespace AzLog
             m_azlm.FFetchPartitionsForDateRange(dttmMin, dttmMac);
         }
 
+        /*----------------------------------------------------------------------------
+			%%Function:CenterViewOnItem
+			%%Qualified:AzLog.AzLogWindow.CenterViewOnItem
+        ----------------------------------------------------------------------------*/
         void CenterViewOnItem(ListView lv, int item, bool fSelect = false)
         {
 	        if (fSelect)
@@ -1214,7 +1218,7 @@ namespace AzLog
 	        }
 
 	        m_lvLog.Items[item].EnsureVisible();
-
+            m_lvLog.Select();
         }
 
         /*----------------------------------------------------------------------------
@@ -1274,6 +1278,95 @@ namespace AzLog
 			}	
 		}
 
+        private AzLogView.LogEntryBookmark[] m_bookmarks = new AzLogView.LogEntryBookmark[11];
+
+        /*----------------------------------------------------------------------------
+			%%Function:SaveBookmark
+			%%Qualified:AzLog.AzLogWindow.SaveBookmark
+        ----------------------------------------------------------------------------*/
+        void SaveBookmark(Button button, int nBookmark)
+        {
+	        if (m_lvLog.SelectedIndices.Count == 0)
+	        {
+		        MessageBox.Show("No current election in log window. Cannot set bookmark");
+		        return;
+	        }
+
+	        int iSelection = m_lvLog.SelectedIndices[0];
+
+	        m_bookmarks[nBookmark] = m_azlv.CreateBookmarkFromIndex(iSelection);
+	        button.BackColor = Color.LightBlue;
+        }
+
+        /*----------------------------------------------------------------------------
+			%%Function:GotoBookmark
+			%%Qualified:AzLog.AzLogWindow.GotoBookmark
+        ----------------------------------------------------------------------------*/
+        void GotoBookmark(Button button, AzLogView.LogEntryBookmark bookmark)
+        {
+	        if (bookmark == null)
+	        {
+		        MessageBox.Show("Bookmark is not set yet. Hold control while you click to set the bookmark");
+		        return;
+	        }
+
+	        int i = m_azlv.FindNearestIndexForBookmark(bookmark);
+
+	        SaveGoBack();
+	        
+	        if (i != -1)
+	        {
+		        CenterViewOnItem(m_lvLog, i, true);
+		        if (i != bookmark.Hint)
+			        bookmark.Hint = i;
+		        if (button.BackColor != Color.LightBlue)
+			        button.BackColor = Color.LightBlue;
+	        }
+	        else
+	        {
+		        MessageBox.Show("Can't find bookmark, even search surrounding items. Sorry. I tried. I really did.");
+		        button.BackColor = Color.Salmon;
+	        }
+        }
+
+        /*----------------------------------------------------------------------------
+			%%Function:SaveGoBack
+			%%Qualified:AzLog.AzLogWindow.SaveGoBack
+        ----------------------------------------------------------------------------*/
+        void SaveGoBack()
+        {
+	        if (m_lvLog.SelectedIndices.Count == 0)
+		        return;
+
+	        if (m_bookmarks[10] != null && m_lvLog.SelectedIndices[0] == m_bookmarks[10].Hint)
+		        return; // no need to save, we already have it.
+	        
+	        SaveBookmark(m_pbGoBack, 10);
+        }
+        
+        /*----------------------------------------------------------------------------
+			%%Function:DoBookmark
+			%%Qualified:AzLog.AzLogWindow.DoBookmark
+        ----------------------------------------------------------------------------*/
+        private void DoBookmarkButton(object sender, EventArgs e)
+		{
+			Button button = (Button) sender;
+			// which bookmark is this?
+			int nBookmark;
+
+			if (!Int32.TryParse((string)button.Tag, out nBookmark))
+			{
+				if ((string) button.Tag == "-")
+					nBookmark = 10;
+				else
+					throw new Exception("unknown bookmark");
+			}
+
+			if ((Control.ModifierKeys & Keys.Control) == Keys.Control)
+				SaveBookmark(button, nBookmark);
+			else
+				GotoBookmark(button, m_bookmarks[nBookmark]);
+		}
 	}
 }
 

@@ -198,6 +198,9 @@ namespace AzLog
         {
 	        if (iMax == 0)
 		        return -1;
+
+	        if (iStart >= iMax)
+		        iStart = iMax - 1;
 	        
 	        int iLastReverse = kind == SearchKind.Forward ? iStart + 1 : 0;
 	        int iLastForward = kind == SearchKind.Backward ? iStart - 1 : iMax - 1;
@@ -264,16 +267,17 @@ namespace AzLog
 		        (entry, search) => String.Compare(m_azlm.LogEntry(m_pliale[entry]).GetColumn(AzLogEntry.LogColumn.EventTickCount), search) == 0);
         }
 
-        class SelectionRestoreContext
+        public class LogEntryBookmark
         {
 	        private List<string> m_plBackwardSave; // this will include the actual selected item
 	        private List<string> m_plForwardSave;
-	        
+	        public int Hint { get; set; }
+
 	        public delegate string FetchKeyDelegate(int i);
 
-	        public static SelectionRestoreContext CreateRestoreContextFromListView(int iPreserve, int iMax, FetchKeyDelegate fetchKey)
+	        public static LogEntryBookmark CreateBookmark(int iPreserve, int iMax, FetchKeyDelegate fetchKey)
 	        {
-		        SelectionRestoreContext restore = new SelectionRestoreContext();
+		        LogEntryBookmark restore = new LogEntryBookmark();
 
 		        restore.m_plBackwardSave = new List<string>();
 		        restore.m_plForwardSave = new List<string>();
@@ -291,6 +295,8 @@ namespace AzLog
 			        restore.m_plForwardSave.Add(fetchKey(i++));
 		        }
 
+		        restore.Hint = iPreserve;
+		        
 		        return restore;
 	        }
 
@@ -298,37 +304,53 @@ namespace AzLog
 	        
 	        public int FindNearestForRestore(RestoreSearchDelegate searchDelegate)
 	        {
+		        List<string> backwards = new List<string>(m_plBackwardSave);
+		        List<string> forwards = new List<string>(m_plForwardSave);
+		        
                 // we have no idea what items that used to be around us are valid --
                 // any of them could now be filtered out. We've got a max of 20 keys
                 // to try to match (10 back and 10 forward, if they were available).
 
-                while (m_plBackwardSave.Count > 0 || m_plForwardSave.Count > 0)
+                while (backwards.Count > 0 || forwards.Count > 0)
                 {
 	                int i;
 
-	                if (m_plBackwardSave.Count > 0)
+	                if (backwards.Count > 0)
 	                {
-		                i = searchDelegate(m_plBackwardSave[0]);
+		                i = searchDelegate(backwards[0]);
 
 		                if (i != -1)
 			                return i;
 
-		                m_plBackwardSave.RemoveAt(0);
+		                backwards.RemoveAt(0);
 	                }
 
-	                if (m_plForwardSave.Count > 0)
+	                if (forwards.Count > 0)
 	                {
-		                i = searchDelegate(m_plForwardSave[0]);
+		                i = searchDelegate(forwards[0]);
 
 		                if (i != -1)
 			                return i;
 
-		                m_plForwardSave.RemoveAt(0);
+		                forwards.RemoveAt(0);
 	                }
                 }
 
                 return -1;
 	        }
+        }
+
+        /*----------------------------------------------------------------------------
+			%%Function:CreateBookmarkFromIndex
+			%%Qualified:AzLog.AzLogView.CreateBookmarkFromIndex
+			
+        ----------------------------------------------------------------------------*/
+        public LogEntryBookmark CreateBookmarkFromIndex(int iSelection)
+        {
+	        return LogEntryBookmark.CreateBookmark(
+		        iSelection,
+		        m_pliale.Count,
+		        (_i) => m_azlm.LogEntry(m_pliale[_i]).GetColumn(AzLogEntry.LogColumn.EventTickCount));
         }
         
         /* R E B U I L D  V I E W */
@@ -345,8 +367,8 @@ namespace AzLog
         ----------------------------------------------------------------------------*/
         public int RebuildView(int iPreserveSelection)
         {
-	        SelectionRestoreContext restore = iPreserveSelection != -1
-		        ? SelectionRestoreContext.CreateRestoreContextFromListView(
+	        LogEntryBookmark restore = iPreserveSelection != -1
+		        ? LogEntryBookmark.CreateBookmark(
 			        iPreserveSelection,
 			        m_pliale.Count,
 			        (_i) => m_azlm.LogEntry(m_pliale[_i]).GetColumn(AzLogEntry.LogColumn.EventTickCount))
@@ -364,14 +386,21 @@ namespace AzLog
 
             if (restore != null)
             {
-	            int hint = Math.Min(iPreserveSelection, m_pliale.Count);
-
-                return restore.FindNearestForRestore((_search) => FindNearestEventTickcountInView(_search, hint));
+	            return FindNearestIndexForBookmark(restore);
             }
             
             return -1;
         }
 
+        /*----------------------------------------------------------------------------
+			%%Function:FindNearestIndexForBookmark
+			%%Qualified:AzLog.AzLogView.FindNearestIndexForBookmark
+        ----------------------------------------------------------------------------*/
+        public int FindNearestIndexForBookmark(LogEntryBookmark bookmark)
+        {
+	        return bookmark.FindNearestForRestore((_search) => FindNearestEventTickcountInView(_search, bookmark.Hint));
+        }
+        
         /*----------------------------------------------------------------------------
 			%%Function:RebuildView
 			%%Qualified:AzLog.AzLogView.RebuildView
